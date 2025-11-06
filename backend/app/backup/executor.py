@@ -27,6 +27,7 @@ from app.backup.sources.ftp import FTPBackup, SFTPBackup
 from app.backup.sources.webdav import WebDAVBackup
 from app.backup.sources.docker import DockerVolumeBackup, DockerImageBackup
 from app.backup.sources.rsync_ssh import RsyncSSHBackup, NASBackup
+from app.backup.sources.selfhosted import SelfHostedBackup
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -53,6 +54,7 @@ class BackupExecutor:
             'forgejo': ForgejoBackup,
             'bitbucket': BitbucketBackup,
             'codeberg': CodebergBackup,
+            'gitbucket': GiteaBackup,  # GitBucket uses similar API to Gitea
 
             # Cloud Storage
             'rclone': RcloneBackup,
@@ -68,6 +70,7 @@ class BackupExecutor:
             'redis': RedisBackup,
             'sqlite': SQLiteBackup,
             'couchdb': CouchDBBackup,
+            'influxdb': SelfHostedBackup,
 
             # FTP/SFTP
             'ftp': FTPBackup,
@@ -82,6 +85,56 @@ class BackupExecutor:
             'rsync-ssh': RsyncSSHBackup,
             'rsync': RsyncSSHBackup,  # Alias
             'nas': NASBackup,
+
+            # Self-Hosted Services - Media Servers
+            'plex': SelfHostedBackup,
+            'jellyfin': SelfHostedBackup,
+            'immich': SelfHostedBackup,
+            'photoprism': SelfHostedBackup,
+            'komga': SelfHostedBackup,
+            'kaleidescape': SelfHostedBackup,
+            'musicbrainz': SelfHostedBackup,
+
+            # Self-Hosted Services - File Storage
+            'seafile': SelfHostedBackup,
+
+            # Self-Hosted Services - Smart Home & Automation
+            'homeassistant': SelfHostedBackup,
+            'grafana': SelfHostedBackup,
+            'nodered': SelfHostedBackup,
+            'prometheus': SelfHostedBackup,
+            'loki': SelfHostedBackup,
+
+            # Self-Hosted Services - Security & Password Management
+            'vaultwarden': SelfHostedBackup,
+            'bitwarden': SelfHostedBackup,
+
+            # Self-Hosted Services - Documentation & Wiki
+            'mediawiki': SelfHostedBackup,
+            'tiddlywiki': SelfHostedBackup,
+            'obsidian': SelfHostedBackup,
+
+            # Self-Hosted Services - Monitoring & Analytics
+            'sentry': SelfHostedBackup,
+
+            # Self-Hosted Services - Email & Communication
+            'mailcow': SelfHostedBackup,
+            'mastodon': SelfHostedBackup,
+            'mattermost': SelfHostedBackup,
+
+            # Self-Hosted Services - Content Management
+            'paperless-ngx': SelfHostedBackup,
+            'archivebox': SelfHostedBackup,
+            'wallabag': SelfHostedBackup,
+            'linkding': SelfHostedBackup,
+
+            # Self-Hosted Services - Admin & User Management
+            'portainer': SelfHostedBackup,
+            'yacht': SelfHostedBackup,
+
+            # Self-Hosted Services - Specialized
+            'syncthing': SelfHostedBackup,
+            'restic': SelfHostedBackup,
         }
 
     def load_sources(self):

@@ -26,15 +26,23 @@ Ein selbstgehosted Backup-System für Raspberry Pi 3 mit Weboberfläche zur auto
 
 ## ✨ Features
 
-- ✅ **Multi-Source Backup**: 30+ Backup-Quellen unterstützt
+- ✅ **Multi-Source Backup**: 60+ Backup-Quellen unterstützt
   - **Network Storage**: NAS (SMB/NFS), rsync over SSH (Synology, QNAP, TrueNAS)
-  - **Git Platforms**: GitHub, GitLab, Gitea, Forgejo, Bitbucket, Codeberg
-  - **Databases**: MySQL, PostgreSQL, MongoDB, Redis, SQLite, CouchDB
+  - **Git Platforms**: GitHub, GitLab, Gitea, Forgejo, Bitbucket, Codeberg, GitBucket
+  - **Databases**: MySQL, PostgreSQL, MongoDB, Redis, SQLite, CouchDB, InfluxDB
   - **Cloud Storage**: Google Drive, Dropbox, OneDrive, S3, Backblaze B2, und 40+ mehr (via rclone)
   - **WebDAV**: Nextcloud, Seafile, ownCloud
   - **FTP/SFTP**: FTP, FTPS, SFTP Servers
   - **Docker**: Volumes, Containers, Images
   - **Local**: Dateisystem, Home-Verzeichnisse
+  - **Self-Hosted Services**:
+    - Media: Plex, Jellyfin, Immich, PhotoPrism, Komga, Kaleidescape
+    - Smart Home: Home Assistant, Grafana, Node-RED, Prometheus, Loki
+    - Security: Vaultwarden, Bitwarden
+    - Documentation: MediaWiki, TiddlyWiki, Obsidian
+    - Communication: Mailcow, Mastodon, Mattermost
+    - Content: Paperless-NGX, ArchiveBox, Wallabag, Linkding
+    - Management: Portainer, Yacht, Syncthing, Restic
 - ✅ **Trigger-basiert**: Automatische Ausführung beim Einstecken einer USB-Festplatte
 - ✅ **Weboberfläche**: Moderne React-basierte SPA für Konfiguration und Monitoring
 - ✅ **REST API**: Vollständige API für Automation und Integration

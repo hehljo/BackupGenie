@@ -405,6 +405,524 @@
       "options": {
         "compress": true
       }
+    },
+    {
+      "id": "plex-media",
+      "name": "Plex Media Server",
+      "type": "plex",
+      "enabled": true,
+      "priority": 26,
+      "host": "192.168.1.100",
+      "port": 32400,
+      "credentials": {
+        "token_env": "PLEX_TOKEN"
+      },
+      "options": {
+        "backup_database": true,
+        "backup_metadata": true,
+        "backup_library": false,
+        "backup_method": "docker-volume"
+      }
+    },
+    {
+      "id": "jellyfin-media",
+      "name": "Jellyfin Media Server",
+      "type": "jellyfin",
+      "enabled": true,
+      "priority": 27,
+      "host": "192.168.1.100",
+      "port": 8096,
+      "credentials": {
+        "api_key_env": "JELLYFIN_API_KEY"
+      },
+      "options": {
+        "backup_database": true,
+        "backup_metadata": true,
+        "backup_library": false,
+        "backup_method": "docker-volume"
+      }
+    },
+    {
+      "id": "immich-photos",
+      "name": "Immich Photo Management",
+      "type": "immich",
+      "enabled": true,
+      "priority": 28,
+      "host": "192.168.1.100",
+      "port": 3001,
+      "credentials": {
+        "api_key_env": "IMMICH_API_KEY"
+      },
+      "options": {
+        "backup_database": true,
+        "backup_upload_location": true,
+        "backup_method": "docker-volume"
+      }
+    },
+    {
+      "id": "seafile-files",
+      "name": "Seafile File Sync",
+      "type": "seafile",
+      "enabled": true,
+      "priority": 29,
+      "host": "192.168.1.100",
+      "port": 8000,
+      "credentials": {
+        "username_env": "SEAFILE_USER",
+        "password_env": "SEAFILE_PASSWORD"
+      },
+      "options": {
+        "backup_libraries": true,
+        "backup_database": true
+      }
+    },
+    {
+      "id": "homeassistant",
+      "name": "Home Assistant",
+      "type": "homeassistant",
+      "enabled": true,
+      "priority": 30,
+      "host": "192.168.1.100",
+      "port": 8123,
+      "credentials": {
+        "token_env": "HA_TOKEN"
+      },
+      "options": {
+        "backup_config": true,
+        "backup_database": true,
+        "backup_addons": true,
+        "use_snapshot_api": true
+      }
+    },
+    {
+      "id": "influxdb-timeseries",
+      "name": "InfluxDB Time-Series Database",
+      "type": "influxdb",
+      "enabled": true,
+      "priority": 31,
+      "host": "192.168.1.100",
+      "port": 8086,
+      "credentials": {
+        "username_env": "INFLUXDB_USER",
+        "password_env": "INFLUXDB_PASSWORD",
+        "token_env": "INFLUXDB_TOKEN"
+      },
+      "options": {
+        "backup_method": "influxd_backup",
+        "databases": ["sensors", "metrics"]
+      }
+    },
+    {
+      "id": "grafana-dashboards",
+      "name": "Grafana Dashboards",
+      "type": "grafana",
+      "enabled": true,
+      "priority": 32,
+      "host": "192.168.1.100",
+      "port": 3000,
+      "credentials": {
+        "token_env": "GRAFANA_TOKEN"
+      },
+      "options": {
+        "backup_dashboards": true,
+        "backup_database": true,
+        "backup_datasources": true,
+        "use_api": true
+      }
+    },
+    {
+      "id": "nodered-flows",
+      "name": "Node-RED Automation",
+      "type": "nodered",
+      "enabled": true,
+      "priority": 33,
+      "host": "192.168.1.100",
+      "port": 1880,
+      "credentials": {
+        "username_env": "NODERED_USER",
+        "password_env": "NODERED_PASSWORD"
+      },
+      "options": {
+        "backup_flows": true,
+        "backup_config": true,
+        "use_api": true
+      }
+    },
+    {
+      "id": "gitbucket-repos",
+      "name": "GitBucket Repositories",
+      "type": "gitbucket",
+      "enabled": true,
+      "priority": 34,
+      "host": "192.168.1.100",
+      "port": 8080,
+      "repositories": [
+        "user/repo1",
+        "user/repo2"
+      ],
+      "credentials": {
+        "token_env": "GITBUCKET_TOKEN"
+      },
+      "options": {
+        "include_lfs": true,
+        "include_issues": true
+      }
+    },
+    {
+      "id": "vaultwarden-passwords",
+      "name": "Vaultwarden Password Manager",
+      "type": "vaultwarden",
+      "enabled": true,
+      "priority": 35,
+      "host": "192.168.1.100",
+      "port": 80,
+      "options": {
+        "backup_database": true,
+        "backup_attachments": true,
+        "backup_method": "docker-volume",
+        "db_type": "sqlite"
+      }
+    },
+    {
+      "id": "bitwarden-selfhosted",
+      "name": "Bitwarden Self-Hosted",
+      "type": "bitwarden",
+      "enabled": true,
+      "priority": 36,
+      "host": "192.168.1.100",
+      "port": 80,
+      "credentials": {
+        "admin_token_env": "BITWARDEN_ADMIN_TOKEN"
+      },
+      "options": {
+        "backup_database": true,
+        "backup_attachments": true,
+        "use_backup_script": true
+      }
+    },
+    {
+      "id": "mediawiki",
+      "name": "MediaWiki",
+      "type": "mediawiki",
+      "enabled": true,
+      "priority": 37,
+      "host": "192.168.1.100",
+      "port": 80,
+      "options": {
+        "backup_database": true,
+        "backup_images": true,
+        "backup_path": "/var/www/wiki"
+      }
+    },
+    {
+      "id": "tiddlywiki",
+      "name": "TiddlyWiki Personal Wiki",
+      "type": "tiddlywiki",
+      "enabled": true,
+      "priority": 38,
+      "host": "192.168.1.100",
+      "port": 8080,
+      "options": {
+        "backup_method": "json_export",
+        "backup_plugins": true
+      }
+    },
+    {
+      "id": "obsidian-vault",
+      "name": "Obsidian Sync Alternative",
+      "type": "obsidian",
+      "enabled": true,
+      "priority": 39,
+      "host": "192.168.1.100",
+      "port": 8000,
+      "options": {
+        "backup_method": "rsync",
+        "vault_path": "/data/obsidian"
+      }
+    },
+    {
+      "id": "prometheus-metrics",
+      "name": "Prometheus Metrics",
+      "type": "prometheus",
+      "enabled": true,
+      "priority": 40,
+      "host": "192.168.1.100",
+      "port": 9090,
+      "options": {
+        "backup_method": "tsdb_snapshot",
+        "backup_config": true
+      }
+    },
+    {
+      "id": "grafana-loki-logs",
+      "name": "Grafana Loki Logs",
+      "type": "loki",
+      "enabled": true,
+      "priority": 41,
+      "host": "192.168.1.100",
+      "port": 3100,
+      "options": {
+        "backup_method": "docker-volume",
+        "backup_config": true
+      }
+    },
+    {
+      "id": "sentry-errors",
+      "name": "Sentry Error Tracking",
+      "type": "sentry",
+      "enabled": true,
+      "priority": 42,
+      "host": "192.168.1.100",
+      "port": 9000,
+      "credentials": {
+        "auth_token_env": "SENTRY_AUTH_TOKEN"
+      },
+      "options": {
+        "backup_database": true,
+        "backup_attachments": true
+      }
+    },
+    {
+      "id": "mailcow-email",
+      "name": "Mailcow Mail Server",
+      "type": "mailcow",
+      "enabled": true,
+      "priority": 43,
+      "host": "192.168.1.100",
+      "port": 443,
+      "credentials": {
+        "api_key_env": "MAILCOW_API_KEY"
+      },
+      "options": {
+        "backup_maildir": true,
+        "backup_database": true,
+        "backup_config": true
+      }
+    },
+    {
+      "id": "mastodon-social",
+      "name": "Mastodon Social Network",
+      "type": "mastodon",
+      "enabled": true,
+      "priority": 44,
+      "host": "192.168.1.100",
+      "port": 3000,
+      "credentials": {
+        "access_token_env": "MASTODON_TOKEN"
+      },
+      "options": {
+        "backup_database": true,
+        "backup_media": true,
+        "use_streaming_api": true
+      }
+    },
+    {
+      "id": "mattermost-chat",
+      "name": "Mattermost Team Chat",
+      "type": "mattermost",
+      "enabled": true,
+      "priority": 45,
+      "host": "192.168.1.100",
+      "port": 8065,
+      "credentials": {
+        "token_env": "MATTERMOST_TOKEN"
+      },
+      "options": {
+        "backup_database": true,
+        "backup_files": true,
+        "use_mmctl": true
+      }
+    },
+    {
+      "id": "paperless-ngx-docs",
+      "name": "Paperless-NGX Documents",
+      "type": "paperless-ngx",
+      "enabled": true,
+      "priority": 46,
+      "host": "192.168.1.100",
+      "port": 8000,
+      "credentials": {
+        "token_env": "PAPERLESS_TOKEN"
+      },
+      "options": {
+        "backup_documents": true,
+        "backup_database": true,
+        "backup_media": true,
+        "use_exporter": true
+      }
+    },
+    {
+      "id": "archivebox-web",
+      "name": "ArchiveBox Web Archive",
+      "type": "archivebox",
+      "enabled": true,
+      "priority": 47,
+      "host": "192.168.1.100",
+      "port": 5000,
+      "options": {
+        "backup_method": "snapshot_api",
+        "backup_data": true
+      }
+    },
+    {
+      "id": "wallabag-articles",
+      "name": "Wallabag Read Later",
+      "type": "wallabag",
+      "enabled": true,
+      "priority": 48,
+      "host": "192.168.1.100",
+      "port": 80,
+      "credentials": {
+        "client_id_env": "WALLABAG_CLIENT_ID",
+        "client_secret_env": "WALLABAG_CLIENT_SECRET",
+        "username_env": "WALLABAG_USER",
+        "password_env": "WALLABAG_PASSWORD"
+      },
+      "options": {
+        "backup_database": true,
+        "use_json_export": true
+      }
+    },
+    {
+      "id": "linkding-bookmarks",
+      "name": "Linkding Bookmark Manager",
+      "type": "linkding",
+      "enabled": true,
+      "priority": 49,
+      "host": "192.168.1.100",
+      "port": 9090,
+      "credentials": {
+        "token_env": "LINKDING_TOKEN"
+      },
+      "options": {
+        "backup_method": "json_export",
+        "backup_database": true
+      }
+    },
+    {
+      "id": "kaleidescape-media",
+      "name": "Kaleidescape Movie Collection",
+      "type": "kaleidescape",
+      "enabled": true,
+      "priority": 50,
+      "host": "192.168.1.100",
+      "port": 3006,
+      "options": {
+        "backup_method": "xml_api",
+        "backup_metadata": true
+      }
+    },
+    {
+      "id": "musicbrainz-picard",
+      "name": "MusicBrainz Picard Music Tagger",
+      "type": "musicbrainz",
+      "enabled": true,
+      "priority": 51,
+      "host": "192.168.1.100",
+      "port": 8086,
+      "options": {
+        "backup_database": true,
+        "backup_method": "docker-volume"
+      }
+    },
+    {
+      "id": "portainer-docker",
+      "name": "Portainer Docker Management",
+      "type": "portainer",
+      "enabled": true,
+      "priority": 52,
+      "host": "192.168.1.100",
+      "port": 9000,
+      "credentials": {
+        "api_key_env": "PORTAINER_API_KEY"
+      },
+      "options": {
+        "backup_config": true,
+        "backup_templates": true,
+        "use_api": true
+      }
+    },
+    {
+      "id": "yacht-docker",
+      "name": "Yacht Docker Dashboard",
+      "type": "yacht",
+      "enabled": true,
+      "priority": 53,
+      "host": "192.168.1.100",
+      "port": 8000,
+      "options": {
+        "backup_templates": true,
+        "backup_config": true
+      }
+    },
+    {
+      "id": "syncthing-sync",
+      "name": "Syncthing P2P File Sync",
+      "type": "syncthing",
+      "enabled": true,
+      "priority": 54,
+      "host": "192.168.1.100",
+      "port": 8384,
+      "credentials": {
+        "api_key_env": "SYNCTHING_API_KEY"
+      },
+      "options": {
+        "backup_config": true,
+        "backup_data": true,
+        "use_api": true
+      }
+    },
+    {
+      "id": "restic-server",
+      "name": "Restic Backup Server",
+      "type": "restic",
+      "enabled": true,
+      "priority": 55,
+      "host": "192.168.1.100",
+      "port": 8000,
+      "credentials": {
+        "password_env": "RESTIC_PASSWORD"
+      },
+      "options": {
+        "backup_repository": true,
+        "backup_method": "export"
+      }
+    },
+    {
+      "id": "photoprism-photos",
+      "name": "PhotoPrism AI Photo Library",
+      "type": "photoprism",
+      "enabled": true,
+      "priority": 56,
+      "host": "192.168.1.100",
+      "port": 2342,
+      "credentials": {
+        "username_env": "PHOTOPRISM_USER",
+        "password_env": "PHOTOPRISM_PASSWORD"
+      },
+      "options": {
+        "backup_storage": true,
+        "backup_database": true,
+        "backup_method": "docker-volume"
+      }
+    },
+    {
+      "id": "komga-comics",
+      "name": "Komga Comics/Manga Server",
+      "type": "komga",
+      "enabled": true,
+      "priority": 57,
+      "host": "192.168.1.100",
+      "port": 8080,
+      "credentials": {
+        "username_env": "KOMGA_USER",
+        "password_env": "KOMGA_PASSWORD"
+      },
+      "options": {
+        "backup_library": false,
+        "backup_metadata": true,
+        "backup_database": true
+      }
     }
   ]
 }
