@@ -1,0 +1,203 @@
+import { useState, useEffect } from 'react'
+import { Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { backupAPI } from '../services/api'
+import clsx from 'clsx'
+import { formatDistanceToNow } from 'date-fns'
+
+export default function History() {
+  const [backups, setBackups] = useState([])
+  const [total, setTotal] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
+  const [page, setPage] = useState(0)
+  const limit = 10
+
+  useEffect(() => {
+    loadHistory()
+  }, [page])
+
+  const loadHistory = async () => {
+    setIsLoading(true)
+    try {
+      const response = await backupAPI.getHistory(limit, page * limit)
+      setBackups(response.data.backups)
+      setTotal(response.data.total)
+      setIsLoading(false)
+    } catch (error) {
+      console.error('Error loading history:', error)
+      setIsLoading(false)
+    }
+  }
+
+  const formatBytes = (bytes) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+  }
+
+  const formatDuration = (seconds) => {
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    const secs = seconds % 60
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${secs}s`
+    } else if (minutes > 0) {
+      return `${minutes}m ${secs}s`
+    }
+    return `${secs}s`
+  }
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle className="w-5 h-5 text-green-600" />
+      case 'failed':
+        return <XCircle className="w-5 h-5 text-red-600" />
+      case 'partial':
+        return <AlertCircle className="w-5 h-5 text-yellow-600" />
+      default:
+        return <Clock className="w-5 h-5 text-blue-600" />
+    }
+  }
+
+  const getStatusBadge = (status) => {
+    const badges = {
+      completed: 'badge-success',
+      running: 'badge-info',
+      failed: 'badge-error',
+      partial: 'badge-warning',
+    }
+    return badges[status] || 'badge-info'
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading history...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Backup History</h1>
+        <p className="text-gray-600 mt-1">View all backup executions</p>
+      </div>
+
+      {/* History List */}
+      <div className="space-y-4">
+        {backups.map((backup) => (
+          <div key={backup.backup_id} className="card">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                {getStatusIcon(backup.status)}
+                <div>
+                  <p className="font-semibold text-gray-900">
+                    Backup {backup.backup_id.substring(0, 8)}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {formatDistanceToNow(new Date(backup.started_at), { addSuffix: true })}
+                  </p>
+                </div>
+              </div>
+              <span className={clsx('badge', getStatusBadge(backup.status))}>
+                {backup.status}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div>
+                <p className="text-sm text-gray-600">Started</p>
+                <p className="font-medium text-gray-900">
+                  {new Date(backup.started_at).toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Duration</p>
+                <p className="font-medium text-gray-900">
+                  {backup.duration ? formatDuration(backup.duration) : 'N/A'}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Sources</p>
+                <p className="font-medium text-gray-900">{backup.sources_count}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Total Size</p>
+                <p className="font-medium text-gray-900">{formatBytes(backup.total_size)}</p>
+              </div>
+            </div>
+
+            {backup.sources && backup.sources.length > 0 && (
+              <div className="border-t border-gray-200 pt-4">
+                <p className="text-sm font-medium text-gray-700 mb-3">Source Details</p>
+                <div className="space-y-2">
+                  {backup.sources.map((source) => (
+                    <div key={source.source_id} className="flex items-center justify-between text-sm bg-gray-50 p-3 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className={clsx(
+                          'w-2 h-2 rounded-full',
+                          source.status === 'completed' ? 'bg-green-500' :
+                          source.status === 'failed' ? 'bg-red-500' :
+                          'bg-blue-500'
+                        )}></div>
+                        <span className="font-medium">{source.source_name}</span>
+                        <span className="text-gray-500">({source.source_type})</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="text-gray-600">
+                          {source.files_synced} files • {formatBytes(source.size_synced)}
+                        </span>
+                        <span className={clsx('badge text-xs', getStatusBadge(source.status))}>
+                          {source.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {backups.length === 0 && (
+        <div className="card text-center py-12">
+          <Clock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">No backup history</h3>
+          <p className="text-gray-600">Start your first backup to see history here</p>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {total > limit && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setPage(Math.max(0, page - 1))}
+            disabled={page === 0}
+            className="btn btn-secondary disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="text-gray-600">
+            Page {page + 1} of {Math.ceil(total / limit)}
+          </span>
+          <button
+            onClick={() => setPage(page + 1)}
+            disabled={(page + 1) * limit >= total}
+            className="btn btn-secondary disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
