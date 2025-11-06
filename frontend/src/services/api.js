@@ -1,4 +1,5 @@
 import axios from 'axios'
+import i18n from '../i18n'
 
 const API_URL = import.meta.env.VITE_API_URL || '/api/v1'
 
@@ -9,12 +10,17 @@ const api = axios.create({
   },
 })
 
-// Add token to requests
+// Add token and language to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+
+  // Add Accept-Language header for backend i18n
+  const language = i18n.language || 'en'
+  config.headers['Accept-Language'] = language
+
   return config
 })
 

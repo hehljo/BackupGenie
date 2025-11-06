@@ -17,6 +17,7 @@ Ein selbstgehosted Backup-System für Raspberry Pi 3 mit Weboberfläche zur auto
 - [Installation](#installation)
 - [Konfiguration](#konfiguration)
 - [Nutzung](#nutzung)
+- [Internationalisierung (i18n)](#internationalisierung-i18n)
 - [API-Dokumentation](#api-dokumentation)
 - [Troubleshooting](#troubleshooting)
 - [Sicherheit](#sicherheit)
@@ -50,6 +51,7 @@ Ein selbstgehosted Backup-System für Raspberry Pi 3 mit Weboberfläche zur auto
 - ✅ **Docker-basiert**: Einfaches Deployment auf beliebigen Linux-Systemen
 - ✅ **Sicherheit**: SSH-Key-Authentication, SSL/TLS, RBAC-ready
 - ✅ **Raspberry Pi optimiert**: ARM-kompatible Images, Resource-aware
+- ✅ **Multi-Language**: Vollständige i18n-Unterstützung (Deutsch 🇩🇪 & English 🇬🇧) für Frontend und Backend
 
 📚 **[Vollständige Dokumentation aller Backup-Quellen →](docs/BACKUP_SOURCES.md)**
 
@@ -597,6 +599,45 @@ curl -X POST http://localhost:5000/api/v1/backup/start \
 docker exec BackupGenie-backend python -m app.backup.executor --source github-repos --source nas-project1
 
 ```
+
+---
+
+## 🌍 Internationalisierung (i18n)
+
+BackupGenie unterstützt vollständige mehrsprachige Benutzeroberflächen im Frontend und Backend.
+
+### Unterstützte Sprachen
+
+- 🇩🇪 **Deutsch** - Vollständig übersetzt
+- 🇬🇧 **English** - Vollständig übersetzt
+
+### Sprachauswahl
+
+**Im Frontend:**
+- Sprachumschalter im Seitenleisten-Header (nach Login)
+- Sprachumschalter auf der Login-Seite
+- Automatische Spracherkennung basierend auf Browser-Einstellungen
+- Auswahl wird im Browser localStorage gespeichert
+
+**Im Backend:**
+- Automatische Erkennung über `Accept-Language` HTTP-Header
+- API-Antworten werden in der gewählten Sprache zurückgegeben
+
+### Weitere Sprachen hinzufügen
+
+Detaillierte Anleitung zum Hinzufügen neuer Sprachen:
+📚 **[i18n-Dokumentation →](docs/i18n.md)**
+
+**Kurz:**
+1. Frontend: Neue Übersetzungsdatei in `frontend/src/locales/{lang}/translation.json` erstellen
+2. Backend: `pybabel init -d app/translations -l {lang}` ausführen
+3. Übersetzungen in `.po`-Dateien hinzufügen
+4. Kompilieren: `pybabel compile -d app/translations`
+
+### Technologie
+
+- **Frontend**: react-i18next mit i18next-browser-languagedetector
+- **Backend**: Flask-Babel mit automatischer Locale-Erkennung
 
 ---
 

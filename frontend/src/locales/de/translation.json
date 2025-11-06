@@ -1,0 +1,115 @@
+{
+  "app": {
+    "name": "BackupGenie",
+    "tagline": "Automatisierter Multi-Quellen Backup Manager"
+  },
+  "nav": {
+    "dashboard": "Übersicht",
+    "sources": "Quellen",
+    "history": "Verlauf",
+    "settings": "Einstellungen",
+    "logout": "Abmelden"
+  },
+  "dashboard": {
+    "title": "Übersicht",
+    "subtitle": "Überwachen und steuern Sie Ihre Backups",
+    "stats": {
+      "totalBackups": "Gesamt Backups",
+      "successful": "Erfolgreich",
+      "failed": "Fehlgeschlagen",
+      "totalSize": "Gesamtgröße"
+    },
+    "backupSources": "Backup-Quellen",
+    "recentBackups": "Letzte Backups",
+    "startBackup": "Backup starten",
+    "active": "Aktiv",
+    "noSources": "Keine aktiven Quellen konfiguriert",
+    "noBackups": "Noch keine Backups vorhanden",
+    "status": {
+      "completed": "Abgeschlossen",
+      "running": "Läuft",
+      "failed": "Fehlgeschlagen",
+      "partial": "Teilweise"
+    }
+  },
+  "sources": {
+    "title": "Backup-Quellen",
+    "subtitle": "Verwalten Sie Ihre Backup-Quellen",
+    "addSource": "Quelle hinzufügen",
+    "status": "Status",
+    "enabled": "Aktiviert",
+    "disabled": "Deaktiviert",
+    "priority": "Priorität",
+    "testConnection": "Verbindung testen",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "noSources": "Keine Quellen konfiguriert",
+    "noSourcesHint": "Fügen Sie Ihre erste Backup-Quelle hinzu, um zu beginnen"
+  },
+  "history": {
+    "title": "Backup-Verlauf",
+    "subtitle": "Alle Backup-Ausführungen anzeigen",
+    "started": "Gestartet",
+    "duration": "Dauer",
+    "sources": "Quellen",
+    "totalSize": "Gesamtgröße",
+    "sourceDetails": "Quellen-Details",
+    "noHistory": "Kein Backup-Verlauf vorhanden",
+    "previous": "Zurück",
+    "next": "Weiter",
+    "page": "Seite {{current}} von {{total}}"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "subtitle": "Konfigurieren Sie Ihr Backup-System",
+    "general": "Allgemeine Einstellungen",
+    "backupBasePath": "Backup-Basispfad",
+    "maxParallelTasks": "Max. parallele Aufgaben",
+    "logRetention": "Log-Aufbewahrung (Tage)",
+    "user": "Benutzereinstellungen",
+    "username": "Benutzername",
+    "newPassword": "Neues Passwort",
+    "confirmPassword": "Passwort bestätigen",
+    "save": "Änderungen speichern",
+    "saving": "Speichere...",
+    "saved": "Einstellungen erfolgreich gespeichert",
+    "error": "Fehler beim Speichern der Einstellungen"
+  },
+  "login": {
+    "title": "Anmeldung",
+    "username": "Benutzername",
+    "password": "Passwort",
+    "loginButton": "Anmelden",
+    "loggingIn": "Melde an...",
+    "failed": "Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.",
+    "defaultCredentials": "Standardanmeldedaten: admin / admin"
+  },
+  "common": {
+    "loading": "Laden...",
+    "error": "Fehler",
+    "success": "Erfolg",
+    "warning": "Warnung",
+    "info": "Info",
+    "cancel": "Abbrechen",
+    "confirm": "Bestätigen",
+    "close": "Schließen",
+    "save": "Speichern",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "add": "Hinzufügen",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "clear": "Löschen",
+    "refresh": "Aktualisieren",
+    "back": "Zurück",
+    "next": "Weiter",
+    "previous": "Zurück",
+    "yes": "Ja",
+    "no": "Nein"
+  },
+  "language": {
+    "select": "Sprache wählen",
+    "en": "English",
+    "de": "Deutsch"
+  }
+}
