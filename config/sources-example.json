@@ -1,0 +1,85 @@
+{
+  "backup_sources": [
+    {
+      "id": "nas-project1",
+      "name": "NAS - Project 1",
+      "type": "smb",
+      "enabled": true,
+      "priority": 1,
+      "source": "//192.168.1.100/projects/project1",
+      "credentials": {
+        "username": "backup_user",
+        "password_env": "NAS_PASSWORD_1"
+      },
+      "options": {
+        "recursive": true,
+        "delete": true,
+        "timeout": 300
+      },
+      "schedule": {
+        "trigger": "usb_mount",
+        "max_duration": 3600
+      }
+    },
+    {
+      "id": "github-repos",
+      "name": "GitHub Repositories",
+      "type": "github",
+      "enabled": true,
+      "priority": 2,
+      "repositories": [
+        "username/repo1",
+        "username/repo2"
+      ],
+      "credentials": {
+        "token_env": "GITHUB_TOKEN"
+      },
+      "options": {
+        "include_issues": false,
+        "include_wikis": true,
+        "include_lfs": true
+      },
+      "schedule": {
+        "trigger": "usb_mount",
+        "max_duration": 600
+      }
+    },
+    {
+      "id": "google-drive",
+      "name": "Google Drive Backup",
+      "type": "rclone",
+      "remote": "gdrive",
+      "path": "/My_Backup",
+      "enabled": true,
+      "priority": 3,
+      "options": {
+        "transfers": 4,
+        "checkers": 8
+      },
+      "schedule": {
+        "trigger": "usb_mount",
+        "max_duration": 1800
+      }
+    },
+    {
+      "id": "local-docs",
+      "name": "Local Documents",
+      "type": "local",
+      "enabled": true,
+      "priority": 4,
+      "sources": [
+        "/home/pi/documents",
+        "/home/pi/photos"
+      ],
+      "options": {
+        "recursive": true,
+        "delete": false,
+        "compress": false
+      },
+      "schedule": {
+        "trigger": "usb_mount",
+        "max_duration": 600
+      }
+    }
+  ]
+}
