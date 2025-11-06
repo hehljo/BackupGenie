@@ -2,7 +2,7 @@
 # README.md
 
 ```markdown
-# RaspiBak - Automated Multi-Source Backup Manager
+# BackupGenie - Automated Multi-Source Backup Manager
 
 Ein selbstgehosted Backup-System für Raspberry Pi 3 mit Weboberfläche zur automatischen Synchronisierung von mehreren Quellen (NAS, GitHub, Cloud-Services, lokale Ordner) auf externe USB-Festplatten.
 
@@ -94,9 +94,9 @@ sudo reboot
 ```
 
 cd /opt
-sudo git clone https://github.com/dein-github/raspibak.git
-sudo chown -R pi:pi raspibak
-cd raspibak
+sudo git clone https://github.com/dein-github/BackupGenie.git
+sudo chown -R pi:pi BackupGenie
+cd BackupGenie
 
 ```
 
@@ -129,7 +129,7 @@ DEBUG=false
 
 # Database
 
-DATABASE_URL=sqlite:////data/raspibak.db
+DATABASE_URL=sqlite:////data/BackupGenie.db
 
 # Backup
 
@@ -352,7 +352,7 @@ smbclient -L 192.168.1.100 -U backup_user
 
 # Interaktive Konfiguration
 
-docker exec -it raspibak-backend rclone config
+docker exec -it BackupGenie-backend rclone config
 
 # Oder direkt in config/rclone.conf
 
@@ -370,7 +370,7 @@ token = {...}
 **Google Drive OAuth Setup:**
 ```
 
-docker exec -it raspibak-backend rclone authorize drive
+docker exec -it BackupGenie-backend rclone authorize drive
 
 # Folge den Browser-Anweisungen
 
@@ -397,7 +397,7 @@ docker exec -it raspibak-backend rclone authorize drive
 
 ```
 
-sudo nano /etc/udev/rules.d/99-raspibak-backup.rules
+sudo nano /etc/udev/rules.d/99-BackupGenie-backup.rules
 
 ```
 
@@ -406,11 +406,11 @@ sudo nano /etc/udev/rules.d/99-raspibak-backup.rules
 
 # Trigger backup when USB device is added
 
-ACTION=="add", KERNEL=="sd[a-z][0-9]", TAG+="systemd", ENV{SYSTEMD_WANTS}="raspibak-backup@%k.service"
+ACTION=="add", KERNEL=="sd[a-z][0-9]", TAG+="systemd", ENV{SYSTEMD_WANTS}="BackupGenie-backup@%k.service"
 
 # Optional: Remove tag when device is removed
 
-ACTION=="remove", KERNEL=="sd[a-z][0-9]", RUN+="/opt/raspibak/scripts/backup-cleanup.sh %k"
+ACTION=="remove", KERNEL=="sd[a-z][0-9]", RUN+="/opt/BackupGenie/scripts/backup-cleanup.sh %k"
 
 ```
 
@@ -418,17 +418,17 @@ ACTION=="remove", KERNEL=="sd[a-z][0-9]", RUN+="/opt/raspibak/scripts/backup-cle
 
 ```
 
-sudo nano /etc/systemd/system/raspibak-backup@.service
+sudo nano /etc/systemd/system/BackupGenie-backup@.service
 
 ```
 
 ```
 
 [Unit]
-Description=RaspiBak Auto-Backup Trigger for %i
+Description=BackupGenie Auto-Backup Trigger for %i
 BindsTo=sys-subsystem-block-devices-%i.device
 After=sys-subsystem-block-devices-%i.device
-ConditionPathExists=/opt/raspibak/docker-compose.yml
+ConditionPathExists=/opt/BackupGenie/docker-compose.yml
 
 [Service]
 Type=oneshot
@@ -436,7 +436,7 @@ Type=oneshot
 # Warte bis Device gemountet ist
 
 ExecStartPre=/bin/bash -c 'for i in {1..60}; do mountpoint -q /mnt/backup \&\& break || sleep 1; done'
-ExecStart=/opt/raspibak/scripts/trigger-backup.sh
+ExecStart=/opt/BackupGenie/scripts/trigger-backup.sh
 StandardOutput=journal
 StandardError=journal
 User=pi
@@ -449,7 +449,7 @@ Environment="PATH=/usr/local/bin:/usr/bin:/bin"
 
 ```
 
-sudo nano /opt/raspibak/scripts/trigger-backup.sh
+sudo nano /opt/BackupGenie/scripts/trigger-backup.sh
 
 ```
 
@@ -458,7 +458,7 @@ sudo nano /opt/raspibak/scripts/trigger-backup.sh
 \#!/bin/bash
 set -e
 
-LOG_FILE="/var/log/raspibak-trigger.log"
+LOG_FILE="/var/log/BackupGenie-trigger.log"
 BACKUP_DIR="/mnt/backup"
 API_URL="http://localhost:5000/api/v1/backup/start"
 
@@ -475,7 +475,7 @@ fi
 
 response=$(curl -s -X POST "$API_URL" \
 -H "Content-Type: application/json" \
--H "Authorization: Bearer \$(cat /etc/raspibak/api-token)" \
+-H "Authorization: Bearer \$(cat /etc/BackupGenie/api-token)" \
 -d '{
 "parallel": 2,
 "notify": true
@@ -493,7 +493,7 @@ fi
 
 ```
 
-sudo chmod +x /opt/raspibak/scripts/trigger-backup.sh
+sudo chmod +x /opt/BackupGenie/scripts/trigger-backup.sh
 sudo systemctl daemon-reload
 sudo udevadm control --reload-rules
 
@@ -506,25 +506,25 @@ sudo udevadm control --reload-rules
 
 # Backup-Benutzer erstellen (Best Practice)
 
-sudo useradd -r -s /bin/false -m -d /var/lib/raspibak raspibak
-sudo usermod -aG docker raspibak
+sudo useradd -r -s /bin/false -m -d /var/lib/BackupGenie BackupGenie
+sudo usermod -aG docker BackupGenie
 
 # Verzeichnis-Berechtigungen setzen
 
-sudo mkdir -p /var/lib/raspibak
-sudo chown -R raspibak:raspibak /var/lib/raspibak
-sudo chmod 750 /var/lib/raspibak
+sudo mkdir -p /var/lib/BackupGenie
+sudo chown -R BackupGenie:BackupGenie /var/lib/BackupGenie
+sudo chmod 750 /var/lib/BackupGenie
 
 # NAS-Credentials speichern (für smb)
 
-sudo mkdir -p /etc/raspibak
-sudo tee /etc/raspibak/credentials > /dev/null <<EOF
+sudo mkdir -p /etc/BackupGenie
+sudo tee /etc/BackupGenie/credentials > /dev/null <<EOF
 username=backup_user
 password=YourSecurePassword
 domain=WORKGROUP
 EOF
-sudo chmod 600 /etc/raspibak/credentials
-sudo chown raspibak:raspibak /etc/raspibak/credentials
+sudo chmod 600 /etc/BackupGenie/credentials
+sudo chown BackupGenie:BackupGenie /etc/BackupGenie/credentials
 
 ```
 
@@ -576,7 +576,7 @@ curl -X POST http://localhost:5000/api/v1/backup/start \
 **Via SSH auf Raspberry:**
 ```
 
-docker exec raspibak-backend python -m app.backup.executor --source github-repos --source nas-project1
+docker exec BackupGenie-backend python -m app.backup.executor --source github-repos --source nas-project1
 
 ```
 
@@ -771,7 +771,7 @@ sudo udevadm trigger
 
 # Logs überprüfen
 
-journalctl -u raspibak-backup@sd* -n 50 -f
+journalctl -u BackupGenie-backup@sd* -n 50 -f
 
 # USB-Geräte debuggen
 
@@ -791,11 +791,11 @@ smbclient -L //192.168.1.100 -U backup_user
 
 # Von Docker aus testen
 
-docker exec raspibak-backend smbclient -L //192.168.1.100 -U backup_user
+docker exec BackupGenie-backend smbclient -L //192.168.1.100 -U backup_user
 
 # Credentials überprüfen
 
-cat /etc/raspibak/credentials
+cat /etc/BackupGenie/credentials
 
 ```
 
@@ -833,7 +833,7 @@ du -sh /mnt/backup/* | sort -rh | head -20
 
 # Alte Backups löschen
 
-docker exec raspibak-backend python -m app.cleanup --days 30
+docker exec BackupGenie-backend python -m app.cleanup --days 30
 
 ```
 
@@ -848,11 +848,11 @@ docker exec raspibak-backend python -m app.cleanup --days 30
 
 # SSH-Key Pair generieren (lokal)
 
-ssh-keygen -t ed25519 -o -a 100 -f ~/.ssh/raspibak
+ssh-keygen -t ed25519 -o -a 100 -f ~/.ssh/BackupGenie
 
 # Public Key auf Raspberry kopieren
 
-ssh-copy-id -i ~/.ssh/raspibak.pub pi@raspberrypi.local
+ssh-copy-id -i ~/.ssh/BackupGenie.pub pi@raspberrypi.local
 
 # SSH Config anpassen
 
@@ -892,7 +892,7 @@ sudo systemctl restart ssh
 
 # API Token generieren
 
-docker exec raspibak-backend python -c "
+docker exec BackupGenie-backend python -c "
 from app.auth import generate_token
 token = generate_token('backup-automation', expires_days=365)
 print(f'Token: {token}')
@@ -900,8 +900,8 @@ print(f'Token: {token}')
 
 # In Datei speichern (mit Permissions)
 
-sudo tee /etc/raspibak/api-token > /dev/null <<< 'YOUR_TOKEN'
-sudo chmod 600 /etc/raspibak/api-token
+sudo tee /etc/BackupGenie/api-token > /dev/null <<< 'YOUR_TOKEN'
+sudo chmod 600 /etc/BackupGenie/api-token
 
 ```
 
@@ -947,17 +947,17 @@ sudo apt install gpg -y
 
 # Verschlüsseln
 
-gpg -c /etc/raspibak/credentials
+gpg -c /etc/BackupGenie/credentials
 
 # Passwort eingeben
 
 # Löschen Original
 
-sudo shred -vfz /etc/raspibak/credentials
+sudo shred -vfz /etc/BackupGenie/credentials
 
 # In Docker Entrypoint entschlüsseln
 
-gpg --batch --yes --passphrase-file=/run/secrets/gpg_pass -o /tmp/creds.txt /etc/raspibak/credentials.gpg
+gpg --batch --yes --passphrase-file=/run/secrets/gpg_pass -o /tmp/creds.txt /etc/BackupGenie/credentials.gpg
 
 ```
 
@@ -969,7 +969,7 @@ gpg --batch --yes --passphrase-file=/run/secrets/gpg_pass -o /tmp/creds.txt /etc
 
 ```
 
-raspibak/
+BackupGenie/
 ├── backend/
 │   ├── app/
 │   │   ├── __init__.py
