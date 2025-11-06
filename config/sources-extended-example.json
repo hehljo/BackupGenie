@@ -1,0 +1,410 @@
+{
+  "backup_sources": [
+    {
+      "id": "local-docs",
+      "name": "Local Documents",
+      "type": "local",
+      "enabled": true,
+      "priority": 1,
+      "sources": [
+        "/home/pi/documents",
+        "/home/pi/photos",
+        "/home/pi/projects"
+      ],
+      "options": {
+        "recursive": true,
+        "delete": false,
+        "follow_symlinks": false
+      },
+      "schedule": {
+        "trigger": "usb_mount",
+        "max_duration": 600
+      }
+    },
+    {
+      "id": "nas-smb",
+      "name": "NAS via SMB",
+      "type": "smb",
+      "enabled": true,
+      "priority": 2,
+      "source": "//192.168.1.100/backupshare",
+      "credentials": {
+        "username": "backup_user",
+        "password_env": "SMB_PASSWORD"
+      },
+      "options": {
+        "recursive": true,
+        "delete": true,
+        "timeout": 300
+      }
+    },
+    {
+      "id": "nas-nfs",
+      "name": "NAS via NFS",
+      "type": "nfs",
+      "enabled": true,
+      "priority": 3,
+      "source": "192.168.1.100:/exports/backup",
+      "options": {
+        "vers": 3,
+        "nolock": true
+      }
+    },
+    {
+      "id": "synology-nas",
+      "name": "Synology NAS via rsync",
+      "type": "rsync-ssh",
+      "enabled": true,
+      "priority": 4,
+      "host": "192.168.1.100",
+      "port": 22,
+      "path": "/volume1/backup",
+      "credentials": {
+        "username_env": "NAS_USER",
+        "ssh_key_path": "~/.ssh/id_rsa"
+      },
+      "options": {
+        "delete": false,
+        "compress": true,
+        "recursive": true,
+        "exclude": ["*.tmp", "*.log"]
+      }
+    },
+    {
+      "id": "github-repos",
+      "name": "GitHub Repositories",
+      "type": "github",
+      "enabled": true,
+      "priority": 5,
+      "repositories": [
+        "username/repo1",
+        "organization/repo2"
+      ],
+      "credentials": {
+        "token_env": "GITHUB_TOKEN"
+      },
+      "options": {
+        "include_lfs": true,
+        "include_wikis": true,
+        "include_releases": true
+      }
+    },
+    {
+      "id": "gitlab-repos",
+      "name": "GitLab Repositories",
+      "type": "gitlab",
+      "enabled": true,
+      "priority": 6,
+      "repositories": [
+        "username/project1",
+        "group/project2"
+      ],
+      "credentials": {
+        "token_env": "GITLAB_TOKEN"
+      },
+      "options": {
+        "include_lfs": true,
+        "include_wikis": true
+      }
+    },
+    {
+      "id": "gitea-selfhosted",
+      "name": "Gitea Self-Hosted",
+      "type": "gitea",
+      "enabled": true,
+      "priority": 7,
+      "host": "git.example.com",
+      "repositories": [
+        "user/repo1",
+        "user/repo2"
+      ],
+      "credentials": {
+        "token_env": "GITEA_TOKEN"
+      }
+    },
+    {
+      "id": "bitbucket-repos",
+      "name": "Bitbucket Repositories",
+      "type": "bitbucket",
+      "enabled": true,
+      "priority": 8,
+      "repositories": [
+        "workspace/repo1"
+      ],
+      "credentials": {
+        "token_env": "BITBUCKET_TOKEN"
+      }
+    },
+    {
+      "id": "codeberg-repos",
+      "name": "Codeberg Repositories",
+      "type": "codeberg",
+      "enabled": true,
+      "priority": 9,
+      "repositories": [
+        "username/project1"
+      ],
+      "credentials": {
+        "token_env": "CODEBERG_TOKEN"
+      }
+    },
+    {
+      "id": "mysql-db",
+      "name": "MySQL/MariaDB Database",
+      "type": "mysql",
+      "enabled": true,
+      "priority": 10,
+      "host": "localhost",
+      "port": 3306,
+      "databases": [
+        "production_db",
+        "analytics_db"
+      ],
+      "credentials": {
+        "username_env": "MYSQL_USER",
+        "password_env": "MYSQL_PASSWORD"
+      },
+      "options": {
+        "compress": true,
+        "gzip": true
+      }
+    },
+    {
+      "id": "postgresql-db",
+      "name": "PostgreSQL Database",
+      "type": "postgresql",
+      "enabled": true,
+      "priority": 11,
+      "host": "localhost",
+      "port": 5432,
+      "databases": [
+        "app_database",
+        "metrics_db"
+      ],
+      "credentials": {
+        "username_env": "POSTGRES_USER",
+        "password_env": "POSTGRES_PASSWORD"
+      },
+      "options": {
+        "gzip": true,
+        "schema_only": false,
+        "data_only": false
+      }
+    },
+    {
+      "id": "mongodb-db",
+      "name": "MongoDB Database",
+      "type": "mongodb",
+      "enabled": true,
+      "priority": 12,
+      "host": "localhost",
+      "port": 27017,
+      "database": "myapp",
+      "credentials": {
+        "username_env": "MONGO_USER",
+        "password_env": "MONGO_PASSWORD"
+      },
+      "options": {
+        "gzip": true
+      }
+    },
+    {
+      "id": "redis-cache",
+      "name": "Redis Database",
+      "type": "redis",
+      "enabled": true,
+      "priority": 13,
+      "host": "localhost",
+      "port": 6379,
+      "credentials": {
+        "password_env": "REDIS_PASSWORD"
+      }
+    },
+    {
+      "id": "sqlite-dbs",
+      "name": "SQLite Databases",
+      "type": "sqlite",
+      "enabled": true,
+      "priority": 14,
+      "databases": [
+        "/var/lib/app/database.db",
+        "/home/pi/data/local.db"
+      ]
+    },
+    {
+      "id": "couchdb-db",
+      "name": "CouchDB Database",
+      "type": "couchdb",
+      "enabled": true,
+      "priority": 15,
+      "host": "localhost",
+      "port": 5984,
+      "databases": [
+        "app_data",
+        "user_profiles"
+      ],
+      "credentials": {
+        "username_env": "COUCHDB_USER",
+        "password_env": "COUCHDB_PASSWORD"
+      }
+    },
+    {
+      "id": "google-drive",
+      "name": "Google Drive",
+      "type": "rclone",
+      "enabled": true,
+      "priority": 16,
+      "remote": "gdrive",
+      "path": "/Backup",
+      "options": {
+        "transfers": 4,
+        "checkers": 8
+      }
+    },
+    {
+      "id": "dropbox",
+      "name": "Dropbox",
+      "type": "rclone",
+      "enabled": true,
+      "priority": 17,
+      "remote": "dropbox",
+      "path": "/Backups",
+      "options": {
+        "transfers": 4,
+        "checkers": 8
+      }
+    },
+    {
+      "id": "onedrive",
+      "name": "Microsoft OneDrive",
+      "type": "rclone",
+      "enabled": true,
+      "priority": 18,
+      "remote": "onedrive",
+      "path": "/Documents/Backup",
+      "options": {
+        "transfers": 4,
+        "checkers": 8
+      }
+    },
+    {
+      "id": "aws-s3",
+      "name": "AWS S3 Bucket",
+      "type": "rclone",
+      "enabled": true,
+      "priority": 19,
+      "remote": "s3",
+      "path": "/my-backup-bucket",
+      "options": {
+        "transfers": 8,
+        "checkers": 16
+      }
+    },
+    {
+      "id": "backblaze-b2",
+      "name": "Backblaze B2",
+      "type": "rclone",
+      "enabled": true,
+      "priority": 20,
+      "remote": "b2",
+      "path": "/my-backup-bucket",
+      "options": {
+        "transfers": 4,
+        "checkers": 8
+      }
+    },
+    {
+      "id": "nextcloud",
+      "name": "Nextcloud via WebDAV",
+      "type": "webdav",
+      "enabled": true,
+      "priority": 21,
+      "host": "cloud.example.com",
+      "path": "/remote.php/dav/files/username/Backup",
+      "https": true,
+      "vendor": "nextcloud",
+      "credentials": {
+        "username_env": "NEXTCLOUD_USER",
+        "password_env": "NEXTCLOUD_PASSWORD"
+      },
+      "options": {
+        "method": "rclone",
+        "transfers": 4,
+        "delete": false
+      }
+    },
+    {
+      "id": "ftp-server",
+      "name": "FTP Server",
+      "type": "ftp",
+      "enabled": true,
+      "priority": 22,
+      "host": "ftp.example.com",
+      "port": 21,
+      "path": "/backup",
+      "ftps": false,
+      "credentials": {
+        "username_env": "FTP_USER",
+        "password_env": "FTP_PASSWORD"
+      },
+      "options": {
+        "parallel": 2,
+        "delete": false,
+        "only_newer": true
+      }
+    },
+    {
+      "id": "sftp-server",
+      "name": "SFTP Server",
+      "type": "sftp",
+      "enabled": true,
+      "priority": 23,
+      "host": "sftp.example.com",
+      "port": 22,
+      "path": "/backup",
+      "credentials": {
+        "username_env": "SFTP_USER",
+        "ssh_key_path": "~/.ssh/id_rsa"
+      },
+      "options": {
+        "delete": false,
+        "compress": true
+      }
+    },
+    {
+      "id": "docker-volumes",
+      "name": "Docker Volumes",
+      "type": "docker-volume",
+      "enabled": true,
+      "priority": 24,
+      "volumes": [
+        "mysql_data",
+        "nginx_config",
+        "app_uploads"
+      ],
+      "containers": [
+        "web_app",
+        "database"
+      ],
+      "options": {
+        "export_filesystem": true,
+        "backup_config": true
+      }
+    },
+    {
+      "id": "docker-images",
+      "name": "Docker Images",
+      "type": "docker-image",
+      "enabled": true,
+      "priority": 25,
+      "images": [
+        "nginx:latest",
+        "mysql:8.0",
+        "myapp:production"
+      ],
+      "options": {
+        "compress": true
+      }
+    }
+  ]
+}
