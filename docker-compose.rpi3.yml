@@ -1,3 +1,5 @@
+# Docker Compose für Raspberry Pi 3 (optimiert für 1GB RAM)
+# Verwendung: docker compose -f docker-compose.rpi3.yml up -d
 version: '3.8'
 
 services:
@@ -5,11 +7,6 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      # Multi-platform support (amd64, arm64, armv7)
-      platforms:
-        - linux/amd64
-        - linux/arm64
-        - linux/arm/v7
     image: backupgenie/backend:latest
     container_name: backupgenie-backend
     restart: unless-stopped
@@ -21,8 +18,8 @@ services:
       - DEBUG=${DEBUG:-false}
       - DATABASE_URL=sqlite:////data/backupgenie.db
       - BACKUP_BASE_PATH=/mnt/backup
-      - MAX_PARALLEL_TASKS=${MAX_PARALLEL_TASKS:-2}
-      - LOG_RETENTION_DAYS=${LOG_RETENTION_DAYS:-30}
+      - MAX_PARALLEL_TASKS=${MAX_PARALLEL_TASKS:-1}  # Nur 1 paralleler Task für Pi 3
+      - LOG_RETENTION_DAYS=${LOG_RETENTION_DAYS:-7}  # Weniger Log-Retention
       - SOURCES_CONFIG_PATH=/app/config/sources.json
       - RCLONE_CONFIG_PATH=/app/config/rclone.conf
       # Credentials from secrets file
@@ -36,36 +33,31 @@ services:
       - ./logs:/var/log/backupgenie
     networks:
       - backupgenie
-    # Resource limits for Raspberry Pi (anpassbar je nach Modell)
+    # Reduzierte Resource Limits für Pi 3
     deploy:
       resources:
         limits:
-          cpus: '2.0'
-          memory: 1G
+          cpus: '1.5'
+          memory: 512M
         reservations:
           cpus: '0.5'
-          memory: 256M
-    privileged: true  # Required for mounting SMB/NFS shares
+          memory: 128M
+    privileged: true
     cap_add:
-      - SYS_ADMIN  # Required for mount operations
+      - SYS_ADMIN
     devices:
-      - /dev/fuse  # Required for some mount operations
+      - /dev/fuse
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 30s
-      timeout: 10s
+      interval: 60s  # Weniger häufige Health Checks
+      timeout: 15s
       retries: 3
-      start_period: 40s
+      start_period: 60s
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      # Multi-platform support (amd64, arm64, armv7)
-      platforms:
-        - linux/amd64
-        - linux/arm64
-        - linux/arm/v7
     image: backupgenie/frontend:latest
     container_name: backupgenie-frontend
     restart: unless-stopped
@@ -78,21 +70,21 @@ services:
         condition: service_healthy
     networks:
       - backupgenie
-    # Resource limits for Raspberry Pi
+    # Minimale Resource Limits für Pi 3
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 256M
+          cpus: '0.5'
+          memory: 128M
         reservations:
           cpus: '0.25'
-          memory: 64M
+          memory: 32M
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
-      interval: 30s
+      interval: 60s
       timeout: 10s
       retries: 3
-      start_period: 20s
+      start_period: 30s
 
 networks:
   backupgenie:
