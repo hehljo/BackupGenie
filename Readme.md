@@ -1,10 +1,3 @@
-<img src="https://r2cdn.perplexity.ai/pplx-full-logo-primary-dark%402x.png" style="height:64px;margin-right:32px"/>
-
-# erstelle mir dafür eine umfangreiche Readme.md um einen Raspberry 3 damit aufzusetzen mit Webobefläche über die alles eingestellt werden kann, alle Quellen wie cloud, nas ordner, github repos usw alles nach aktueller best practise
-
-Basierend auf den Best Practices für 2025 erstelle ich hier eine umfangreiche README für dein Backup-System. Dies ist eine **produktionsreife Lösung** mit moderner Architektur, die leicht zu warten und zu erweitern ist.[^1][^2][^3][^4][^5]
-
-***
 
 # README.md
 
