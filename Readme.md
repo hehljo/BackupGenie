@@ -26,7 +26,15 @@ Ein selbstgehosted Backup-System für Raspberry Pi 3 mit Weboberfläche zur auto
 
 ## ✨ Features
 
-- ✅ **Multi-Source Backup**: NAS (SMB/NFS), GitHub, Cloud-Services (Google Drive, Dropbox, S3), lokale Ordner
+- ✅ **Multi-Source Backup**: 30+ Backup-Quellen unterstützt
+  - **Network Storage**: NAS (SMB/NFS), rsync over SSH (Synology, QNAP, TrueNAS)
+  - **Git Platforms**: GitHub, GitLab, Gitea, Forgejo, Bitbucket, Codeberg
+  - **Databases**: MySQL, PostgreSQL, MongoDB, Redis, SQLite, CouchDB
+  - **Cloud Storage**: Google Drive, Dropbox, OneDrive, S3, Backblaze B2, und 40+ mehr (via rclone)
+  - **WebDAV**: Nextcloud, Seafile, ownCloud
+  - **FTP/SFTP**: FTP, FTPS, SFTP Servers
+  - **Docker**: Volumes, Containers, Images
+  - **Local**: Dateisystem, Home-Verzeichnisse
 - ✅ **Trigger-basiert**: Automatische Ausführung beim Einstecken einer USB-Festplatte
 - ✅ **Weboberfläche**: Moderne React-basierte SPA für Konfiguration und Monitoring
 - ✅ **REST API**: Vollständige API für Automation und Integration
@@ -34,6 +42,8 @@ Ein selbstgehosted Backup-System für Raspberry Pi 3 mit Weboberfläche zur auto
 - ✅ **Docker-basiert**: Einfaches Deployment auf beliebigen Linux-Systemen
 - ✅ **Sicherheit**: SSH-Key-Authentication, SSL/TLS, RBAC-ready
 - ✅ **Raspberry Pi optimiert**: ARM-kompatible Images, Resource-aware
+
+📚 **[Vollständige Dokumentation aller Backup-Quellen →](docs/BACKUP_SOURCES.md)**
 
 ---
 

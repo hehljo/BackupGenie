@@ -15,6 +15,18 @@ from app.backup.sources.smb import SMBBackup
 from app.backup.sources.github import GitHubBackup
 from app.backup.sources.rclone import RcloneBackup
 from app.backup.sources.local import LocalBackup
+from app.backup.sources.git import (
+    GitLabBackup, GiteaBackup, ForgejoBackup,
+    BitbucketBackup, CodebergBackup
+)
+from app.backup.sources.database import (
+    MySQLBackup, PostgreSQLBackup, MongoDBBackup,
+    RedisBackup, SQLiteBackup, CouchDBBackup
+)
+from app.backup.sources.ftp import FTPBackup, SFTPBackup
+from app.backup.sources.webdav import WebDAVBackup
+from app.backup.sources.docker import DockerVolumeBackup, DockerImageBackup
+from app.backup.sources.rsync_ssh import RsyncSSHBackup, NASBackup
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -29,11 +41,47 @@ class BackupExecutor:
 
         # Source type handlers
         self.handlers = {
+            # Network Storage
             'smb': SMBBackup,
             'nfs': SMBBackup,  # NFS uses similar approach
+            'local': LocalBackup,
+
+            # Git Platforms
             'github': GitHubBackup,
+            'gitlab': GitLabBackup,
+            'gitea': GiteaBackup,
+            'forgejo': ForgejoBackup,
+            'bitbucket': BitbucketBackup,
+            'codeberg': CodebergBackup,
+
+            # Cloud Storage
             'rclone': RcloneBackup,
-            'local': LocalBackup
+            'webdav': WebDAVBackup,
+
+            # Databases
+            'mysql': MySQLBackup,
+            'mariadb': MySQLBackup,  # MariaDB uses MySQL handler
+            'postgresql': PostgreSQLBackup,
+            'postgres': PostgreSQLBackup,  # Alias
+            'mongodb': MongoDBBackup,
+            'mongo': MongoDBBackup,  # Alias
+            'redis': RedisBackup,
+            'sqlite': SQLiteBackup,
+            'couchdb': CouchDBBackup,
+
+            # FTP/SFTP
+            'ftp': FTPBackup,
+            'ftps': FTPBackup,
+            'sftp': SFTPBackup,
+
+            # Docker
+            'docker-volume': DockerVolumeBackup,
+            'docker-image': DockerImageBackup,
+
+            # Rsync/NAS
+            'rsync-ssh': RsyncSSHBackup,
+            'rsync': RsyncSSHBackup,  # Alias
+            'nas': NASBackup,
         }
 
     def load_sources(self):
