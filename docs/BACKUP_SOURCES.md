@@ -12,6 +12,7 @@ BackupGenie supports a comprehensive range of backup sources, from local files t
 - [FTP/SFTP](#ftpsftp)
 - [WebDAV](#webdav)
 - [Docker](#docker)
+- [Self-Hosted Services](#self-hosted-services)
 
 ---
 
@@ -770,6 +771,19 @@ FTP_PASSWORD=ftppassword
 SFTP_USER=sftpuser
 NEXTCLOUD_USER=username
 NEXTCLOUD_PASSWORD=password
+
+# Self-Hosted Services
+PLEX_TOKEN=your_plex_token
+JELLYFIN_API_KEY=your_jellyfin_api_key
+IMMICH_API_KEY=your_immich_api_key
+HA_TOKEN=your_homeassistant_token
+GRAFANA_TOKEN=your_grafana_token
+PORTAINER_API_KEY=your_portainer_api_key
+SYNCTHING_API_KEY=your_syncthing_api_key
+PAPERLESS_TOKEN=your_paperless_token
+MAILCOW_API_KEY=your_mailcow_api_key
+WALLABAG_CLIENT_ID=your_client_id
+WALLABAG_CLIENT_SECRET=your_client_secret
 ```
 
 **Load environment variables:**
@@ -779,16 +793,211 @@ export $(cat .env | xargs)
 
 ---
 
+---
+
+## Self-Hosted Services
+
+BackupGenie now supports comprehensive backup for self-hosted services, including media servers, smart home automation, password managers, and more. These backups typically include Docker volumes, databases, and configuration files.
+
+### Media Servers
+
+#### Plex Media Server
+
+**Type:** `plex`
+
+**Configuration:**
+```json
+{
+  "id": "plex-media",
+  "name": "Plex Media Server",
+  "type": "plex",
+  "enabled": true,
+  "priority": 26,
+  "host": "192.168.1.100",
+  "port": 32400,
+  "credentials": {
+    "token_env": "PLEX_TOKEN"
+  },
+  "options": {
+    "backup_database": true,
+    "backup_metadata": true,
+    "backup_library": false,
+    "backup_method": "docker-volume"
+  }
+}
+```
+
+#### Jellyfin Media Server
+
+**Type:** `jellyfin`
+
+**Configuration:**
+```json
+{
+  "id": "jellyfin-media",
+  "name": "Jellyfin Media Server",
+  "type": "jellyfin",
+  "enabled": true,
+  "host": "192.168.1.100",
+  "port": 8096,
+  "credentials": {
+    "api_key_env": "JELLYFIN_API_KEY"
+  },
+  "options": {
+    "backup_database": true,
+    "backup_metadata": true,
+    "backup_library": false
+  }
+}
+```
+
+#### Other Media Services
+
+- **Immich** (`immich`) - Photo management
+- **PhotoPrism** (`photoprism`) - AI-powered photo library
+- **Komga** (`komga`) - Comics/Manga server
+- **Kaleidescape** (`kaleidescape`) - Premium media system
+
+### Smart Home & Automation
+
+#### Home Assistant
+
+**Type:** `homeassistant`
+
+**Configuration:**
+```json
+{
+  "id": "homeassistant",
+  "name": "Home Assistant",
+  "type": "homeassistant",
+  "enabled": true,
+  "host": "192.168.1.100",
+  "port": 8123,
+  "credentials": {
+    "token_env": "HA_TOKEN"
+  },
+  "options": {
+    "backup_config": true,
+    "backup_database": true,
+    "backup_addons": true,
+    "use_snapshot_api": true
+  }
+}
+```
+
+#### Other Smart Home Services
+
+- **Grafana** (`grafana`) - Dashboards and visualization
+- **Node-RED** (`nodered`) - Flow-based automation
+- **Prometheus** (`prometheus`) - Metrics collection
+- **InfluxDB** (`influxdb`) - Time-series database
+- **Loki** (`loki`) - Log aggregation
+
+### Security & Password Management
+
+#### Vaultwarden
+
+**Type:** `vaultwarden`
+
+**Configuration:**
+```json
+{
+  "id": "vaultwarden-passwords",
+  "name": "Vaultwarden Password Manager",
+  "type": "vaultwarden",
+  "enabled": true,
+  "host": "192.168.1.100",
+  "port": 80,
+  "options": {
+    "backup_database": true,
+    "backup_attachments": true,
+    "backup_method": "docker-volume",
+    "db_type": "sqlite"
+  }
+}
+```
+
+- **Bitwarden** (`bitwarden`) - Official Bitwarden self-hosted
+
+### Documentation & Wiki
+
+- **MediaWiki** (`mediawiki`) - Wikipedia-style wiki
+- **TiddlyWiki** (`tiddlywiki`) - Personal wiki
+- **Obsidian** (`obsidian`) - Markdown note-taking
+
+### Communication
+
+- **Mailcow** (`mailcow`) - Complete mail server
+- **Mastodon** (`mastodon`) - Social network
+- **Mattermost** (`mattermost`) - Team chat
+
+### Content Management
+
+#### Paperless-NGX
+
+**Type:** `paperless-ngx`
+
+**Configuration:**
+```json
+{
+  "id": "paperless-ngx-docs",
+  "name": "Paperless-NGX Documents",
+  "type": "paperless-ngx",
+  "enabled": true,
+  "host": "192.168.1.100",
+  "port": 8000,
+  "credentials": {
+    "token_env": "PAPERLESS_TOKEN"
+  },
+  "options": {
+    "backup_documents": true,
+    "backup_database": true,
+    "backup_media": true,
+    "use_exporter": true
+  }
+}
+```
+
+- **ArchiveBox** (`archivebox`) - Web archiving
+- **Wallabag** (`wallabag`) - Read-it-later service
+- **Linkding** (`linkding`) - Bookmark manager
+
+### Management Tools
+
+- **Portainer** (`portainer`) - Docker management UI
+- **Yacht** (`yacht`) - Docker dashboard
+- **Syncthing** (`syncthing`) - P2P file synchronization
+- **Restic** (`restic`) - Backup server
+
+### Backup Methods for Self-Hosted Services
+
+Self-hosted services support multiple backup methods:
+
+1. **Docker Volume Backup**: Backs up Docker volumes containing application data
+2. **API-Based Backup**: Uses service APIs to export configuration and data
+3. **Database Dump**: Creates dumps of MySQL, PostgreSQL, or SQLite databases
+4. **File System Sync**: Uses rsync for direct file synchronization
+
+---
+
 ## Summary
 
-BackupGenie supports **30+ backup source types** across:
+BackupGenie supports **60+ backup source types** across:
 - ✅ **Local Storage** (files, directories)
 - ✅ **Network Storage** (SMB, NFS, rsync/SSH, NAS systems)
-- ✅ **Git Platforms** (GitHub, GitLab, Gitea, Forgejo, Bitbucket, Codeberg)
-- ✅ **Databases** (MySQL, PostgreSQL, MongoDB, Redis, SQLite, CouchDB)
+- ✅ **Git Platforms** (GitHub, GitLab, Gitea, Forgejo, Bitbucket, Codeberg, GitBucket)
+- ✅ **Databases** (MySQL, PostgreSQL, MongoDB, Redis, SQLite, CouchDB, InfluxDB)
 - ✅ **Cloud Storage** (Google Drive, Dropbox, OneDrive, S3, Backblaze B2, and 40+ more)
 - ✅ **WebDAV** (Nextcloud, Seafile, ownCloud)
 - ✅ **FTP/SFTP** (FTP, FTPS, SFTP servers)
 - ✅ **Docker** (volumes, containers, images)
+- ✅ **Self-Hosted Services**:
+  - Media Servers (Plex, Jellyfin, Immich, PhotoPrism, Komga)
+  - Smart Home (Home Assistant, Grafana, Node-RED, Prometheus)
+  - Security (Vaultwarden, Bitwarden)
+  - Documentation (MediaWiki, TiddlyWiki, Obsidian)
+  - Communication (Mailcow, Mastodon, Mattermost)
+  - Content Management (Paperless-NGX, ArchiveBox, Wallabag, Linkding)
+  - Management Tools (Portainer, Yacht, Syncthing, Restic)
 
 For complete examples, see `config/sources-extended-example.json`.
