@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { Play, Clock, CheckCircle, XCircle, HardDrive, Database } from 'lucide-react'
 import { backupAPI, sourcesAPI } from '../services/api'
 import clsx from 'clsx'
+import { useTranslation } from 'react-i18next'
 
 export default function Dashboard() {
+  const { t } = useTranslation()
   const [stats, setStats] = useState(null)
   const [sources, setSources] = useState([])
   const [isStarting, setIsStarting] = useState(false)
@@ -41,7 +43,7 @@ export default function Dashboard() {
       setTimeout(loadData, 2000) // Reload after 2 seconds
     } catch (error) {
       console.error('Error starting backup:', error)
-      alert('Failed to start backup')
+      alert(t('common.error'))
     } finally {
       setIsStarting(false)
     }
@@ -70,7 +72,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+          <p className="mt-4 text-gray-600">{t('common.loading')}</p>
         </div>
       </div>
     )
@@ -81,8 +83,8 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Monitor and control your backups</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('dashboard.title')}</h1>
+          <p className="text-gray-600 mt-1">{t('dashboard.subtitle')}</p>
         </div>
         <button
           onClick={handleStartBackup}
@@ -93,7 +95,7 @@ export default function Dashboard() {
           )}
         >
           <Play className="w-5 h-5" />
-          {isStarting ? 'Starting...' : 'Start Backup'}
+          {isStarting ? t('common.loading') : t('dashboard.startBackup')}
         </button>
       </div>
 
@@ -102,7 +104,7 @@ export default function Dashboard() {
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Backups</p>
+              <p className="text-sm text-gray-600">{t('dashboard.stats.totalBackups')}</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">
                 {stats?.total_backups || 0}
               </p>
@@ -116,7 +118,7 @@ export default function Dashboard() {
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Successful</p>
+              <p className="text-sm text-gray-600">{t('dashboard.stats.successful')}</p>
               <p className="text-3xl font-bold text-green-600 mt-2">
                 {stats?.successful || 0}
               </p>
@@ -130,7 +132,7 @@ export default function Dashboard() {
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Failed</p>
+              <p className="text-sm text-gray-600">{t('dashboard.stats.failed')}</p>
               <p className="text-3xl font-bold text-red-600 mt-2">
                 {stats?.failed || 0}
               </p>
@@ -144,7 +146,7 @@ export default function Dashboard() {
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Size</p>
+              <p className="text-sm text-gray-600">{t('dashboard.stats.totalSize')}</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">
                 {formatBytes(stats?.total_size_bytes || 0)}
               </p>
@@ -158,7 +160,7 @@ export default function Dashboard() {
 
       {/* Sources Overview */}
       <div className="card">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Backup Sources</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">{t('dashboard.backupSources')}</h2>
         <div className="space-y-3">
           {sources.filter(s => s.enabled).map((source) => (
             <div key={source.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -172,18 +174,18 @@ export default function Dashboard() {
                   <p className="text-sm text-gray-600">{source.type.toUpperCase()}</p>
                 </div>
               </div>
-              <span className="badge badge-success">Active</span>
+              <span className="badge badge-success">{t('dashboard.active')}</span>
             </div>
           ))}
           {sources.filter(s => s.enabled).length === 0 && (
-            <p className="text-gray-500 text-center py-4">No active sources configured</p>
+            <p className="text-gray-500 text-center py-4">{t('dashboard.noSources')}</p>
           )}
         </div>
       </div>
 
       {/* Recent Backups */}
       <div className="card">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Backups</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">{t('dashboard.recentBackups')}</h2>
         <div className="space-y-3">
           {recentBackups.map((backup) => (
             <div key={backup.backup_id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -194,17 +196,17 @@ export default function Dashboard() {
                     {new Date(backup.started_at).toLocaleString()}
                   </p>
                   <p className="text-sm text-gray-600">
-                    {backup.sources_count} sources • {formatBytes(backup.total_size)}
+                    {backup.sources_count} {t('dashboard.recentBackups').toLowerCase()} • {formatBytes(backup.total_size)}
                   </p>
                 </div>
               </div>
               <span className={clsx('badge', getStatusBadge(backup.status))}>
-                {backup.status}
+                {t(`dashboard.status.${backup.status}`)}
               </span>
             </div>
           ))}
           {recentBackups.length === 0 && (
-            <p className="text-gray-500 text-center py-4">No backups yet</p>
+            <p className="text-gray-500 text-center py-4">{t('dashboard.noBackups')}</p>
           )}
         </div>
       </div>

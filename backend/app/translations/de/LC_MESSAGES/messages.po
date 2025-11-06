@@ -1,0 +1,90 @@
+# German translations for BackupGenie.
+# Copyright (C) 2024
+# This file is distributed under the same license as the BackupGenie project.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: BackupGenie 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 00:00+0000\n"
+"PO-Revision-Date: 2024-01-01 00:00+0000\n"
+"Last-Translator: \n"
+"Language: de\n"
+"Language-Team: de <>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.12.1\n"
+
+# Auth messages
+msgid "auth.invalid_credentials"
+msgstr "Ungültige Anmeldedaten"
+
+msgid "auth.missing_credentials"
+msgstr "Benutzername oder Passwort fehlt"
+
+msgid "auth.login_success"
+msgstr "Anmeldung erfolgreich"
+
+# Backup messages
+msgid "backup.started"
+msgstr "Backup erfolgreich gestartet"
+
+msgid "backup.completed"
+msgstr "Backup abgeschlossen"
+
+msgid "backup.failed"
+msgstr "Backup fehlgeschlagen"
+
+msgid "backup.not_found"
+msgstr "Backup nicht gefunden"
+
+msgid "backup.no_sources"
+msgstr "Keine aktivierten Quellen zum Sichern"
+
+# Source messages
+msgid "source.created"
+msgstr "Quelle erfolgreich erstellt"
+
+msgid "source.updated"
+msgstr "Quelle erfolgreich aktualisiert"
+
+msgid "source.deleted"
+msgstr "Quelle erfolgreich gelöscht"
+
+msgid "source.not_found"
+msgstr "Quelle nicht gefunden"
+
+msgid "source.test_success"
+msgstr "Verbindungstest erfolgreich"
+
+msgid "source.test_failed"
+msgstr "Verbindungstest fehlgeschlagen"
+
+msgid "source.invalid_type"
+msgstr "Ungültiger Quellentyp"
+
+# Validation messages
+msgid "validation.required_field"
+msgstr "Dieses Feld ist erforderlich"
+
+msgid "validation.invalid_value"
+msgstr "Ungültiger Wert"
+
+# Error messages
+msgid "error.internal_server"
+msgstr "Interner Serverfehler"
+
+msgid "error.not_found"
+msgstr "Ressource nicht gefunden"
+
+msgid "error.unauthorized"
+msgstr "Nicht autorisierter Zugriff"
+
+msgid "error.forbidden"
+msgstr "Verboten"
+
+# Success messages
+msgid "success.operation_complete"
+msgstr "Vorgang erfolgreich abgeschlossen"

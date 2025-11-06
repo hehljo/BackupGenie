@@ -3,8 +3,10 @@ import { Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { backupAPI } from '../services/api'
 import clsx from 'clsx'
 import { formatDistanceToNow } from 'date-fns'
+import { useTranslation } from 'react-i18next'
 
 export default function History() {
+  const { t } = useTranslation()
   const [backups, setBackups] = useState([])
   const [total, setTotal] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
@@ -77,7 +79,7 @@ export default function History() {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading history...</p>
+          <p className="mt-4 text-gray-600">{t('common.loading')}</p>
         </div>
       </div>
     )
@@ -87,8 +89,8 @@ export default function History() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Backup History</h1>
-        <p className="text-gray-600 mt-1">View all backup executions</p>
+        <h1 className="text-3xl font-bold text-gray-900">{t('history.title')}</h1>
+        <p className="text-gray-600 mt-1">{t('history.subtitle')}</p>
       </div>
 
       {/* History List */}
@@ -108,36 +110,36 @@ export default function History() {
                 </div>
               </div>
               <span className={clsx('badge', getStatusBadge(backup.status))}>
-                {backup.status}
+                {t(`dashboard.status.${backup.status}`)}
               </span>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <div>
-                <p className="text-sm text-gray-600">Started</p>
+                <p className="text-sm text-gray-600">{t('history.started')}</p>
                 <p className="font-medium text-gray-900">
                   {new Date(backup.started_at).toLocaleString()}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Duration</p>
+                <p className="text-sm text-gray-600">{t('history.duration')}</p>
                 <p className="font-medium text-gray-900">
                   {backup.duration ? formatDuration(backup.duration) : 'N/A'}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Sources</p>
+                <p className="text-sm text-gray-600">{t('history.sources')}</p>
                 <p className="font-medium text-gray-900">{backup.sources_count}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Total Size</p>
+                <p className="text-sm text-gray-600">{t('history.totalSize')}</p>
                 <p className="font-medium text-gray-900">{formatBytes(backup.total_size)}</p>
               </div>
             </div>
 
             {backup.sources && backup.sources.length > 0 && (
               <div className="border-t border-gray-200 pt-4">
-                <p className="text-sm font-medium text-gray-700 mb-3">Source Details</p>
+                <p className="text-sm font-medium text-gray-700 mb-3">{t('history.sourceDetails')}</p>
                 <div className="space-y-2">
                   {backup.sources.map((source) => (
                     <div key={source.source_id} className="flex items-center justify-between text-sm bg-gray-50 p-3 rounded-lg">
@@ -156,7 +158,7 @@ export default function History() {
                           {source.files_synced} files • {formatBytes(source.size_synced)}
                         </span>
                         <span className={clsx('badge text-xs', getStatusBadge(source.status))}>
-                          {source.status}
+                          {t(`dashboard.status.${source.status}`)}
                         </span>
                       </div>
                     </div>
@@ -171,8 +173,8 @@ export default function History() {
       {backups.length === 0 && (
         <div className="card text-center py-12">
           <Clock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No backup history</h3>
-          <p className="text-gray-600">Start your first backup to see history here</p>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">{t('history.noHistory')}</h3>
+          <p className="text-gray-600">{t('dashboard.startBackup')}</p>
         </div>
       )}
 
@@ -184,17 +186,17 @@ export default function History() {
             disabled={page === 0}
             className="btn btn-secondary disabled:opacity-50"
           >
-            Previous
+            {t('history.previous')}
           </button>
           <span className="text-gray-600">
-            Page {page + 1} of {Math.ceil(total / limit)}
+            {t('history.page', { current: page + 1, total: Math.ceil(total / limit) })}
           </span>
           <button
             onClick={() => setPage(page + 1)}
             disabled={(page + 1) * limit >= total}
             className="btn btn-secondary disabled:opacity-50"
           >
-            Next
+            {t('history.next')}
           </button>
         </div>
       )}

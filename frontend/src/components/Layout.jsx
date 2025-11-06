@@ -1,29 +1,37 @@
 import { Link, useLocation } from 'react-router-dom'
 import { Home, Database, History, Settings, LogOut, HardDrive } from 'lucide-react'
 import clsx from 'clsx'
+import { useTranslation } from 'react-i18next'
+import LanguageSwitcher from './LanguageSwitcher'
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: Home },
-  { name: 'Sources', href: '/sources', icon: Database },
-  { name: 'History', href: '/history', icon: History },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'dashboard', href: '/', icon: Home },
+  { name: 'sources', href: '/sources', icon: Database },
+  { name: 'history', href: '/history', icon: History },
+  { name: 'settings', href: '/settings', icon: Settings },
 ]
 
 export default function Layout({ children, onLogout }) {
   const location = useLocation()
+  const { t } = useTranslation()
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
       <div className="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200">
         {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-200">
-          <div className="p-2 bg-primary-100 rounded-lg">
-            <HardDrive className="w-6 h-6 text-primary-600" />
+        <div className="px-6 py-5 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary-100 rounded-lg">
+              <HardDrive className="w-6 h-6 text-primary-600" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">{t('app.name')}</h1>
+              <p className="text-xs text-gray-500">Backup Manager</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">BackupGenie</h1>
-            <p className="text-xs text-gray-500">Backup Manager</p>
+          <div className="mt-3">
+            <LanguageSwitcher />
           </div>
         </div>
 
@@ -45,7 +53,7 @@ export default function Layout({ children, onLogout }) {
                 )}
               >
                 <Icon className="w-5 h-5" />
-                {item.name}
+                {t(`nav.${item.name}`)}
               </Link>
             )
           })}
@@ -58,7 +66,7 @@ export default function Layout({ children, onLogout }) {
             className="flex items-center gap-3 w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-all"
           >
             <LogOut className="w-5 h-5" />
-            Logout
+            {t('nav.logout')}
           </button>
         </div>
       </div>

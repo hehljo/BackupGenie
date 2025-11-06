@@ -1,12 +1,14 @@
 import { Settings as SettingsIcon, User, Shield, Database } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export default function Settings() {
+  const { t } = useTranslation()
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600 mt-1">Configure your backup system</p>
+        <h1 className="text-3xl font-bold text-gray-900">{t('settings.title')}</h1>
+        <p className="text-gray-600 mt-1">{t('settings.subtitle')}</p>
       </div>
 
       {/* Settings Sections */}
@@ -17,13 +19,13 @@ export default function Settings() {
             <div className="p-2 bg-blue-100 rounded-lg">
               <SettingsIcon className="w-6 h-6 text-blue-600" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">General Settings</h2>
+            <h2 className="text-xl font-bold text-gray-900">{t('settings.general')}</h2>
           </div>
 
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Backup Base Path
+                {t('settings.backupBasePath')}
               </label>
               <input
                 type="text"
@@ -38,7 +40,7 @@ export default function Settings() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Max Parallel Tasks
+                {t('settings.maxParallelTasks')}
               </label>
               <input
                 type="number"
@@ -54,7 +56,7 @@ export default function Settings() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Log Retention (days)
+                {t('settings.logRetention')}
               </label>
               <input
                 type="number"
@@ -75,13 +77,13 @@ export default function Settings() {
             <div className="p-2 bg-green-100 rounded-lg">
               <User className="w-6 h-6 text-green-600" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">User Settings</h2>
+            <h2 className="text-xl font-bold text-gray-900">{t('settings.user')}</h2>
           </div>
 
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Username
+                {t('settings.username')}
               </label>
               <input
                 type="text"
@@ -93,28 +95,28 @@ export default function Settings() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                New Password
+                {t('settings.newPassword')}
               </label>
               <input
                 type="password"
                 className="input"
-                placeholder="Enter new password"
+                placeholder={t('settings.newPassword')}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Confirm Password
+                {t('settings.confirmPassword')}
               </label>
               <input
                 type="password"
                 className="input"
-                placeholder="Confirm new password"
+                placeholder={t('settings.confirmPassword')}
               />
             </div>
 
             <button className="btn btn-primary w-full">
-              Update Password
+              {t('settings.save')}
             </button>
           </div>
         </div>
@@ -194,7 +196,7 @@ export default function Settings() {
       {/* Save Button */}
       <div className="flex justify-end">
         <button className="btn btn-primary px-8">
-          Save All Settings
+          {t('settings.save')}
         </button>
       </div>
     </div>
