@@ -1,0 +1,78 @@
+{
+  "channels": [
+    {
+      "type": "email",
+      "name": "admin-email",
+      "enabled": true,
+      "smtp_host": "smtp.gmail.com",
+      "smtp_port": 587,
+      "smtp_user": "your-email@gmail.com",
+      "smtp_password": "your-app-password",
+      "from_email": "backupgenie@yourdomain.com",
+      "to_emails": ["admin@yourdomain.com"],
+      "use_tls": true,
+      "retry_count": 3,
+      "retry_delay": 2
+    },
+    {
+      "type": "webhook",
+      "name": "discord-notifications",
+      "enabled": false,
+      "webhook_url": "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN",
+      "webhook_type": "discord",
+      "retry_count": 2
+    },
+    {
+      "type": "webhook",
+      "name": "slack-notifications",
+      "enabled": false,
+      "webhook_url": "https://hooks.slack.com/services/YOUR/WEBHOOK/URL",
+      "webhook_type": "slack",
+      "retry_count": 2
+    },
+    {
+      "type": "telegram",
+      "name": "telegram-bot",
+      "enabled": false,
+      "bot_token": "YOUR_BOT_TOKEN",
+      "chat_ids": [123456789],
+      "parse_mode": "Markdown",
+      "retry_count": 3
+    },
+    {
+      "type": "ntfy",
+      "name": "ntfy-push",
+      "enabled": false,
+      "server_url": "https://ntfy.sh",
+      "topic": "backupgenie-YOUR-RANDOM-TOPIC",
+      "username": "",
+      "password": "",
+      "retry_count": 2
+    },
+    {
+      "type": "apprise",
+      "name": "apprise-multi",
+      "enabled": false,
+      "urls": [
+        "mailto://user:password@gmail.com",
+        "discord://webhook_id/webhook_token",
+        "tgram://bottoken/ChatID",
+        "gotify://hostname/token",
+        "pushover://user@token"
+      ],
+      "retry_count": 2
+    }
+  ],
+  "settings": {
+    "notify_on_start": false,
+    "notify_on_success": true,
+    "notify_on_failure": true,
+    "notify_on_partial": true,
+    "quiet_hours": {
+      "enabled": false,
+      "start": "22:00",
+      "end": "08:00",
+      "timezone": "Europe/Berlin"
+    }
+  }
+}

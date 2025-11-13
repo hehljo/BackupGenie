@@ -36,10 +36,12 @@ def create_app(config_class=Config):
     from app.api.backup import backup_bp
     from app.api.sources import sources_bp
     from app.api.auth import auth_bp
+    from app.api.notifications import notifications_bp
 
     app.register_blueprint(backup_bp, url_prefix='/api/v1/backup')
     app.register_blueprint(sources_bp, url_prefix='/api/v1/sources')
     app.register_blueprint(auth_bp, url_prefix='/api/v1/auth')
+    app.register_blueprint(notifications_bp, url_prefix='/api/v1/notifications')
 
     # Create database tables
     with app.app_context():
