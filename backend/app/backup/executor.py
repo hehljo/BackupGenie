@@ -28,6 +28,7 @@ from app.backup.sources.webdav import WebDAVBackup
 from app.backup.sources.docker import DockerVolumeBackup, DockerImageBackup
 from app.backup.sources.rsync_ssh import RsyncSSHBackup, NASBackup
 from app.backup.sources.selfhosted import SelfHostedBackup
+from app.notifications.manager import NotificationManager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -36,9 +37,11 @@ logger = logging.getLogger(__name__)
 class BackupExecutor:
     """Executes backup operations"""
 
-    def __init__(self, backup_id):
+    def __init__(self, backup_id, enable_notifications=True):
         self.backup_id = backup_id
         self.backup_base_path = Config.BACKUP_BASE_PATH
+        self.enable_notifications = enable_notifications
+        self.notification_manager = NotificationManager() if enable_notifications else None
 
         # Source type handlers
         self.handlers = {
@@ -183,6 +186,13 @@ class BackupExecutor:
 
             logger.info(f"Starting backup {self.backup_id} with {len(sources_to_backup)} sources")
 
+            # Send notification: Backup started
+            if self.notification_manager:
+                try:
+                    self.notification_manager.notify_backup_started(self.backup_id, len(sources_to_backup))
+                except Exception as e:
+                    logger.error(f"Failed to send backup started notification: {e}")
+
             # Execute backups
             total_size = 0
             failed_count = 0
@@ -229,12 +239,43 @@ class BackupExecutor:
 
                 logger.info(f"Backup {self.backup_id} completed")
 
+                # Send notification: Backup completed or partial
+                if self.notification_manager:
+                    try:
+                        if failed_count == 0:
+                            self.notification_manager.notify_backup_completed(
+                                self.backup_id,
+                                backup.duration,
+                                total_size,
+                                len(sources_to_backup)
+                            )
+                        else:
+                            # Get failed source names
+                            failed_sources = []
+                            for result in BackupSourceResult.query.filter_by(backup_id=backup.id, status='failed').all():
+                                failed_sources.append(result.source_name)
+
+                            self.notification_manager.notify_backup_partial(
+                                self.backup_id,
+                                failed_sources,
+                                len(sources_to_backup)
+                            )
+                    except Exception as e:
+                        logger.error(f"Failed to send backup completion notification: {e}")
+
             except Exception as e:
                 logger.error(f"Backup {self.backup_id} failed: {e}")
                 backup.status = 'failed'
                 backup.error_message = str(e)
                 backup.completed_at = datetime.utcnow()
                 db.session.commit()
+
+                # Send notification: Backup failed
+                if self.notification_manager:
+                    try:
+                        self.notification_manager.notify_backup_failed(self.backup_id, str(e))
+                    except Exception as ne:
+                        logger.error(f"Failed to send backup failure notification: {ne}")
 
     def _backup_source(self, source):
         """Backup a single source"""

@@ -25,10 +25,26 @@ services:
       - LOG_RETENTION_DAYS=${LOG_RETENTION_DAYS:-30}
       - SOURCES_CONFIG_PATH=/app/config/sources.json
       - RCLONE_CONFIG_PATH=/app/config/rclone.conf
+      - NOTIFICATION_CONFIG_PATH=/app/config/notifications.json
       # Credentials from secrets file
       - NAS_PASSWORD_1=${NAS_PASSWORD_1:-}
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
       - RCLONE_CONFIG_GDRIVE_TOKEN=${RCLONE_CONFIG_GDRIVE_TOKEN:-}
+      # Email Notifications (SMTP)
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM=${SMTP_FROM:-}
+      # Webhook Notifications
+      - WEBHOOK_URL=${WEBHOOK_URL:-}
+      # Telegram Notifications
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      # ntfy.sh Notifications
+      - NTFY_SERVER_URL=${NTFY_SERVER_URL:-https://ntfy.sh}
+      - NTFY_TOPIC=${NTFY_TOPIC:-}
+      - NTFY_USERNAME=${NTFY_USERNAME:-}
+      - NTFY_PASSWORD=${NTFY_PASSWORD:-}
     volumes:
       - ./config:/app/config
       - ./data:/data
