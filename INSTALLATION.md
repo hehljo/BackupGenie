@@ -4,19 +4,19 @@ This guide will help you install BackupGenie on your Raspberry Pi.
 
 ## Quick Install (Recommended)
 
-For a fully automated installation on Raspberry Pi:
+For a fully automated installation:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/BackupGenie/main/scripts/setup-raspberry-pi.sh | bash
+curl -fsSL https://raw.githubusercontent.com/hehljo/BackupGenie/main/install.sh | bash
 ```
 
 Or manually:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/BackupGenie.git
+git clone https://github.com/hehljo/BackupGenie.git
 cd BackupGenie
-chmod +x scripts/setup-raspberry-pi.sh
-./scripts/setup-raspberry-pi.sh
+chmod +x install.sh
+./install.sh
 ```
 
 ## Manual Installation
@@ -46,7 +46,7 @@ sudo reboot
 
 ```bash
 cd /opt
-sudo git clone https://github.com/YOUR_USERNAME/BackupGenie.git
+sudo git clone https://github.com/hehljo/BackupGenie.git
 sudo chown -R $USER:$USER BackupGenie
 cd BackupGenie
 ```
@@ -242,5 +242,5 @@ sudo rm -rf /mnt/backup
 ## Support
 
 For issues and questions:
-- GitHub Issues: https://github.com/YOUR_USERNAME/BackupGenie/issues
+- GitHub Issues: https://github.com/hehljo/BackupGenie/issues
 - Documentation: See README.md
