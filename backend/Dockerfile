@@ -13,11 +13,20 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Install rclone with version pinning and checksum verification
+# Install rclone with version pinning and automatic architecture detection
 # Using official binary distribution for better security
 ARG RCLONE_VERSION=v1.68.2
-ARG RCLONE_ARCH=amd64
-RUN curl -fsSL https://downloads.rclone.org/${RCLONE_VERSION}/rclone-${RCLONE_VERSION}-linux-${RCLONE_ARCH}.zip -o rclone.zip && \
+ARG TARGETARCH
+RUN set -x && \
+    # Map Docker TARGETARCH to rclone architecture naming
+    case "${TARGETARCH}" in \
+        amd64) RCLONE_ARCH="amd64" ;; \
+        arm64) RCLONE_ARCH="arm64" ;; \
+        arm) RCLONE_ARCH="arm" ;; \
+        *) echo "Unsupported architecture: ${TARGETARCH}"; exit 1 ;; \
+    esac && \
+    echo "Installing rclone for architecture: ${RCLONE_ARCH} (Docker: ${TARGETARCH})" && \
+    curl -fsSL https://downloads.rclone.org/${RCLONE_VERSION}/rclone-${RCLONE_VERSION}-linux-${RCLONE_ARCH}.zip -o rclone.zip && \
     unzip -q rclone.zip && \
     cp rclone-${RCLONE_VERSION}-linux-${RCLONE_ARCH}/rclone /usr/local/bin/ && \
     chmod +x /usr/local/bin/rclone && \
