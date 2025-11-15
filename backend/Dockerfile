@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     cifs-utils \
     nfs-common \
     curl \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # Install rclone
