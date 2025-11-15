@@ -31,6 +31,8 @@ RUN set -x && \
     cp rclone-${RCLONE_VERSION}-linux-${RCLONE_ARCH}/rclone /usr/local/bin/ && \
     chmod +x /usr/local/bin/rclone && \
     rm -rf rclone* && \
+    # Unset RCLONE_VERSION to avoid conflict with rclone's environment variables
+    unset RCLONE_VERSION && \
     rclone version
 
 # Set working directory
