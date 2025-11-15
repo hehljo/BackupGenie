@@ -56,8 +56,8 @@ fi
 
 # 3. Dependencies
 echo -e "${YELLOW}[3/6]${NC} Abhängigkeiten installieren..."
-echo -e "  ${YELLOW}→${NC} Installiere: git, curl, rsync, cifs-utils, nfs-common..."
-sudo apt install -y git curl rsync cifs-utils nfs-common > /dev/null || error_exit "Package installation (apt install)"
+echo -e "  ${YELLOW}→${NC} Installiere: git, curl, rsync, cifs-utils, nfs-common, unzip..."
+sudo apt install -y git curl rsync cifs-utils nfs-common unzip > /dev/null || error_exit "Package installation (apt install)"
 echo -e "${GREEN}  ✓${NC} Basis-Pakete installiert"
 
 # Install rclone
