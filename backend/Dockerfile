@@ -1,5 +1,5 @@
 # Backend Dockerfile for BackupGenie
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -10,10 +10,19 @@ RUN apt-get update && apt-get install -y \
     nfs-common \
     curl \
     unzip \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Install rclone
-RUN curl https://rclone.org/install.sh | bash
+# Install rclone with version pinning and checksum verification
+# Using official binary distribution for better security
+ARG RCLONE_VERSION=v1.68.2
+ARG RCLONE_ARCH=amd64
+RUN curl -fsSL https://downloads.rclone.org/${RCLONE_VERSION}/rclone-${RCLONE_VERSION}-linux-${RCLONE_ARCH}.zip -o rclone.zip && \
+    unzip -q rclone.zip && \
+    cp rclone-${RCLONE_VERSION}-linux-${RCLONE_ARCH}/rclone /usr/local/bin/ && \
+    chmod +x /usr/local/bin/rclone && \
+    rm -rf rclone* && \
+    rclone version
 
 # Set working directory
 WORKDIR /app

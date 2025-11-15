@@ -2,14 +2,24 @@
 BackupGenie - Automated Multi-Source Backup Manager
 Main Application Module
 """
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_babel import Babel
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_talisman import Talisman
+from sqlalchemy import text
+import os
 from app.config import Config
 
 db = SQLAlchemy()
 babel = Babel()
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
 
 
 def get_locale():
@@ -30,7 +40,35 @@ def create_app(config_class=Config):
     # Initialize extensions
     db.init_app(app)
     babel.init_app(app, locale_selector=get_locale)
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    limiter.init_app(app)
+
+    # CORS Configuration - Restrict to allowed origins
+    allowed_origins = os.environ.get('ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
+    CORS(app, resources={
+        r"/api/*": {
+            "origins": allowed_origins,
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization", "Accept-Language"],
+            "expose_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True,
+            "max_age": 3600
+        }
+    })
+
+    # Security Headers (disabled force_https for development, enable in production behind proxy)
+    csp = {
+        'default-src': "'self'",
+        'script-src': ["'self'", "'unsafe-inline'"],  # Tailwind requires unsafe-inline
+        'style-src': ["'self'", "'unsafe-inline'"],
+        'img-src': ["'self'", "data:", "https:"],
+        'font-src': ["'self'", "data:"],
+        'connect-src': ["'self'"],
+    }
+    Talisman(app,
+        force_https=False,  # Set to True in production with HTTPS
+        content_security_policy=csp,
+        content_security_policy_nonce_in=['script-src']
+    )
 
     # Register blueprints
     from app.api.backup import backup_bp
@@ -49,6 +87,23 @@ def create_app(config_class=Config):
 
     @app.route('/health')
     def health():
-        return {'status': 'healthy', 'version': '1.0.0'}
+        """Enhanced health check with database connectivity test"""
+        try:
+            # Test database connection
+            db.session.execute(text('SELECT 1'))
+            db_status = 'ok'
+        except Exception as e:
+            db_status = f'error: {str(e)}'
+            return jsonify({
+                'status': 'unhealthy',
+                'version': '1.0.0',
+                'database': db_status
+            }), 503
+
+        return jsonify({
+            'status': 'healthy',
+            'version': '1.0.0',
+            'database': db_status
+        }), 200
 
     return app
