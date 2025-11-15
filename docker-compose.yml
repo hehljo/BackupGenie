@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build:
@@ -61,11 +59,13 @@ services:
         reservations:
           cpus: '0.5'
           memory: 256M
-    privileged: true  # Required for mounting SMB/NFS shares
+    # Security: Use specific capabilities instead of privileged mode
     cap_add:
-      - SYS_ADMIN  # Required for mount operations
+      - SYS_ADMIN  # Required for mount operations (SMB/NFS)
+    security_opt:
+      - apparmor:unconfined  # Required for mount operations
     devices:
-      - /dev/fuse  # Required for some mount operations
+      - /dev/fuse  # Required for FUSE-based mounts
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s

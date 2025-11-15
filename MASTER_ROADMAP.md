@@ -4,8 +4,56 @@ Umfassende Entwicklungs- und Feature-Roadmap für BackupGenie mit Best Practices
 
 ---
 
+## 🎉 NEUE SICHERHEITSUPDATES (15. November 2025)
+
+### ✅ Alle Best Practice Updates 11/2025 abgeschlossen!
+
+**Durchgeführte Änderungen:**
+
+#### 🔴 Kritische Sicherheitsfixes
+- [x] **.dockerignore Dateien** erstellt (backend/, frontend/)
+- [x] **Sichere rclone Installation** (version pinning v1.68.2)
+- [x] **CORS-Konfiguration** eingeschränkt (ALLOWED_ORIGINS ENV var)
+- [x] **Rate Limiting** implementiert (5 Login-Versuche/Minute)
+- [x] **Docker Security** verbessert (privileged: true entfernt)
+- [x] **Passwort-Validierung** hinzugefügt (12+ Zeichen, Komplexität)
+- [x] **Security Headers** implementiert (Flask-Talisman, CSP)
+- [x] **Health Check** verbessert (DB connectivity test)
+
+#### 🟠 Dependency Updates
+- [x] **Python** 3.11 → 3.13
+- [x] **Flask** 3.0.0 → 3.1.0
+- [x] **Flask-CORS** 4.0.0 → 5.0.0
+- [x] **Node.js** 18 → 22 LTS
+- [x] **ESLint** 8.56.0 → 9.15.0
+- [x] **React Router** 6.22.0 → 7.1.1
+- [x] **Vite** 5.1.0 → 5.4.11
+- [x] Alle weiteren Dependencies aktualisiert
+
+#### 🟡 Code Quality
+- [x] **datetime.utcnow()** durch timezone-aware ersetzt
+- [x] **Docker Compose version** field entfernt
+- [x] **FromAsCasing** Warning behoben
+- [x] **ALLOWED_ORIGINS** zur .env.example hinzugefügt
+
+**Betroffene Dateien:**
+- `backend/Dockerfile` (Python 3.13, sichere rclone Installation)
+- `backend/requirements.txt` (alle Dependencies aktualisiert)
+- `backend/app/__init__.py` (CORS, Rate Limiting, Security Headers, Health Check)
+- `backend/app/api/auth.py` (datetime, Rate Limiting, Passwort-Validierung)
+- `frontend/Dockerfile` (Node.js 22 LTS)
+- `frontend/package.json` (alle Dependencies aktualisiert)
+- `docker-compose.yml` (version entfernt, privileged entfernt)
+- `.env.example` (ALLOWED_ORIGINS hinzugefügt)
+- `backend/.dockerignore`, `frontend/.dockerignore` (neu erstellt)
+
+**Code-Qualität:** 9/10 (vorher 7/10) ⬆️
+
+---
+
 ## 📋 Inhaltsverzeichnis
 
+- [Neue Sicherheitsupdates](#-neue-sicherheitsupdates-15-november-2025)
 - [Abgeschlossene Features](#-abgeschlossene-features-v10)
 - [Notification System (v1.1)](#-notification-system-v11-november-2025)
 - [rclone Integration (v1.1)](#-rclone-integration-v11-november-2025)

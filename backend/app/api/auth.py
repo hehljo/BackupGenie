@@ -3,16 +3,40 @@ Authentication API
 """
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import jwt
 import os
+import re
 from functools import wraps
 
-from app import db
+from app import db, limiter
 from app.models.backup import User
 from app.config import Config
 
 auth_bp = Blueprint('auth', __name__)
+
+
+def validate_password(password):
+    """
+    Validate password strength according to best practices 2025
+    Returns: (is_valid, error_message)
+    """
+    if len(password) < 12:
+        return False, "Password must be at least 12 characters long"
+
+    if not re.search(r'[A-Z]', password):
+        return False, "Password must contain at least one uppercase letter"
+
+    if not re.search(r'[a-z]', password):
+        return False, "Password must contain at least one lowercase letter"
+
+    if not re.search(r'\d', password):
+        return False, "Password must contain at least one digit"
+
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+        return False, "Password must contain at least one special character"
+
+    return True, None
 
 
 def token_required(f):
@@ -47,8 +71,9 @@ def token_required(f):
 
 
 @auth_bp.route('/login', methods=['POST'])
+@limiter.limit("5 per minute")  # Rate limiting: max 5 login attempts per minute
 def login():
-    """User login"""
+    """User login with rate limiting"""
     data = request.get_json()
 
     if not data or not data.get('username') or not data.get('password'):
@@ -60,14 +85,14 @@ def login():
         return jsonify({'error': 'Invalid credentials'}), 401
 
     # Update last login
-    user.last_login = datetime.utcnow()
+    user.last_login = datetime.now(timezone.utc)
     db.session.commit()
 
     # Generate token
     token = jwt.encode({
         'user_id': user.id,
         'username': user.username,
-        'exp': datetime.utcnow() + Config.JWT_ACCESS_TOKEN_EXPIRES
+        'exp': datetime.now(timezone.utc) + Config.JWT_ACCESS_TOKEN_EXPIRES
     }, Config.JWT_SECRET_KEY, algorithm='HS256')
 
     return jsonify({
@@ -78,7 +103,7 @@ def login():
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
-    """User registration (admin only in production)"""
+    """User registration with password validation (admin only in production)"""
     data = request.get_json()
 
     if not data or not data.get('username') or not data.get('password'):
@@ -86,6 +111,11 @@ def register():
 
     if User.query.filter_by(username=data['username']).first():
         return jsonify({'error': 'Username already exists'}), 400
+
+    # Validate password strength
+    is_valid, error_msg = validate_password(data['password'])
+    if not is_valid:
+        return jsonify({'error': error_msg}), 400
 
     password_hash = generate_password_hash(data['password'])
     new_user = User(username=data['username'], password_hash=password_hash)
