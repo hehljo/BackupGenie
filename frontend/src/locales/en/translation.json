@@ -1,0 +1,116 @@
+{
+  "app": {
+    "name": "BackupGenie",
+    "tagline": "Automated Multi-Source Backup Manager"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "sources": "Sources",
+    "history": "History",
+    "notifications": "Notifications",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Monitor and control your backups",
+    "stats": {
+      "totalBackups": "Total Backups",
+      "successful": "Successful",
+      "failed": "Failed",
+      "totalSize": "Total Size"
+    },
+    "backupSources": "Backup Sources",
+    "recentBackups": "Recent Backups",
+    "startBackup": "Start Backup",
+    "active": "Active",
+    "noSources": "No active sources configured",
+    "noBackups": "No backups yet",
+    "status": {
+      "completed": "Completed",
+      "running": "Running",
+      "failed": "Failed",
+      "partial": "Partial"
+    }
+  },
+  "sources": {
+    "title": "Backup Sources",
+    "subtitle": "Manage your backup sources",
+    "addSource": "Add Source",
+    "status": "Status",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "priority": "Priority",
+    "testConnection": "Test Connection",
+    "edit": "Edit",
+    "delete": "Delete",
+    "noSources": "No sources configured",
+    "noSourcesHint": "Add your first backup source to get started"
+  },
+  "history": {
+    "title": "Backup History",
+    "subtitle": "View all backup executions",
+    "started": "Started",
+    "duration": "Duration",
+    "sources": "Sources",
+    "totalSize": "Total Size",
+    "sourceDetails": "Source Details",
+    "noHistory": "No backup history",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {{current}} of {{total}}"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Configure your backup system",
+    "general": "General Settings",
+    "backupBasePath": "Backup Base Path",
+    "maxParallelTasks": "Max Parallel Tasks",
+    "logRetention": "Log Retention (days)",
+    "user": "User Settings",
+    "username": "Username",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "save": "Save Changes",
+    "saving": "Saving...",
+    "saved": "Settings saved successfully",
+    "error": "Error saving settings"
+  },
+  "login": {
+    "title": "Login",
+    "username": "Username",
+    "password": "Password",
+    "loginButton": "Login",
+    "loggingIn": "Logging in...",
+    "failed": "Login failed. Please check your credentials.",
+    "defaultCredentials": "Default credentials: admin / AdminPassword123!"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Info",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "clear": "Clear",
+    "refresh": "Refresh",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "language": {
+    "select": "Select Language",
+    "en": "English",
+    "de": "Deutsch"
+  }
+}

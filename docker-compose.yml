@@ -1,0 +1,113 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: backupgenie/backend:latest
+    container_name: backupgenie-backend
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-5000}:5000"
+    environment:
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=${DEBUG:-false}
+      - DATABASE_URL=sqlite:////data/backupgenie.db
+      - BACKUP_BASE_PATH=/mnt/backup
+      - MAX_PARALLEL_TASKS=${MAX_PARALLEL_TASKS:-2}
+      - LOG_RETENTION_DAYS=${LOG_RETENTION_DAYS:-30}
+      - SOURCES_CONFIG_PATH=/app/config/sources.json
+      - RCLONE_CONFIG_PATH=/app/config/rclone.conf
+      - NOTIFICATION_CONFIG_PATH=/app/config/notifications.json
+      # Credentials from secrets file
+      - NAS_PASSWORD_1=${NAS_PASSWORD_1:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - RCLONE_CONFIG_GDRIVE_TOKEN=${RCLONE_CONFIG_GDRIVE_TOKEN:-}
+      # Email Notifications (SMTP)
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM=${SMTP_FROM:-}
+      # Webhook Notifications
+      - WEBHOOK_URL=${WEBHOOK_URL:-}
+      # Telegram Notifications
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      # ntfy.sh Notifications
+      - NTFY_SERVER_URL=${NTFY_SERVER_URL:-https://ntfy.sh}
+      - NTFY_TOPIC=${NTFY_TOPIC:-}
+      - NTFY_USERNAME=${NTFY_USERNAME:-}
+      - NTFY_PASSWORD=${NTFY_PASSWORD:-}
+    volumes:
+      - ./config:/app/config
+      - ./data:/data
+      - ${BACKUP_BASE_PATH:-/mnt/backup}:/mnt/backup
+      - ./logs:/var/log/backupgenie
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # Docker backups
+      - /run/udev:/run/udev:ro  # USB device detection
+    networks:
+      - backupgenie
+    # Resource limits for Raspberry Pi (anpassbar je nach Modell)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    # Security: Use specific capabilities instead of privileged mode
+    cap_add:
+      - SYS_ADMIN  # Required for mount operations (SMB/NFS)
+    security_opt:
+      - apparmor:unconfined  # Required for mount operations
+    devices:
+      - /dev/fuse  # Required for FUSE-based mounts
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: backupgenie/frontend:latest
+    container_name: backupgenie-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - VITE_API_URL=http://backend:5000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - backupgenie
+    # Resource limits for Raspberry Pi
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+networks:
+  backupgenie:
+    driver: bridge
+
+volumes:
+  data:
+    driver: local
+  logs:
+    driver: local

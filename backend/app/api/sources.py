@@ -1,0 +1,206 @@
+"""
+Sources API Endpoints
+"""
+from flask import Blueprint, request, jsonify
+import json
+import os
+
+from app.api.auth import token_required
+from app.config import Config
+
+sources_bp = Blueprint('sources', __name__)
+
+
+def load_sources():
+    """Load sources from configuration file"""
+    try:
+        with open(Config.SOURCES_CONFIG_PATH, 'r') as f:
+            config = json.load(f)
+            return config.get('backup_sources', [])
+    except FileNotFoundError:
+        return []
+    except json.JSONDecodeError:
+        return []
+
+
+def save_sources(sources):
+    """Save sources to configuration file"""
+    config = {'backup_sources': sources}
+    os.makedirs(os.path.dirname(Config.SOURCES_CONFIG_PATH), exist_ok=True)
+    with open(Config.SOURCES_CONFIG_PATH, 'w') as f:
+        json.dump(config, f, indent=2)
+
+
+@sources_bp.route('', methods=['GET'])
+@token_required
+def get_sources(current_user):
+    """Get all backup sources"""
+    sources = load_sources()
+    return jsonify({'sources': sources}), 200
+
+
+@sources_bp.route('/<source_id>', methods=['GET'])
+@token_required
+def get_source(current_user, source_id):
+    """Get a specific source"""
+    sources = load_sources()
+    source = next((s for s in sources if s.get('id') == source_id), None)
+
+    if not source:
+        return jsonify({'error': 'Source not found'}), 404
+
+    return jsonify(source), 200
+
+
+@sources_bp.route('', methods=['POST'])
+@token_required
+def create_source(current_user):
+    """Create a new backup source"""
+    data = request.get_json()
+
+    if not data or not data.get('name') or not data.get('type'):
+        return jsonify({'error': 'Missing required fields: name, type'}), 400
+
+    sources = load_sources()
+
+    # Generate ID if not provided
+    if not data.get('id'):
+        import uuid
+        data['id'] = f"{data['type']}-{str(uuid.uuid4())[:8]}"
+
+    # Check for duplicate ID
+    if any(s.get('id') == data['id'] for s in sources):
+        return jsonify({'error': 'Source ID already exists'}), 400
+
+    # Set defaults
+    data.setdefault('enabled', True)
+    data.setdefault('priority', len(sources) + 1)
+
+    sources.append(data)
+    save_sources(sources)
+
+    return jsonify({
+        'message': 'Source created successfully',
+        'source': data
+    }), 201
+
+
+@sources_bp.route('/<source_id>', methods=['PUT'])
+@token_required
+def update_source(current_user, source_id):
+    """Update a backup source"""
+    data = request.get_json()
+    sources = load_sources()
+
+    source_index = next((i for i, s in enumerate(sources) if s.get('id') == source_id), None)
+
+    if source_index is None:
+        return jsonify({'error': 'Source not found'}), 404
+
+    # Update source
+    sources[source_index].update(data)
+    sources[source_index]['id'] = source_id  # Ensure ID doesn't change
+
+    save_sources(sources)
+
+    return jsonify({
+        'message': 'Source updated successfully',
+        'source': sources[source_index]
+    }), 200
+
+
+@sources_bp.route('/<source_id>', methods=['DELETE'])
+@token_required
+def delete_source(current_user, source_id):
+    """Delete a backup source"""
+    sources = load_sources()
+    sources = [s for s in sources if s.get('id') != source_id]
+
+    save_sources(sources)
+
+    return jsonify({'message': 'Source deleted successfully'}), 200
+
+
+@sources_bp.route('/<source_id>/test', methods=['POST'])
+@token_required
+def test_source(current_user, source_id):
+    """Test connection to a backup source"""
+    sources = load_sources()
+    source = next((s for s in sources if s.get('id') == source_id), None)
+
+    if not source:
+        return jsonify({'error': 'Source not found'}), 404
+
+    source_type = source.get('type')
+    source_name = source.get('name')
+
+    # Real connection testing based on source type
+    try:
+        if source_type == 'local':
+            # Test local directory access
+            import os
+            path = source.get('config', {}).get('path', '')
+            if not path:
+                return jsonify({'error': 'Path not configured'}), 400
+            if not os.path.exists(path):
+                return jsonify({'error': f'Path does not exist: {path}'}), 400
+            if not os.access(path, os.R_OK):
+                return jsonify({'error': f'No read permission for: {path}'}), 403
+            return jsonify({
+                'status': 'success',
+                'message': f'Local directory accessible: {path}',
+                'source_id': source_id
+            }), 200
+
+        elif source_type == 'nas' or source_type == 'nfs':
+            # Test network share connectivity
+            host = source.get('config', {}).get('host', '')
+            if not host:
+                return jsonify({'error': 'Host not configured'}), 400
+
+            # Simple network connectivity test
+            import socket
+            try:
+                socket.create_connection((host, 445 if source_type == 'nas' else 2049), timeout=5)
+                return jsonify({
+                    'status': 'success',
+                    'message': f'Connection to {host} successful',
+                    'source_id': source_id
+                }), 200
+            except (socket.timeout, socket.error) as e:
+                return jsonify({'error': f'Cannot connect to {host}: {str(e)}'}), 503
+
+        elif source_type == 'github':
+            # Test GitHub API access
+            token = source.get('config', {}).get('token', '')
+            repo = source.get('config', {}).get('repo', '')
+            if not token or not repo:
+                return jsonify({'error': 'Token or repository not configured'}), 400
+
+            import requests
+            headers = {'Authorization': f'token {token}'}
+            response = requests.get(f'https://api.github.com/repos/{repo}', headers=headers, timeout=10)
+
+            if response.status_code == 200:
+                return jsonify({
+                    'status': 'success',
+                    'message': f'GitHub repository {repo} accessible',
+                    'source_id': source_id
+                }), 200
+            elif response.status_code == 401:
+                return jsonify({'error': 'Invalid GitHub token'}), 401
+            elif response.status_code == 404:
+                return jsonify({'error': f'Repository {repo} not found'}), 404
+            else:
+                return jsonify({'error': f'GitHub API error: {response.status_code}'}), 503
+
+        else:
+            # For other source types, return informative message
+            return jsonify({
+                'status': 'info',
+                'message': f'Connection test for {source_type} not yet implemented. Source will be tested during actual backup.',
+                'source_id': source_id
+            }), 200
+
+    except Exception as e:
+        return jsonify({'error': f'Connection test failed: {str(e)}'}), 500

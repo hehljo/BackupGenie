@@ -1,0 +1,97 @@
+# Docker Compose für Raspberry Pi 3 (optimiert für 1GB RAM)
+# Verwendung: docker compose -f docker-compose.rpi3.yml up -d
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: backupgenie/backend:latest
+    container_name: backupgenie-backend
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-5000}:5000"
+    environment:
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=${DEBUG:-false}
+      - DATABASE_URL=sqlite:////data/backupgenie.db
+      - BACKUP_BASE_PATH=/mnt/backup
+      - MAX_PARALLEL_TASKS=${MAX_PARALLEL_TASKS:-1}  # Nur 1 paralleler Task für Pi 3
+      - LOG_RETENTION_DAYS=${LOG_RETENTION_DAYS:-7}  # Weniger Log-Retention
+      - SOURCES_CONFIG_PATH=/app/config/sources.json
+      - RCLONE_CONFIG_PATH=/app/config/rclone.conf
+      # Credentials from secrets file
+      - NAS_PASSWORD_1=${NAS_PASSWORD_1:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - RCLONE_CONFIG_GDRIVE_TOKEN=${RCLONE_CONFIG_GDRIVE_TOKEN:-}
+    volumes:
+      - ./config:/app/config
+      - ./data:/data
+      - ${BACKUP_BASE_PATH:-/mnt/backup}:/mnt/backup
+      - ./logs:/var/log/backupgenie
+    networks:
+      - backupgenie
+    # Reduzierte Resource Limits für Pi 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 128M
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - /dev/fuse
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 60s  # Weniger häufige Health Checks
+      timeout: 15s
+      retries: 3
+      start_period: 60s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: backupgenie/frontend:latest
+    container_name: backupgenie-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - VITE_API_URL=http://backend:5000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - backupgenie
+    # Minimale Resource Limits für Pi 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+        reservations:
+          cpus: '0.25'
+          memory: 32M
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  backupgenie:
+    driver: bridge
+
+volumes:
+  data:
+    driver: local
+  logs:
+    driver: local
