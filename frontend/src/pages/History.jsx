@@ -138,6 +138,14 @@ export default function History() {
               </div>
             </div>
 
+            {/* Backup-level error message */}
+            {backup.error_message && (
+              <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm font-medium text-red-800 mb-1">Fehler / Error:</p>
+                <pre className="text-xs text-red-700 font-mono whitespace-pre-wrap">{backup.error_message}</pre>
+              </div>
+            )}
+
             {backup.sources && backup.sources.length > 0 && (
               <div className="border-t border-gray-200 pt-4">
                 <p className="text-sm font-medium text-gray-700 mb-3">{t('history.sourceDetails')}</p>
@@ -155,41 +163,43 @@ export default function History() {
                           <span className="font-medium">{source.source_name}</span>
                           <span className="text-gray-500">({source.source_type})</span>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-gray-600">
+                        <div className="flex items-center gap-2 md:gap-4 flex-wrap justify-end">
+                          <span className="text-gray-600 text-xs md:text-sm">
                             {source.files_synced} files • {formatBytes(source.size_synced)}
                           </span>
                           <span className={clsx('badge text-xs', getStatusBadge(source.status))}>
                             {t(`dashboard.status.${source.status}`)}
                           </span>
-                          {(source.logs || source.error_message) && (
-                            <button
-                              onClick={() => setExpandedLogs(prev => ({
-                                ...prev,
-                                [`${backup.backup_id}-${source.source_id}`]: !prev[`${backup.backup_id}-${source.source_id}`]
-                              }))}
-                              className="text-gray-400 hover:text-gray-600"
-                            >
-                              {expandedLogs[`${backup.backup_id}-${source.source_id}`] ? (
-                                <ChevronUp className="w-4 h-4" />
-                              ) : (
-                                <ChevronDown className="w-4 h-4" />
-                              )}
-                            </button>
-                          )}
+                          <button
+                            onClick={() => setExpandedLogs(prev => ({
+                              ...prev,
+                              [`${backup.backup_id}-${source.source_id}`]: !prev[`${backup.backup_id}-${source.source_id}`]
+                            }))}
+                            className="flex items-center gap-1 text-gray-500 hover:text-gray-700 text-xs"
+                            title="Logs"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            {expandedLogs[`${backup.backup_id}-${source.source_id}`] ? (
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            ) : (
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            )}
+                          </button>
                         </div>
                       </div>
                       {expandedLogs[`${backup.backup_id}-${source.source_id}`] && (
                         <div className="border-t border-gray-200 p-3">
                           {source.error_message && (
-                            <div className="mb-2 p-2 bg-red-50 rounded text-xs text-red-700 font-mono">
+                            <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700 font-mono whitespace-pre-wrap">
                               {source.error_message}
                             </div>
                           )}
-                          {source.logs && (
-                            <pre className="text-xs text-gray-600 font-mono whitespace-pre-wrap max-h-48 overflow-y-auto bg-white p-2 rounded border">
+                          {source.logs ? (
+                            <pre className="text-xs text-gray-600 font-mono whitespace-pre-wrap max-h-64 overflow-y-auto bg-white p-2 rounded border">
                               {source.logs}
                             </pre>
+                          ) : !source.error_message && (
+                            <p className="text-xs text-gray-400 italic">No logs available</p>
                           )}
                         </div>
                       )}
