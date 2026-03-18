@@ -1069,7 +1069,12 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
 
             {/* Type-specific config */}
             <div className="border-t border-gray-200 pt-4 md:pt-6">
-              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Configuration</h3>
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3">Configuration</h3>
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg mb-4">
+                <p className="text-xs text-amber-800">
+                  Zugangsdaten (Tokens, Passwörter, API-Keys) werden global unter <strong>Settings → Credentials</strong> verwaltet. Dort einmal eintragen, gilt für alle Quellen dieses Typs.
+                </p>
+              </div>
               {renderConfigFields()}
             </div>
 
