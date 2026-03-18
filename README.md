@@ -239,7 +239,9 @@ Die Datei `config/example.env` aus dem ZIP am PC öffnen, anpassen und als `.env
 | **Build method** | Repository |
 | **Repository URL** | `https://github.com/hehljo/BackupGenie` |
 | **Repository reference** | `refs/heads/main` (Pflichtfeld!) |
-| **Compose path** | `docker-compose.yml` |
+| **Compose path** | `docker-compose.portainer.yml` |
+
+> **Wichtig:** `docker-compose.portainer.yml` nutzt fertige Images von GitHub Container Registry - kein Build auf der Diskstation nötig!
 
 > **Privates Repo?** → **Authentication** aktivieren → Username: dein GitHub-User → Password: Personal Access Token (classic, Scope: `repo`)
 
@@ -439,10 +441,11 @@ docker compose up -d
 
 #### Portainer (ohne Synology)
 
-In Portainer → Stacks → Add Stack → Web editor:
-1. `docker-compose.yml` Inhalt einfügen
-2. Environment Variables setzen (mindestens `SECRET_KEY`)
-3. Deploy
+In Portainer → Stacks → Add Stack → Repository:
+1. Repository URL: `https://github.com/hehljo/BackupGenie`
+2. Compose path: `docker-compose.portainer.yml` (nutzt fertige GHCR Images, kein Build nötig)
+3. Environment Variables setzen (mindestens `SECRET_KEY`)
+4. Deploy
 
 #### Umgebungsvariablen für Ressourcen-Anpassung
 

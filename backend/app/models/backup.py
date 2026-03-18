@@ -72,8 +72,48 @@ class BackupSourceResult(db.Model):
             'files_synced': self.files_synced,
             'size_synced': self.size_synced,
             'progress': self.progress,
-            'error_message': self.error_message
+            'error_message': self.error_message,
+            'logs': self.logs
         }
+
+
+class Setting(db.Model):
+    """Key-value settings stored in database"""
+    __tablename__ = 'settings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(100), unique=True, nullable=False)
+    value = db.Column(db.Text, nullable=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @staticmethod
+    def get(key, default=None):
+        setting = Setting.query.filter_by(key=key).first()
+        return setting.value if setting else default
+
+    @staticmethod
+    def set(key, value):
+        from app import db as _db
+        setting = Setting.query.filter_by(key=key).first()
+        if setting:
+            setting.value = value
+        else:
+            setting = Setting(key=key, value=value)
+            _db.session.add(setting)
+        _db.session.commit()
+        return setting
+
+    # Credential keys are stored with prefix 'credential.'
+    # e.g. 'credential.github_token', 'credential.supabase_db_password'
+    CREDENTIAL_KEYS = [
+        'credential.github_token',
+        'credential.nas_password_1',
+        'credential.supabase_db_password',
+        'credential.supabase_service_role_key',
+        'credential.smtp_password',
+        'credential.telegram_bot_token',
+        'credential.rclone_gdrive_token',
+    ]
 
 
 class User(db.Model):

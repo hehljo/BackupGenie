@@ -66,8 +66,28 @@ class BackupHandler(ABC):
             return 0
 
     def _get_env_credential(self, key, required=True):
-        """Get credential from environment variable"""
+        """Get credential: DB (global) first, then environment variable"""
+        # Map env var names to DB credential keys
+        env_to_db = {
+            'GITHUB_TOKEN': 'github_token',
+            'NAS_PASSWORD_1': 'nas_password_1',
+            'SUPABASE_DB_PASSWORD': 'supabase_db_password',
+            'SUPABASE_SERVICE_ROLE_KEY': 'supabase_service_role_key',
+            'SMTP_PASSWORD': 'smtp_password',
+            'TELEGRAM_BOT_TOKEN': 'telegram_bot_token',
+            'RCLONE_CONFIG_GDRIVE_TOKEN': 'rclone_gdrive_token',
+        }
+        db_key = env_to_db.get(key)
+        if db_key:
+            try:
+                from app.api.settings import get_credential
+                value = get_credential(db_key)
+                if value:
+                    return value
+            except Exception:
+                pass
+        # Fallback to env var
         value = os.environ.get(key, '')
         if required and not value:
-            raise Exception(f"Required environment variable not found: {key}")
+            raise Exception(f"Credential not found. Set it in Settings → Credentials or as {key} env var.")
         return value

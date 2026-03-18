@@ -49,13 +49,23 @@ class GitHubBackup(BackupHandler):
             # Manual mode: use explicitly listed repos
             return self.source_config.get('repositories', [])
 
-    def backup(self):
-        """Execute GitHub backup"""
+    def _get_token(self):
+        """Get GitHub token from DB (global credential), then env var fallback"""
+        from app.api.settings import get_credential
+        token = get_credential('github_token')
+        if token:
+            return token
+        # Legacy: token_env reference in source config
         credentials = self.source_config.get('credentials', {})
         token = os.environ.get(credentials.get('token_env', ''), '')
+        return token
+
+    def backup(self):
+        """Execute GitHub backup"""
+        token = self._get_token()
 
         if not token:
-            raise Exception("GitHub token not found in environment")
+            raise Exception("GitHub token not configured. Set it in Settings → Credentials or as GITHUB_TOKEN env var.")
 
         repositories = self._resolve_repositories(token)
         files_synced = 0

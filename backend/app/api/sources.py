@@ -131,10 +131,11 @@ def delete_source(current_user, source_id):
 @limiter.limit("5 per hour")
 def discover_github_repos(current_user):
     """Discover all GitHub repositories accessible with the configured token"""
-    token = os.environ.get('GITHUB_TOKEN', '')
+    from app.api.settings import get_credential
+    token = get_credential('github_token')
 
     if not token:
-        return jsonify({'error': 'GITHUB_TOKEN not configured in environment'}), 400
+        return jsonify({'error': 'GitHub Token not configured. Set it in Settings → Credentials.'}), 400
 
     try:
         result = discover_all(token)
