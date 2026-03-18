@@ -183,16 +183,22 @@ Alle Daten liegen persistent unter `/volume1/docker/backupgenie/` (Mariushosting
 sudo mkdir -p /volume1/docker/backupgenie/{config,data,logs,backup}
 ```
 
-#### 2. Beispiel-Configs kopieren (einmalig)
+#### 2. Beispiel-Configs holen (einmalig)
 
+**Per SSH (falls wget verfügbar):**
 ```bash
-cd /volume1/docker/backupgenie
-# Temporär Repo klonen um Config-Templates zu holen
-git clone --depth 1 https://github.com/hehljo/BackupGenie.git /tmp/backupgenie-setup
-cp /tmp/backupgenie-setup/config/sources-example.json config/sources.json
-cp /tmp/backupgenie-setup/config/example.env .env
-rm -rf /tmp/backupgenie-setup
+cd /tmp
+wget https://github.com/hehljo/BackupGenie/archive/refs/heads/main.zip
+unzip main.zip
+cp BackupGenie-main/config/sources-example.json /volume1/docker/backupgenie/config/sources.json
+cp BackupGenie-main/config/example.env /volume1/docker/backupgenie/.env
+rm -rf main.zip BackupGenie-main
 ```
+
+**Oder manuell:**
+1. [ZIP herunterladen](https://github.com/hehljo/BackupGenie/archive/refs/heads/main.zip) am PC
+2. `config/sources-example.json` → per File Station nach `/volume1/docker/backupgenie/config/sources.json` hochladen
+3. `config/example.env` → nach `/volume1/docker/backupgenie/.env` hochladen (umbenennen!)
 
 #### 3. `.env` konfigurieren
 
