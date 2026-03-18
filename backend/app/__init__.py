@@ -105,10 +105,17 @@ def create_app(config_class=Config):
 
     # Create database tables if they don't exist
     with app.app_context():
-        try:
-            db.create_all()
-        except Exception as e:
-            app.logger.warning(f"Database tables may already exist: {e}")
+        from sqlalchemy import inspect as sa_inspect
+        inspector = sa_inspect(db.engine)
+        existing_tables = set(inspector.get_table_names())
+        # Only create tables that don't exist yet
+        tables_to_create = [
+            table for table in db.metadata.sorted_tables
+            if table.name not in existing_tables
+        ]
+        if tables_to_create:
+            db.metadata.create_all(db.engine, tables=tables_to_create)
+            app.logger.info(f"Created new tables: {[t.name for t in tables_to_create]}")
 
         # Bootstrap admin user if no users exist
         from app.models.backup import User
