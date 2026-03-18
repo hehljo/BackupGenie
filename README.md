@@ -78,19 +78,20 @@ curl -fsSL https://raw.githubusercontent.com/hehljo/BackupGenie/main/install.sh 
 git clone https://github.com/hehljo/BackupGenie.git
 cd BackupGenie
 
-# 2. Configure environment
-cp config/example.env .env
-cp config/sources-example.json config/sources.json
-nano .env  # Edit your settings
+# 2. Set SECRET_KEY (mandatory)
+export SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
 
 # 3. Start services
-docker compose up -d
+SECRET_KEY=$SECRET_KEY docker compose up -d
 
-# 4. Open Web UI
+# 4. Get admin password from logs
+docker compose logs backend | grep "INIT"
+
+# 5. Open Web UI → configure credentials and sources
 open http://localhost:3000
 ```
 
-**Default Login**: `admin` / Check logs: `docker compose logs backend | grep "Initial password"`
+**Login**: `admin` / Passwort aus den Container-Logs (Schritt 4). Alle Credentials (Tokens, Passwörter) werden über die Web UI verwaltet.
 
 ---
 
@@ -162,74 +163,19 @@ Compose: 2.0+
 <details>
 <summary>Schritt-für-Schritt Anleitung</summary>
 
-#### Verzeichnisstruktur auf der Diskstation
-
-Alle Daten liegen persistent unter `/volume1/docker/backupgenie/` (Mariushosting-Konvention). Bei Updates oder Neuinstallation bleiben alle Daten erhalten.
-
-```
-/volume1/docker/backupgenie/
-├── config/          # Backup-Quellen, rclone, Notifications
-│   ├── sources.json
-│   ├── rclone.conf
-│   └── notifications.json
-├── data/            # Datenbank, User, Backup-Historie
-├── logs/            # Anwendungs-Logs
-└── backup/          # Hier landen die Backups
-```
-
-#### 1. Ordner per SSH anlegen
+#### 1. Ordner auf der Diskstation anlegen (SSH)
 
 ```bash
 sudo mkdir -p /volume1/docker/backupgenie/{config,data,logs,backup}
 ```
 
-#### 2. Beispiel-Configs holen (einmalig)
-
-**Per SSH (falls wget verfügbar):**
-```bash
-cd /tmp
-wget https://github.com/hehljo/BackupGenie/archive/refs/heads/main.zip
-unzip main.zip
-cp BackupGenie-main/config/sources-example.json /volume1/docker/backupgenie/config/sources.json
-cp BackupGenie-main/config/example.env /volume1/docker/backupgenie/.env
-rm -rf main.zip BackupGenie-main
-```
-
-**Oder manuell:**
-1. [ZIP herunterladen](https://github.com/hehljo/BackupGenie/archive/refs/heads/main.zip) am PC
-2. `config/sources-example.json` → per File Station nach `/volume1/docker/backupgenie/config/sources.json` hochladen
-3. `config/example.env` → nach `/volume1/docker/backupgenie/.env` hochladen (umbenennen!)
-
-#### 3. `.env` konfigurieren
+#### 2. SECRET_KEY generieren
 
 ```bash
-nano /volume1/docker/backupgenie/.env
-```
-```bash
-SECRET_KEY=hier_einen_langen_zufaelligen_string_setzen
-PLATFORM_PROFILE=auto
-
-# Pfade auf der Diskstation (persistent!)
-CONFIG_PATH=/volume1/docker/backupgenie/config
-DATA_PATH=/volume1/docker/backupgenie/data
-LOGS_PATH=/volume1/docker/backupgenie/logs
-BACKUP_BASE_PATH=/volume1/docker/backupgenie/backup
-
-# Ports (DSM belegt oft 5000/5001!)
-API_PORT=5050
-FRONTEND_PORT=3080
-
-# Credentials
-GITHUB_TOKEN=ghp_dein_token
-# SUPABASE_DB_PASSWORD=...
-# SUPABASE_SERVICE_ROLE_KEY=...
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
-#### 4. `.env` am PC vorbereiten
-
-Die Datei `config/example.env` aus dem ZIP am PC öffnen, anpassen und als `.env` speichern (siehe Schritt 3 für die Werte). Diese Datei brauchst du gleich in Portainer.
-
-#### 5. In Portainer den Stack anlegen
+#### 3. Stack in Portainer anlegen
 
 **Portainer** → **Stacks** → **Add Stack**:
 
@@ -238,56 +184,50 @@ Die Datei `config/example.env` aus dem ZIP am PC öffnen, anpassen und als `.env
 | **Name** | `backupgenie` |
 | **Build method** | Repository |
 | **Repository URL** | `https://github.com/hehljo/BackupGenie` |
-| **Repository reference** | `refs/heads/main` (Pflichtfeld!) |
+| **Repository reference** | `refs/heads/main` |
 | **Compose path** | `docker-compose.portainer.yml` |
-
-> **Wichtig:** `docker-compose.portainer.yml` nutzt fertige Images von GitHub Container Registry - kein Build auf der Diskstation nötig!
 
 > **Privates Repo?** → **Authentication** aktivieren → Username: dein GitHub-User → Password: Personal Access Token (classic, Scope: `repo`)
 
-**Environment variables:**
-- Auf **Advanced mode** klicken
-- Inhalt deiner vorbereiteten `.env` komplett reinfügen
-- Oder: **Load variables from .env file** → deine `.env` hochladen
+**Environment variables** (Advanced mode):
+
+```
+SECRET_KEY=dein_generierter_key
+PLATFORM_PROFILE=auto
+API_PORT=5050
+FRONTEND_PORT=3080
+```
+
+> Keine `.env`-Datei nötig! Nur diese 4 Variablen. Alle Credentials (GitHub Token, Supabase etc.) werden über die Web UI verwaltet.
 
 → **Deploy the stack**
 
-#### 5. Web UI öffnen
+#### 4. Einloggen
 
 ```
 http://diskstation-ip:3080
 ```
 
-**Login:** `admin` / `AdminPassword123!` (sofort ändern!)
+**Passwort:** Wird beim ersten Start zufällig generiert. Findest du in Portainer → Container `backupgenie-backend` → **Logs** → suche nach `[INIT] Admin user created. Password:`
 
-#### Variante B: Docker Compose direkt via SSH
+Passwort sofort ändern unter **Settings → User**.
 
-```bash
-cd /volume1/docker/backupgenie
-# Repo klonen
-git clone https://github.com/hehljo/BackupGenie.git /tmp/backupgenie-repo
-# docker-compose.yml von dort starten
-docker compose -f /tmp/backupgenie-repo/docker-compose.yml --env-file .env up -d
-docker compose logs -f
-```
+#### 5. Einrichten
 
-#### Updates durchführen
+1. **Settings → Credentials** → GitHub Token, NAS-Passwörter etc. eintragen (verschlüsselt gespeichert)
+2. **Sources → Add Source** → Backup-Quellen konfigurieren
+3. **Backup starten** → Dashboard → Start Backup
 
-Daten bleiben erhalten, nur das Stack-Image wird aktualisiert:
+#### Updates
 
-In **Portainer** → Stack `backupgenie` → **Editor** → **Update the stack** → **Re-pull image and redeploy**
+In **Portainer** → Stack `backupgenie` → **Update the stack** → **Re-pull image and redeploy**
 
-Oder via SSH:
-```bash
-docker compose pull && docker compose up -d
-```
+#### Synology-Hinweise
 
-#### Synology-spezifische Hinweise
-
-- **Ports:** DSM belegt 5000 (HTTP) und 5001 (HTTPS) - daher `API_PORT=5050` und `FRONTEND_PORT=3080` empfohlen
-- **SMB/NFS Backups:** Funktioniert, da `SYS_ADMIN` Capability gesetzt ist
+- **Ports:** DSM belegt 5000/5001 - daher `API_PORT=5050` und `FRONTEND_PORT=3080`
 - **Autostart nach Reboot:** Durch `restart: unless-stopped` automatisch
-- **Berechtigungen:** Falls Permission-Fehler, Ordner mit `sudo chown -R 1000:1000 /volume1/docker/backupgenie/` anpassen
+- **Berechtigungen:** Falls Permission-Fehler: `sudo chown -R 1000:1000 /volume1/docker/backupgenie/`
+- **Daten persistent:** Alle Daten unter `/volume1/docker/backupgenie/` bleiben bei Updates erhalten
 
 </details>
 
@@ -463,35 +403,21 @@ In Portainer → Stacks → Add Stack → Repository:
 ### Initial Configuration
 
 > [!IMPORTANT]
-> `SECRET_KEY` in `.env` muss vor dem ersten Start gesetzt werden!
+> `SECRET_KEY` muss gesetzt werden (Pflicht!). Ohne startet die App nicht.
+> Generieren: `python3 -c "import secrets; print(secrets.token_urlsafe(32))"`
 
-**.env Übersicht:**
+**Benötigte Environment Variables:**
 
-```bash
-# Server
-SECRET_KEY=CHANGE_THIS          # Pflicht! Langer zufälliger String
-FLASK_ENV=production
-DEBUG=false
+| Variable | Pflicht | Beschreibung |
+|----------|---------|-------------|
+| `SECRET_KEY` | Ja | Zufälliger String für JWT + Credential-Verschlüsselung |
+| `API_PORT` | Nein (5000) | Port für die Backend-API |
+| `FRONTEND_PORT` | Nein (3000) | Port für die Web UI |
+| `PLATFORM_PROFILE` | Nein (auto) | `auto`, `raspberrypi`, `synology`, `server` |
 
-# Ports
-API_PORT=5000
-FRONTEND_PORT=3000
+> **Credentials** (GitHub Token, NAS-Passwörter, Supabase Keys etc.) werden **nicht** über Environment Variables gesetzt, sondern über die Web UI: **Settings → Credentials**. Dort werden sie AES-verschlüsselt in der Datenbank gespeichert.
 
-# Backup
-BACKUP_BASE_PATH=/mnt/backup    # Pfad wo Backups gespeichert werden
-MAX_PARALLEL_TASKS=auto          # auto = wird anhand RAM berechnet
-
-# Platform (optional)
-PLATFORM_PROFILE=auto            # auto|raspberrypi|synology|server
-
-# Credentials (je nach genutzten Backup-Quellen)
-# GITHUB_TOKEN=ghp_xxx
-# SUPABASE_DB_PASSWORD=xxx
-# SUPABASE_SERVICE_ROLE_KEY=xxx
-# NAS_PASSWORD_1=xxx
-```
-
-**Default Login:** `admin` / Passwort in den Logs: `docker compose logs backend | grep "password"`
+**Login:** `admin` / Passwort wird beim ersten Start zufällig generiert → `docker compose logs backend | grep "INIT"`
 
 ### 💾 Data Persistence (Docker Volumes)
 
@@ -821,32 +747,13 @@ sudo udevadm control --reload-rules
 
 ### Credentials Management
 
-> [!WARNING]
-> Never commit credentials to version control!
+Alle Zugangsdaten werden über die Web UI verwaltet:
 
-Store sensitive credentials in `.env.secrets`:
+1. **Settings** → **Credentials**
+2. Token/Passwort eintragen (GitHub, NAS, Supabase, SMTP, Telegram etc.)
+3. **Save Credentials**
 
-```bash
-# Create secrets file
-nano .env.secrets
-
-# Add credentials
-NAS_PASSWORD=YourSecurePassword
-GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxx
-RCLONE_CONFIG_GDRIVE_TOKEN=...
-
-# Set secure permissions
-chmod 600 .env.secrets
-```
-
-Load in `docker-compose.yml`:
-```yaml
-services:
-  backend:
-    env_file:
-      - .env
-      - .env.secrets
-```
+Die Credentials werden **AES-verschlüsselt** in der Datenbank gespeichert (Fernet/PBKDF2). Keine Klartext-Passwörter in Dateien oder Environment Variables nötig.
 
 ---
 
