@@ -124,20 +124,14 @@ def create_app(config_class=Config):
 
         try:
             if User.query.count() == 0:
-                import secrets
-                default_password = os.environ.get('DEFAULT_ADMIN_PASSWORD', '')
-                if not default_password:
-                    # Generate random password meeting strength requirements
-                    default_password = secrets.token_urlsafe(12) + 'A1!'
+                default_password = os.environ.get('DEFAULT_ADMIN_PASSWORD', 'AdminPassword123!')
                 admin = User(
                     username='admin',
                     password_hash=generate_password_hash(default_password)
                 )
                 db.session.add(admin)
                 db.session.commit()
-                # Log password only once, only to container stdout (not to file)
-                print(f"[INIT] Admin user created. Password: {default_password}")
-                print("[INIT] Change this password immediately via Settings → User!")
+                print("[INIT] Admin user created with default password.")
                 app.logger.info("Bootstrap: Admin user created. Check container stdout for password.")
         except IntegrityError:
             # User already exists (race condition with multiple workers)
