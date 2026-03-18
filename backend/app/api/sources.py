@@ -161,18 +161,23 @@ def test_source(current_user, source_id):
     # Real connection testing based on source type
     try:
         if source_type == 'local':
-            # Test local directory access
+            # Test local directory access with path traversal protection
             import os
             path = source.get('config', {}).get('path', '')
             if not path:
                 return jsonify({'error': 'Path not configured'}), 400
-            if not os.path.exists(path):
-                return jsonify({'error': f'Path does not exist: {path}'}), 400
-            if not os.access(path, os.R_OK):
-                return jsonify({'error': f'No read permission for: {path}'}), 403
+            # Resolve to absolute and check for traversal
+            resolved = os.path.realpath(path)
+            allowed_prefixes = ['/mnt/', '/data/', '/backup/', '/home/', '/opt/']
+            if not any(resolved.startswith(p) for p in allowed_prefixes):
+                return jsonify({'error': 'Path not in allowed directory'}), 403
+            if not os.path.exists(resolved):
+                return jsonify({'error': 'Path does not exist'}), 400
+            if not os.access(resolved, os.R_OK):
+                return jsonify({'error': 'No read permission'}), 403
             return jsonify({
                 'status': 'success',
-                'message': f'Local directory accessible: {path}',
+                'message': 'Local directory accessible',
                 'source_id': source_id
             }), 200
 

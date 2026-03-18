@@ -27,22 +27,15 @@ services:
       - RCLONE_CONFIG_PATH=/app/config/rclone.conf
       - NOTIFICATION_CONFIG_PATH=/app/config/notifications.json
       - PLATFORM_PROFILE=${PLATFORM_PROFILE:-auto}
-      - NAS_PASSWORD_1=${NAS_PASSWORD_1:-}
-      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
-      - RCLONE_CONFIG_GDRIVE_TOKEN=${RCLONE_CONFIG_GDRIVE_TOKEN:-}
+      # Notifications (non-secret config)
       - SMTP_HOST=${SMTP_HOST:-}
       - SMTP_PORT=${SMTP_PORT:-587}
       - SMTP_USER=${SMTP_USER:-}
-      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
       - SMTP_FROM=${SMTP_FROM:-}
-      - WEBHOOK_URL=${WEBHOOK_URL:-}
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - NTFY_SERVER_URL=${NTFY_SERVER_URL:-https://ntfy.sh}
       - NTFY_TOPIC=${NTFY_TOPIC:-}
-      - NTFY_USERNAME=${NTFY_USERNAME:-}
-      - NTFY_PASSWORD=${NTFY_PASSWORD:-}
-      - SUPABASE_DB_PASSWORD=${SUPABASE_DB_PASSWORD:-}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
+      # All credentials (tokens, passwords, API keys) are managed
+      # via the Web UI: Settings → Credentials (encrypted in DB)
     volumes:
       - ${CONFIG_PATH:-/volume1/docker/backupgenie/config}:/app/config
       - ${DATA_PATH:-/volume1/docker/backupgenie/data}:/data
@@ -52,9 +45,7 @@ services:
     networks:
       - backupgenie
     cap_add:
-      - SYS_ADMIN
-    security_opt:
-      - apparmor:unconfined
+      - DAC_READ_SEARCH
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s

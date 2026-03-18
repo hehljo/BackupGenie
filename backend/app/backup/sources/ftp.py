@@ -5,6 +5,7 @@ Supports: FTP, FTPS, SFTP
 import subprocess
 import logging
 import os
+import shlex
 from app.backup.base import BackupHandler
 
 logger = logging.getLogger(__name__)
@@ -16,9 +17,15 @@ class FTPBackup(BackupHandler):
     def backup(self):
         """Execute FTP backup using lftp mirror"""
         host = self.source_config.get('host', 'localhost')
-        port = self.source_config.get('port', 21)
+        port = int(self.source_config.get('port', 21))
         credentials = self.source_config.get('credentials', {})
         remote_path = self.source_config.get('path', '/')
+
+        # Validate inputs
+        if not host or not host.replace('.', '').replace('-', '').replace('_', '').isalnum():
+            raise Exception("Invalid hostname")
+        if not (1 <= port <= 65535):
+            raise Exception("Invalid port number")
 
         # Get credentials
         username = self._get_env_credential(credentials.get('username_env', 'FTP_USER'))
@@ -31,32 +38,48 @@ class FTPBackup(BackupHandler):
         try:
             self.log(f"Starting FTP backup from {protocol}://{host}:{port}{remote_path}")
 
-            # Build lftp command
             options = self.source_config.get('options', {})
+            parallel = int(options.get('parallel', 2))
+            if not (1 <= parallel <= 10):
+                parallel = 2
 
+            # Build lftp script file to avoid command injection
+            # Use lftp's set command for credentials instead of URL embedding
             lftp_commands = [
-                f"open {protocol}://{username}:{password}@{host}:{port}",
-                f"mirror --verbose --parallel={options.get('parallel', 2)}"
+                f"set net:timeout 30",
+                f"set net:max-retries 3",
+                f"open -u {shlex.quote(username)},{shlex.quote(password)} "
+                f"-p {port} {protocol}://{shlex.quote(host)}",
             ]
 
+            mirror_cmd = f"mirror --verbose --parallel={parallel}"
+
             if options.get('delete', False):
-                lftp_commands[1] += " --delete"
-
+                mirror_cmd += " --delete"
             if options.get('only_newer', True):
-                lftp_commands[1] += " --only-newer"
+                mirror_cmd += " --only-newer"
 
-            lftp_commands[1] += f" {remote_path} {self.dest_path}"
+            mirror_cmd += f" {shlex.quote(remote_path)} {shlex.quote(self.dest_path)}"
+            lftp_commands.append(mirror_cmd)
             lftp_commands.append("bye")
 
-            # Execute lftp
-            lftp_script = '; '.join(lftp_commands)
+            lftp_script = '\n'.join(lftp_commands)
 
-            result = subprocess.run(
-                ['lftp', '-c', lftp_script],
-                capture_output=True,
-                text=True,
-                timeout=3600
-            )
+            # Write script to temp file instead of passing via -c
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.lftp', delete=False) as f:
+                f.write(lftp_script)
+                script_path = f.name
+
+            try:
+                result = subprocess.run(
+                    ['lftp', '-f', script_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=3600
+                )
+            finally:
+                os.unlink(script_path)
 
             if result.stdout:
                 self.log(result.stdout)
@@ -80,7 +103,7 @@ class FTPBackup(BackupHandler):
             self.log("ERROR: FTP backup timeout")
             raise Exception("FTP backup timeout")
         except Exception as e:
-            self.log(f"ERROR: {str(e)}")
+            self.log(f"ERROR: FTP backup failed")
             raise
 
 
@@ -90,9 +113,13 @@ class SFTPBackup(BackupHandler):
     def backup(self):
         """Execute SFTP backup using rsync"""
         host = self.source_config.get('host', 'localhost')
-        port = self.source_config.get('port', 22)
+        port = int(self.source_config.get('port', 22))
         credentials = self.source_config.get('credentials', {})
         remote_path = self.source_config.get('path', '/')
+
+        # Validate inputs
+        if not (1 <= port <= 65535):
+            raise Exception("Invalid port number")
 
         # Get credentials
         username = self._get_env_credential(credentials.get('username_env', 'SFTP_USER'))
@@ -102,9 +129,9 @@ class SFTPBackup(BackupHandler):
         password_env = credentials.get('password_env', '')
 
         try:
-            self.log(f"Starting SFTP backup from {username}@{host}:{port}{remote_path}")
+            self.log(f"Starting SFTP backup from {host}:{remote_path}")
 
-            # Build rsync command with SSH
+            # Build rsync command as array (no shell interpretation)
             cmd = ['rsync', '-avz', '--stats']
 
             options = self.source_config.get('options', {})
@@ -115,17 +142,18 @@ class SFTPBackup(BackupHandler):
             if options.get('compress', True):
                 cmd.append('--compress')
 
-            # SSH options
-            ssh_opts = f"-p {port}"
+            # SSH options as array
+            ssh_cmd = ['ssh', '-p', str(port)]
             if ssh_key and os.path.exists(ssh_key):
-                ssh_opts += f" -i {ssh_key}"
-                self.log(f"Using SSH key: {ssh_key}")
+                ssh_cmd.extend(['-i', ssh_key])
+                self.log(f"Using SSH key authentication")
             elif password_env:
-                # Use sshpass for password authentication
+                # Use sshpass with SSHPASS env var (not command line)
                 password = self._get_env_credential(password_env)
-                cmd = ['sshpass', f'-p{password}'] + cmd
+                cmd = ['sshpass', '-e'] + cmd
+                os.environ['SSHPASS'] = password
 
-            cmd.extend(['-e', f'ssh {ssh_opts}'])
+            cmd.extend(['-e', ' '.join(ssh_cmd)])
 
             # Add source and destination
             source = f"{username}@{host}:{remote_path}"
@@ -139,11 +167,14 @@ class SFTPBackup(BackupHandler):
                 timeout=3600
             )
 
+            # Clean up SSHPASS from environment
+            os.environ.pop('SSHPASS', None)
+
             if result.stdout:
                 self.log(result.stdout)
 
             if result.returncode != 0:
-                raise Exception(f"rsync failed: {result.stderr}")
+                raise Exception(f"rsync failed with code {result.returncode}")
 
             # Parse rsync stats
             files_synced = 0
@@ -153,13 +184,13 @@ class SFTPBackup(BackupHandler):
                 if 'Number of files' in line:
                     try:
                         files_synced = int(line.split(':')[1].strip().split()[0].replace(',', ''))
-                    except:
+                    except (ValueError, IndexError):
                         pass
                 if 'Total file size' in line:
                     try:
                         size_str = line.split(':')[1].strip().split()[0].replace(',', '')
                         size_synced = int(size_str)
-                    except:
+                    except (ValueError, IndexError):
                         pass
 
             self.log(f"SFTP backup completed: {files_synced} files, {size_synced} bytes")
@@ -174,5 +205,6 @@ class SFTPBackup(BackupHandler):
             self.log("ERROR: SFTP backup timeout")
             raise Exception("SFTP backup timeout")
         except Exception as e:
-            self.log(f"ERROR: {str(e)}")
+            os.environ.pop('SSHPASS', None)
+            self.log(f"ERROR: SFTP backup failed")
             raise

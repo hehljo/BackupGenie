@@ -89,16 +89,28 @@ class Setting(db.Model):
     @staticmethod
     def get(key, default=None):
         setting = Setting.query.filter_by(key=key).first()
-        return setting.value if setting else default
+        if not setting:
+            return default
+        # Decrypt credential values
+        if key.startswith('credential.'):
+            from app.crypto import decrypt_value
+            decrypted = decrypt_value(setting.value)
+            return decrypted if decrypted else default
+        return setting.value
 
     @staticmethod
     def set(key, value):
         from app import db as _db
+        store_value = value
+        # Encrypt credential values
+        if key.startswith('credential.'):
+            from app.crypto import encrypt_value
+            store_value = encrypt_value(value)
         setting = Setting.query.filter_by(key=key).first()
         if setting:
-            setting.value = value
+            setting.value = store_value
         else:
-            setting = Setting(key=key, value=value)
+            setting = Setting(key=key, value=store_value)
             _db.session.add(setting)
         _db.session.commit()
         return setting

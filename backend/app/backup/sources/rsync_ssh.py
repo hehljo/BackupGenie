@@ -16,12 +16,16 @@ class RsyncSSHBackup(BackupHandler):
     def backup(self):
         """Execute rsync over SSH backup"""
         host = self.source_config.get('host', '')
-        port = self.source_config.get('port', 22)
+        port = int(self.source_config.get('port', 22))
         remote_path = self.source_config.get('path', '/')
         credentials = self.source_config.get('credentials', {})
 
         if not host:
             raise Exception("Host is required for rsync over SSH")
+
+        # Validate port
+        if not (1 <= port <= 65535):
+            raise Exception("Invalid port number")
 
         # Get username
         username = self._get_env_credential(credentials.get('username_env', 'SSH_USER'))
@@ -32,9 +36,9 @@ class RsyncSSHBackup(BackupHandler):
             ssh_key = os.path.expanduser(ssh_key)
 
         try:
-            self.log(f"Starting rsync backup from {username}@{host}:{remote_path}")
+            self.log(f"Starting rsync backup from {host}:{remote_path}")
 
-            # Build rsync command
+            # Build rsync command as array (no shell interpretation)
             cmd = ['rsync', '-avz', '--stats']
 
             options = self.source_config.get('options', {})
@@ -48,31 +52,40 @@ class RsyncSSHBackup(BackupHandler):
             if options.get('recursive', True):
                 cmd.append('--recursive')
 
-            # Exclude patterns
+            # Exclude patterns - validated as simple strings
             excludes = options.get('exclude', [])
             for pattern in excludes:
-                cmd.extend(['--exclude', pattern])
+                if isinstance(pattern, str) and len(pattern) < 256:
+                    cmd.extend(['--exclude', pattern])
 
             # Include patterns
             includes = options.get('include', [])
             for pattern in includes:
-                cmd.extend(['--include', pattern])
+                if isinstance(pattern, str) and len(pattern) < 256:
+                    cmd.extend(['--include', pattern])
 
-            # SSH options
-            ssh_opts = ['-p', str(port)]
+            # SSH options as array elements
+            ssh_cmd_parts = ['ssh', '-p', str(port)]
 
             if ssh_key and os.path.exists(ssh_key):
-                ssh_opts.extend(['-i', ssh_key])
-                self.log(f"Using SSH key: {ssh_key}")
+                ssh_cmd_parts.extend(['-i', ssh_key])
+                self.log("Using SSH key authentication")
 
             # Strict host key checking
             if not options.get('strict_host_key_checking', True):
-                ssh_opts.extend(['-o', 'StrictHostKeyChecking=no'])
-                ssh_opts.extend(['-o', 'UserKnownHostsFile=/dev/null'])
+                ssh_cmd_parts.extend(['-o', 'StrictHostKeyChecking=no'])
+                ssh_cmd_parts.extend(['-o', 'UserKnownHostsFile=/dev/null'])
 
-            # Add SSH options to rsync
-            ssh_command = 'ssh ' + ' '.join(ssh_opts)
-            cmd.extend(['-e', ssh_command])
+            # Pass SSH command to rsync
+            cmd.extend(['-e', ' '.join(ssh_cmd_parts)])
+
+            # Handle password auth via SSHPASS env var (not command line)
+            password_env = credentials.get('password_env', '')
+            if password_env and not ssh_key:
+                password = self._get_env_credential(password_env, required=False)
+                if password:
+                    cmd = ['sshpass', '-e'] + cmd
+                    os.environ['SSHPASS'] = password
 
             # Source and destination
             source = f"{username}@{host}:{remote_path}"
@@ -81,21 +94,25 @@ class RsyncSSHBackup(BackupHandler):
 
             cmd.extend([source, self.dest_path])
 
-            self.log(f"Executing: {' '.join(cmd[:3])} ... (SSH details hidden)")
+            self.log("Executing rsync backup...")
 
             # Execute rsync
+            timeout = int(options.get('timeout', 3600))
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=options.get('timeout', 3600)
+                timeout=timeout
             )
+
+            # Clean up SSHPASS from environment
+            os.environ.pop('SSHPASS', None)
 
             if result.stdout:
                 self.log(result.stdout)
 
             if result.returncode != 0:
-                raise Exception(f"rsync failed with code {result.returncode}: {result.stderr}")
+                raise Exception(f"rsync failed with code {result.returncode}")
 
             # Parse rsync stats
             files_synced = 0
@@ -106,20 +123,20 @@ class RsyncSSHBackup(BackupHandler):
                     try:
                         parts = line.split(':')[1].strip().split()
                         files_synced = int(parts[0].replace(',', ''))
-                    except:
+                    except (ValueError, IndexError):
                         pass
                 elif 'Total file size' in line:
                     try:
                         size_str = line.split(':')[1].strip().split()[0].replace(',', '')
                         size_synced = int(size_str)
-                    except:
+                    except (ValueError, IndexError):
                         pass
                 elif 'Total transferred file size' in line:
                     try:
                         size_str = line.split(':')[1].strip().split()[0].replace(',', '')
-                        if size_synced == 0:  # Use transferred size if total not found
+                        if size_synced == 0:
                             size_synced = int(size_str)
-                    except:
+                    except (ValueError, IndexError):
                         pass
 
             self.log(f"Rsync backup completed: {files_synced} files, {size_synced} bytes")
@@ -131,10 +148,12 @@ class RsyncSSHBackup(BackupHandler):
             }
 
         except subprocess.TimeoutExpired:
+            os.environ.pop('SSHPASS', None)
             self.log("ERROR: Rsync backup timeout")
             raise Exception("Rsync backup timeout")
         except Exception as e:
-            self.log(f"ERROR: {str(e)}")
+            os.environ.pop('SSHPASS', None)
+            self.log(f"ERROR: Rsync backup failed")
             raise
 
 

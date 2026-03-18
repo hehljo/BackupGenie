@@ -9,8 +9,18 @@ class Config:
     """Base configuration"""
 
     # Flask
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
+    SECRET_KEY = os.environ.get('SECRET_KEY', '')
     DEBUG = os.environ.get('DEBUG', 'false').lower() == 'true'
+
+    @staticmethod
+    def validate():
+        """Validate critical configuration at startup"""
+        if not Config.SECRET_KEY or Config.SECRET_KEY == 'dev-secret-key-change-in-production':
+            raise RuntimeError(
+                "FATAL: SECRET_KEY is not set or uses the insecure default. "
+                "Set a strong, random SECRET_KEY environment variable. "
+                "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(32))\""
+            )
 
     # Database
     DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:////data/backupgenie.db')

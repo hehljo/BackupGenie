@@ -34,6 +34,9 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    # Validate critical security settings
+    config_class.validate()
+
     # Babel configuration
     app.config['BABEL_DEFAULT_LOCALE'] = 'en'
     app.config['BABEL_SUPPORTED_LOCALES'] = ['en', 'de']
@@ -114,16 +117,21 @@ def create_app(config_class=Config):
 
         try:
             if User.query.count() == 0:
-                # Use environment variable or default password for development
-                # Default password meets security requirements: 12+ chars, upper, lower, digit, special
-                default_password = os.environ.get('DEFAULT_ADMIN_PASSWORD', 'AdminPassword123!')
+                import secrets
+                default_password = os.environ.get('DEFAULT_ADMIN_PASSWORD', '')
+                if not default_password:
+                    # Generate random password meeting strength requirements
+                    default_password = secrets.token_urlsafe(12) + 'A1!'
                 admin = User(
                     username='admin',
                     password_hash=generate_password_hash(default_password)
                 )
                 db.session.add(admin)
                 db.session.commit()
-                app.logger.info(f"Bootstrap: Created admin user. Default password: AdminPassword123!")
+                # Log password only once, only to container stdout (not to file)
+                print(f"[INIT] Admin user created. Password: {default_password}")
+                print("[INIT] Change this password immediately via Settings → User!")
+                app.logger.info("Bootstrap: Admin user created. Check container stdout for password.")
         except IntegrityError:
             # User already exists (race condition with multiple workers)
             db.session.rollback()

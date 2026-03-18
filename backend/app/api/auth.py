@@ -102,8 +102,10 @@ def login():
 
 
 @auth_bp.route('/register', methods=['POST'])
-def register():
-    """User registration with password validation (admin only in production)"""
+@token_required
+@limiter.limit("3 per hour")
+def register(current_user):
+    """User registration (admin only, rate limited)"""
     data = request.get_json()
 
     if not data or not data.get('username') or not data.get('password'):

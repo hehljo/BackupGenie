@@ -19,8 +19,16 @@ config_bp = Blueprint('config', __name__)
 def export_config(current_user):
     """Export all configuration as JSON"""
     try:
-        # Load sources
+        # Load sources and strip credentials
         sources = load_sources()
+        # Remove credential values from export (only keep env references)
+        for source in sources:
+            creds = source.get('credentials', {})
+            for key in list(creds.keys()):
+                if key.endswith('_env'):
+                    continue  # Keep env var name references
+                if 'token' in key.lower() or 'password' in key.lower() or 'key' in key.lower():
+                    creds[key] = '***REDACTED***'
 
         # Get system settings
         settings = {
@@ -57,16 +65,26 @@ def export_config(current_user):
         timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
         filename = f'backupgenie_config_{timestamp}.json'
 
-        # Send file
-        return send_file(
+        # Send file and schedule cleanup
+        response = send_file(
             temp_file.name,
             as_attachment=True,
             download_name=filename,
             mimetype='application/json'
         )
 
+        # Clean up temp file after response is sent
+        @response.call_on_close
+        def cleanup():
+            try:
+                os.unlink(temp_file.name)
+            except OSError:
+                pass
+
+        return response
+
     except Exception as e:
-        return jsonify({'error': f'Export failed: {str(e)}'}), 500
+        return jsonify({'error': 'Export failed'}), 500
 
 
 @config_bp.route('/import', methods=['POST'])
