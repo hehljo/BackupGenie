@@ -3,10 +3,15 @@ Sources API Endpoints
 """
 from flask import Blueprint, request, jsonify
 import json
+import logging
 import os
 
 from app.api.auth import token_required
+from app import limiter
 from app.config import Config
+from app.services.github_discovery import discover_all
+
+logger = logging.getLogger(__name__)
 
 sources_bp = Blueprint('sources', __name__)
 
@@ -119,6 +124,24 @@ def delete_source(current_user, source_id):
     save_sources(sources)
 
     return jsonify({'message': 'Source deleted successfully'}), 200
+
+
+@sources_bp.route('/github/discover', methods=['GET'])
+@token_required
+@limiter.limit("5 per hour")
+def discover_github_repos(current_user):
+    """Discover all GitHub repositories accessible with the configured token"""
+    token = os.environ.get('GITHUB_TOKEN', '')
+
+    if not token:
+        return jsonify({'error': 'GITHUB_TOKEN not configured in environment'}), 400
+
+    try:
+        result = discover_all(token)
+        return jsonify(result), 200
+    except Exception as e:
+        logger.error(f"GitHub discovery failed: {e}")
+        return jsonify({'error': 'GitHub API request failed'}), 502
 
 
 @sources_bp.route('/<source_id>/test', methods=['POST'])

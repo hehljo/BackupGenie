@@ -94,6 +94,9 @@ export const sourcesAPI = {
 
   test: (sourceId) =>
     api.post(`/sources/${sourceId}/test`),
+
+  discoverGitHub: () =>
+    api.get('/sources/github/discover'),
 }
 
 // Settings API

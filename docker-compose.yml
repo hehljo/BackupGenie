@@ -1,8 +1,8 @@
 services:
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     image: backupgenie/backend:latest
     container_name: backupgenie-backend
     restart: unless-stopped
@@ -14,11 +14,13 @@ services:
       - DEBUG=${DEBUG:-false}
       - DATABASE_URL=sqlite:////data/backupgenie.db
       - BACKUP_BASE_PATH=/mnt/backup
-      - MAX_PARALLEL_TASKS=${MAX_PARALLEL_TASKS:-2}
+      - MAX_PARALLEL_TASKS=${MAX_PARALLEL_TASKS:-auto}
       - LOG_RETENTION_DAYS=${LOG_RETENTION_DAYS:-30}
       - SOURCES_CONFIG_PATH=/app/config/sources.json
       - RCLONE_CONFIG_PATH=/app/config/rclone.conf
       - NOTIFICATION_CONFIG_PATH=/app/config/notifications.json
+      # Platform auto-detection (auto|raspberrypi|synology|server)
+      - PLATFORM_PROFILE=${PLATFORM_PROFILE:-auto}
       # Credentials from secrets file
       - NAS_PASSWORD_1=${NAS_PASSWORD_1:-}
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
@@ -38,29 +40,31 @@ services:
       - NTFY_TOPIC=${NTFY_TOPIC:-}
       - NTFY_USERNAME=${NTFY_USERNAME:-}
       - NTFY_PASSWORD=${NTFY_PASSWORD:-}
+      # Supabase
+      - SUPABASE_DB_PASSWORD=${SUPABASE_DB_PASSWORD:-}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
     volumes:
       - ./config:/app/config
       - ./data:/data
       - ${BACKUP_BASE_PATH:-/mnt/backup}:/mnt/backup
       - ./logs:/var/log/backupgenie
-      - /var/run/docker.sock:/var/run/docker.sock:ro  # Docker backups
-      - /run/udev:/run/udev:ro  # USB device detection
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # Docker backups (optional)
+      - /run/udev:/run/udev:ro  # USB device detection (optional)
     networks:
       - backupgenie
-    # Resource limits for Raspberry Pi (anpassbar je nach Modell)
     deploy:
       resources:
         limits:
-          cpus: '2.0'
-          memory: 1G
+          cpus: '${BACKEND_CPU_LIMIT:-2.0}'
+          memory: ${BACKEND_MEMORY_LIMIT:-1G}
         reservations:
           cpus: '0.5'
           memory: 256M
-    # Security: Use specific capabilities instead of privileged mode
+    # Security: capabilities for mount operations (SMB/NFS)
     cap_add:
-      - SYS_ADMIN  # Required for mount operations (SMB/NFS)
+      - SYS_ADMIN
     security_opt:
-      - apparmor:unconfined  # Required for mount operations
+      - apparmor:unconfined
     devices:
       - /dev/fuse  # Required for FUSE-based mounts
     healthcheck:
@@ -86,12 +90,11 @@ services:
         condition: service_healthy
     networks:
       - backupgenie
-    # Resource limits for Raspberry Pi
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 256M
+          cpus: '${FRONTEND_CPU_LIMIT:-1.0}'
+          memory: ${FRONTEND_MEMORY_LIMIT:-256M}
         reservations:
           cpus: '0.25'
           memory: 64M

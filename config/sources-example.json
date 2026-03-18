@@ -27,10 +27,11 @@
       "type": "github",
       "enabled": true,
       "priority": 2,
-      "repositories": [
-        "username/repo1",
-        "username/repo2"
+      "discovery_mode": "all",
+      "exclude": [
+        "username/some-fork"
       ],
+      "repositories": [],
       "credentials": {
         "token_env": "GITHUB_TOKEN"
       },

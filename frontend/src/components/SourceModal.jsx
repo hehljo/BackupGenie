@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
+import GitHubRepoSelector from './GitHubRepoSelector'
 
 // Complete list of 60+ backup source types organized by category
 const SOURCE_TYPES = [
@@ -407,34 +408,74 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
       )
     }
 
-    // Git Platforms
-    if (['github', 'gitlab', 'gitea', 'forgejo', 'bitbucket', 'codeberg'].includes(type)) {
+    // GitHub with auto-discovery
+    if (type === 'github') {
       return (
         <div className="space-y-4">
-          {type !== 'github' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {type === 'gitlab' ? 'GitLab Instance' : 'Host'} {type === 'gitlab' && '(optional)'}
-              </label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Access Token *</label>
+            <div className="relative">
               <input
-                type="text"
-                className="input"
-                value={formData.config.host || ''}
-                onChange={(e) => handleConfigChange('host', e.target.value)}
-                placeholder={
-                  type === 'gitlab' ? 'gitlab.com' :
-                  type === 'gitea' ? 'gitea.example.com' :
-                  type === 'forgejo' ? 'forgejo.example.com' :
-                  type === 'codeberg' ? 'codeberg.org' :
-                  'bitbucket.org'
-                }
+                type={showToken ? "text" : "password"}
+                className="input pr-10"
+                value={formData.config.token || ''}
+                onChange={(e) => handleConfigChange('token', e.target.value)}
+                placeholder="ghp_xxxxxxxxxxxx"
+                required
               />
+              <button
+                type="button"
+                onClick={() => setShowToken(!showToken)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700"
+              >
+                {showToken ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
             </div>
-          )}
+            <p className="text-xs text-gray-500 mt-1">
+              <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
+                Generate a personal access token
+              </a>
+            </p>
+          </div>
+
+          <hr className="border-gray-200" />
+
+          <GitHubRepoSelector
+            discoveryMode={formData.config.discovery_mode || 'manual'}
+            selectedRepos={formData.config.repositories || []}
+            excludeRepos={formData.config.exclude || []}
+            onDiscoveryModeChange={(mode) => handleConfigChange('discovery_mode', mode)}
+            onSelectedReposChange={(repos) => handleConfigChange('repositories', repos)}
+            onExcludeChange={(excludes) => handleConfigChange('exclude', excludes)}
+          />
+        </div>
+      )
+    }
+
+    // Other Git Platforms
+    if (['gitlab', 'gitea', 'forgejo', 'bitbucket', 'codeberg'].includes(type)) {
+      return (
+        <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {type === 'github' || type === 'gitlab' ? 'Repositories' : 'Repositories'} *
+              {type === 'gitlab' ? 'GitLab Instance' : 'Host'} {type === 'gitlab' && '(optional)'}
             </label>
+            <input
+              type="text"
+              className="input"
+              value={formData.config.host || ''}
+              onChange={(e) => handleConfigChange('host', e.target.value)}
+              placeholder={
+                type === 'gitlab' ? 'gitlab.com' :
+                type === 'gitea' ? 'gitea.example.com' :
+                type === 'forgejo' ? 'forgejo.example.com' :
+                type === 'codeberg' ? 'codeberg.org' :
+                'bitbucket.org'
+              }
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Repositories *</label>
             <input
               type="text"
               className="input"
@@ -454,7 +495,6 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
                 value={formData.config.token || ''}
                 onChange={(e) => handleConfigChange('token', e.target.value)}
                 placeholder={
-                  type === 'github' ? 'ghp_xxxxxxxxxxxx' :
                   type === 'gitlab' ? 'glpat-xxxxxxxxxxxx' :
                   'xxxxxxxxxxxx'
                 }
@@ -468,13 +508,6 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
                 {showToken ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
-            {type === 'github' && (
-              <p className="text-xs text-gray-500 mt-1">
-                <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
-                  Generate a personal access token
-                </a>
-              </p>
-            )}
           </div>
         </div>
       )

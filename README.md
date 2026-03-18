@@ -2,7 +2,7 @@
 
 # 🧞 BackupGenie
 
-### Automated Multi-Source Backup Manager for Raspberry Pi
+### Automated Multi-Source Backup Manager
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker](https://img.shields.io/badge/Docker-20.10%2B-blue.svg)](https://www.docker.com/)
@@ -15,7 +15,7 @@
 
 ---
 
-Ein selbstgehostetes Backup-System für Raspberry Pi mit moderner Weboberfläche zur automatischen Synchronisierung von 60+ Quellen (NAS, GitHub, Cloud-Services, Docker, Self-Hosted Apps) auf externe USB-Festplatten.
+Ein selbstgehostetes Backup-System mit moderner Weboberfläche zur automatischen Synchronisierung von 60+ Quellen (NAS, GitHub, Supabase, Cloud-Services, Docker, Self-Hosted Apps). Läuft auf Raspberry Pi, Synology NAS, jedem Linux-Server oder als Docker-Container auf jeder Plattform.
 
 [🇩🇪 Deutsch](#) • [🇬🇧 English](README.en.md)
 
@@ -31,10 +31,11 @@ Ein selbstgehostetes Backup-System für Raspberry Pi mit moderner Weboberfläche
 
 ### 🔄 60+ Backup Sources
 - **Network Storage**: NAS (SMB/NFS), rsync over SSH
-- **Git Platforms**: GitHub, GitLab, Bitbucket, Gitea
+- **Git Platforms**: GitHub (Auto-Discovery), GitLab, Bitbucket, Gitea
+- **BaaS/PaaS**: Supabase (DB + Storage + Config)
 - **Databases**: MySQL, PostgreSQL, MongoDB, Redis
 - **Cloud Storage**: Google Drive, Dropbox, OneDrive, S3
-- **Self-Hosted**: Nextcloud, Plex, Home Assistant, Vaultwarden
+- **Self-Hosted**: Nextcloud, Plex, Home Assistant, Vaultwarden, Portainer
 - **Docker**: Volumes, Containers, Images
 - **Local**: Filesystems, Home Directories
 
@@ -44,12 +45,13 @@ Ein selbstgehostetes Backup-System für Raspberry Pi mit moderner Weboberfläche
 <td width="50%">
 
 ### 🎯 Smart Automation
-- ⚡ **USB-Trigger**: Automatischer Start beim Einstecken
+- ⚡ **USB-Trigger**: Automatischer Start beim Einstecken (Pi)
+- 🔍 **Auto-Discovery**: GitHub Repos automatisch erkennen
 - 🌐 **Modern Web UI**: React-basierte SPA
 - 🔐 **Secure**: SSH-Key Auth, SSL/TLS, RBAC
 - 📊 **Real-time Monitoring**: Live Dashboard & Logs
 - 🐳 **Docker-based**: One-command deployment
-- 🥧 **Raspberry Pi optimized**: ARM-compatible
+- 🖥️ **Universal**: Raspberry Pi, Synology, Linux, Docker
 - 🌍 **Multi-Language**: 🇩🇪 German & 🇬🇧 English
 
 </td>
@@ -61,7 +63,7 @@ Ein selbstgehostetes Backup-System für Raspberry Pi mit moderner Weboberfläche
 ## 🚀 Quick Start
 
 > [!NOTE]
-> Requires Raspberry Pi 3/4/5 with 2GB+ RAM and Docker installed.
+> Requires Docker 20.10+ and 2GB+ RAM. Runs on Raspberry Pi, Synology NAS, Linux servers, or any Docker host.
 
 ### One-Line Install
 
@@ -85,7 +87,7 @@ nano .env  # Edit your settings
 docker compose up -d
 
 # 4. Open Web UI
-open http://raspberrypi.local:3000
+open http://localhost:3000
 ```
 
 **Default Login**: `admin` / Check logs: `docker compose logs backend | grep "Initial password"`
@@ -99,8 +101,10 @@ open http://raspberrypi.local:3000
 
 - [Requirements](#-requirements)
 - [Installation](#-installation)
-  - [Raspberry Pi Setup](#raspberry-pi-setup)
-  - [Docker Installation](#docker-installation)
+  - [Synology NAS / Portainer](#-synology-nas--portainer)
+  - [Linux Server / VPS](#-linux-server--vps)
+  - [Raspberry Pi](#-raspberry-pi)
+  - [Docker (Generic)](#-docker-generic)
   - [Initial Configuration](#initial-configuration)
 - [Configuration](#️-configuration)
   - [Backup Sources](#backup-sources)
@@ -125,21 +129,19 @@ open http://raspberrypi.local:3000
 ## 🔧 Requirements
 
 ### Hardware
-| Component | Minimum | Recommended |
-|-----------|---------|-------------|
-| **Board** | Raspberry Pi 3 | Raspberry Pi 4/5 |
-| **RAM** | 2 GB | 4 GB |
-| **Storage** | 16 GB microSD | 32 GB+ microSD |
-| **Network** | WLAN | Ethernet |
-| **USB** | USB 2.0 Drive | USB 3.0+ SSD |
+| Platform | RAM | Architektur |
+|----------|-----|-------------|
+| **Raspberry Pi 3/4/5** | 2 GB+ | ARM/ARM64 |
+| **Synology NAS** | 2 GB+ | x86_64/ARM64 |
+| **Linux Server** | 2 GB+ | x86_64/ARM64 |
+| **Docker Host** | 2 GB+ | x86_64/ARM64/ARM |
+
+Hardware wird automatisch erkannt und Ressourcen entsprechend angepasst.
 
 ### Software
 ```
-OS:      Raspberry Pi OS (Lite or Desktop)
 Docker:  20.10+
 Compose: 2.0+
-Python:  3.9+
-Node.js: 18+
 ```
 
 ### Authentication Requirements
@@ -152,109 +154,278 @@ Node.js: 18+
 
 ## 🚀 Installation
 
-### Raspberry Pi Setup
+> [!TIP]
+> BackupGenie erkennt die Hardware automatisch und passt Ressourcen (Worker, RAM-Limits, Parallel-Tasks) selbstständig an.
+
+### 📦 Synology NAS / Portainer
 
 <details>
-<summary>Expand for detailed steps</summary>
+<summary>Schritt-für-Schritt Anleitung</summary>
 
-#### 1. System Update
+#### Variante A: Portainer Stack (empfohlen)
 
+1. **SSH auf die Diskstation** und Verzeichnis vorbereiten:
 ```bash
-sudo apt update && sudo apt upgrade -y
+sudo mkdir -p /volume1/docker/backupgenie
+cd /volume1/docker/backupgenie
+sudo git clone https://github.com/hehljo/BackupGenie.git .
+cp config/example.env .env
+cp config/sources-example.json config/sources.json
 ```
 
-#### 2. Install Docker & Docker Compose
-
+2. **`.env` konfigurieren:**
 ```bash
-# Install Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-sudo usermod -aG docker pi
+nano .env
+```
+```bash
+SECRET_KEY=hier_einen_langen_zufaelligen_string_setzen
+BACKUP_BASE_PATH=/volume1/backups/backupgenie
+PLATFORM_PROFILE=auto
 
-# Install Docker Compose Plugin
-sudo apt install docker-compose-plugin -y
+# Optional: Ports anpassen (falls 5000/3000 belegt)
+API_PORT=5050
+FRONTEND_PORT=3080
 
-# Verify installation
-docker --version
-docker compose version
+# Credentials
+GITHUB_TOKEN=ghp_dein_token
+# SUPABASE_DB_PASSWORD=...
+# SUPABASE_SERVICE_ROLE_KEY=...
 ```
 
-#### 3. Install Dependencies
+3. **In Portainer** → Stacks → Add Stack:
+   - **Name:** `backupgenie`
+   - **Build method:** Repository
+   - **Repository URL:** `https://github.com/hehljo/BackupGenie`
+   - **Compose path:** `docker-compose.yml`
+   - **Environment variables:** Aus `.env` übertragen oder als `.env` File hochladen
+   - **Deploy the stack**
 
+   **Alternativ** als "Web editor": Inhalt von `docker-compose.yml` einfügen und Environment Variables setzen.
+
+4. **Backup-Verzeichnis auf der NAS anlegen:**
 ```bash
-sudo apt install -y \
-    git \
-    curl \
-    rsync \
-    rclone \
-    git-lfs \
-    openssh-client \
-    usbmount
+sudo mkdir -p /volume1/backups/backupgenie
 ```
 
-#### 4. Reboot
+5. **Web UI öffnen:** `http://diskstation-ip:3080`
+
+#### Variante B: Docker Compose direkt via SSH
 
 ```bash
-sudo reboot
+cd /volume1/docker/backupgenie
+docker compose up -d
+docker compose logs -f
 ```
+
+#### Synology-spezifische Hinweise
+
+- **Shared Folder als Backup-Ziel:** `BACKUP_BASE_PATH=/volume1/backups/backupgenie` in `.env` setzen und im `docker-compose.yml` entsprechend mounten
+- **SMB/NFS Backups von anderen NAS-Geräten:** Funktioniert, da `SYS_ADMIN` Capability gesetzt ist
+- **Ports:** Falls DSM bereits Port 5000 oder 5001 belegt, in `.env` anpassen (`API_PORT=5050`)
+- **Autostart:** Container starten automatisch nach DSM-Reboot (durch `restart: unless-stopped`)
 
 </details>
 
-### Docker Installation
+### 🐧 Linux Server / VPS
+
+<details>
+<summary>Schritt-für-Schritt Anleitung</summary>
+
+#### 1. Docker installieren (falls noch nicht vorhanden)
 
 ```bash
-# Clone repository
+curl -fsSL https://get.docker.com | bash
+sudo usermod -aG docker $USER
+# Neu einloggen damit Gruppenänderung greift
+```
+
+#### 2. BackupGenie installieren
+
+```bash
 cd /opt
 sudo git clone https://github.com/hehljo/BackupGenie.git
 sudo chown -R $USER:$USER BackupGenie
 cd BackupGenie
 
-# Copy configuration templates
+cp config/example.env .env
+cp config/sources-example.json config/sources.json
+```
+
+#### 3. Konfigurieren
+
+```bash
+nano .env
+```
+```bash
+SECRET_KEY=$(openssl rand -base64 32)
+BACKUP_BASE_PATH=/mnt/backups
+```
+
+#### 4. Starten
+
+```bash
+docker compose up -d
+docker compose ps
+```
+
+#### 5. Web UI öffnen
+
+```
+http://server-ip:3000
+```
+
+</details>
+
+### 🥧 Raspberry Pi
+
+<details>
+<summary>Schritt-für-Schritt Anleitung</summary>
+
+#### 1. System vorbereiten
+
+```bash
+sudo apt update && sudo apt upgrade -y
+
+# Docker installieren
+curl -fsSL https://get.docker.com | bash
+sudo usermod -aG docker pi
+
+# Für USB Auto-Trigger (optional)
+sudo apt install -y usbmount
+
+sudo reboot
+```
+
+#### 2. BackupGenie installieren
+
+```bash
+cd /opt
+sudo git clone https://github.com/hehljo/BackupGenie.git
+sudo chown -R pi:pi BackupGenie
+cd BackupGenie
+
+cp config/example.env .env
+cp config/sources-example.json config/sources.json
+```
+
+#### 3. Konfigurieren
+
+```bash
+nano .env
+```
+```bash
+SECRET_KEY=ein_langer_zufaelliger_string
+BACKUP_BASE_PATH=/mnt/backup
+
+# Pi 3 mit wenig RAM: Limits anpassen
+# BACKEND_MEMORY_LIMIT=512M
+# BACKEND_CPU_LIMIT=1.5
+# FRONTEND_MEMORY_LIMIT=128M
+```
+
+#### 4. Starten
+
+```bash
+docker compose up -d
+```
+
+#### 5. Web UI öffnen
+
+```
+http://raspberrypi.local:3000
+```
+
+#### USB Auto-Trigger einrichten (optional)
+
+USB-Festplatte einstecken → Backup startet automatisch:
+
+```bash
+# udev-Regel erstellen
+sudo nano /etc/udev/rules.d/99-backupgenie-backup.rules
+```
+```
+ACTION=="add", KERNEL=="sd[a-z][0-9]", TAG+="systemd", ENV{SYSTEMD_WANTS}="backupgenie-backup@%k.service"
+```
+```bash
+sudo udevadm control --reload-rules
+```
+
+Detaillierte Anleitung: [USB Auto-Trigger →](#usb-auto-trigger)
+
+</details>
+
+### 🐳 Docker (Generic)
+
+<details>
+<summary>Für jede Plattform mit Docker</summary>
+
+```bash
+git clone https://github.com/hehljo/BackupGenie.git
+cd BackupGenie
 cp config/example.env .env
 cp config/sources-example.json config/sources.json
 
-# Edit configuration
+# .env anpassen
 nano .env
 
-# Start services
+# Starten
 docker compose up -d
 
-# Check status
-docker compose ps
-docker compose logs -f
+# Web UI: http://localhost:3000
 ```
+
+#### Portainer (ohne Synology)
+
+In Portainer → Stacks → Add Stack → Web editor:
+1. `docker-compose.yml` Inhalt einfügen
+2. Environment Variables setzen (mindestens `SECRET_KEY`)
+3. Deploy
+
+#### Umgebungsvariablen für Ressourcen-Anpassung
+
+| Variable | Default | Beschreibung |
+|----------|---------|-------------|
+| `PLATFORM_PROFILE` | `auto` | `auto`, `raspberrypi`, `synology`, `server` |
+| `BACKEND_CPU_LIMIT` | `2.0` | CPU-Limit Backend |
+| `BACKEND_MEMORY_LIMIT` | `1G` | RAM-Limit Backend |
+| `FRONTEND_CPU_LIMIT` | `1.0` | CPU-Limit Frontend |
+| `FRONTEND_MEMORY_LIMIT` | `256M` | RAM-Limit Frontend |
+| `MAX_PARALLEL_TASKS` | `auto` | Parallele Backup-Tasks (auto = basierend auf RAM) |
+
+</details>
 
 ### Initial Configuration
 
 > [!IMPORTANT]
-> Generate a secure `SECRET_KEY` before first run!
+> `SECRET_KEY` in `.env` muss vor dem ersten Start gesetzt werden!
 
-**.env Configuration:**
+**.env Übersicht:**
 
 ```bash
 # Server
+SECRET_KEY=CHANGE_THIS          # Pflicht! Langer zufälliger String
 FLASK_ENV=production
-SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')
 DEBUG=false
 
-# Database
-DATABASE_URL=sqlite:////data/backupgenie.db
-
-# Backup
-BACKUP_BASE_PATH=/mnt/backup
-MAX_PARALLEL_TASKS=2
-LOG_RETENTION_DAYS=30
-
-# API
+# Ports
 API_PORT=5000
-API_HOST=0.0.0.0
-
-# Frontend
 FRONTEND_PORT=3000
 
-# Language (de or en)
-DEFAULT_LANGUAGE=de
+# Backup
+BACKUP_BASE_PATH=/mnt/backup    # Pfad wo Backups gespeichert werden
+MAX_PARALLEL_TASKS=auto          # auto = wird anhand RAM berechnet
+
+# Platform (optional)
+PLATFORM_PROFILE=auto            # auto|raspberrypi|synology|server
+
+# Credentials (je nach genutzten Backup-Quellen)
+# GITHUB_TOKEN=ghp_xxx
+# SUPABASE_DB_PASSWORD=xxx
+# SUPABASE_SERVICE_ROLE_KEY=xxx
+# NAS_PASSWORD_1=xxx
 ```
+
+**Default Login:** `admin` / Passwort in den Logs: `docker compose logs backend | grep "password"`
 
 ### 💾 Data Persistence (Docker Volumes)
 
@@ -362,7 +533,7 @@ smbclient -L //192.168.1.100 -U backup_user
 </details>
 
 <details>
-<summary>🐙 GitHub Repositories</summary>
+<summary>🐙 GitHub Repositories (Auto-Discovery)</summary>
 
 ```json
 {
@@ -371,23 +542,53 @@ smbclient -L //192.168.1.100 -U backup_user
   "type": "github",
   "enabled": true,
   "priority": 2,
-  "repositories": ["user/repo1", "user/repo2"],
+  "discovery_mode": "all",
+  "exclude": ["user/some-unwanted-fork"],
+  "repositories": [],
   "credentials": {
     "token_env": "GITHUB_TOKEN"
   },
   "options": {
-    "include_issues": false,
     "include_wikis": true,
     "include_lfs": true
-  },
-  "schedule": {
-    "trigger": "usb_mount",
-    "max_duration": 600
   }
 }
 ```
 
+**`discovery_mode`**: `"all"` sichert automatisch alle Repos (private + public + Orgs). Neue Repos werden beim nächsten Backup automatisch erkannt. Alternativ `"manual"` für manuelle Auswahl über die Web UI.
+
 **Generate token:** GitHub → Settings → Developer settings → Personal access tokens → Scopes: `repo`, `gist`
+
+</details>
+
+<details>
+<summary>🟢 Supabase (DB + Storage)</summary>
+
+```json
+{
+  "id": "supabase-project",
+  "name": "Supabase Production",
+  "type": "supabase",
+  "enabled": true,
+  "priority": 3,
+  "project_ref": "your-project-ref",
+  "region": "aws-0-eu-central-1",
+  "backup_mode": "full",
+  "credentials": {
+    "db_password_env": "SUPABASE_DB_PASSWORD",
+    "service_role_key_env": "SUPABASE_SERVICE_ROLE_KEY"
+  },
+  "options": {
+    "include_storage": true,
+    "include_auth_config": true,
+    "compress": true
+  }
+}
+```
+
+**`backup_mode`**: `"full"` sichert DB (roles + schema + data) + Storage Buckets + RLS/Auth Config. `"db_only"` für nur PostgreSQL Dumps.
+
+**Restore-Anleitung:** [docs/SUPABASE_RESTORE.md](docs/SUPABASE_RESTORE.md)
 
 </details>
 

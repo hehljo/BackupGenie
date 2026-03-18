@@ -923,6 +923,25 @@
         "backup_metadata": true,
         "backup_database": true
       }
+    },
+    {
+      "id": "supabase-project",
+      "name": "Supabase Production",
+      "type": "supabase",
+      "enabled": true,
+      "priority": 58,
+      "project_ref": "abcdefghijklmnop",
+      "region": "aws-0-us-east-1",
+      "backup_mode": "full",
+      "credentials": {
+        "db_password_env": "SUPABASE_DB_PASSWORD",
+        "service_role_key_env": "SUPABASE_SERVICE_ROLE_KEY"
+      },
+      "options": {
+        "include_storage": true,
+        "include_auth_config": true,
+        "compress": true
+      }
     }
   ]
 }

@@ -29,6 +29,7 @@ from app.backup.sources.docker import DockerVolumeBackup, DockerImageBackup
 from app.backup.sources.rsync_ssh import RsyncSSHBackup, NASBackup
 from app.backup.sources.selfhosted import SelfHostedBackup
 from app.backup.sources.proxmox import ProxmoxBackup
+from app.backup.sources.supabase import SupabaseBackup
 from app.notifications.manager import NotificationManager
 
 logging.basicConfig(level=logging.INFO)
@@ -147,6 +148,9 @@ class BackupExecutor:
             # Self-Hosted Services - Specialized
             'syncthing': SelfHostedBackup,
             'restic': SelfHostedBackup,
+
+            # Cloud Platforms
+            'supabase': SupabaseBackup,
         }
 
     def load_sources(self):

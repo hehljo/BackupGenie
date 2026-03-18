@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     unzip \
     ca-certificates \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # Install rclone with version pinning and automatic architecture detection
@@ -38,17 +39,21 @@ RUN set -x && \
 # Set working directory
 WORKDIR /app
 
-# Copy requirements
-COPY requirements.txt .
+# Copy requirements first (better layer caching)
+COPY backend/requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY . .
+COPY backend/ .
 
-# Create necessary directories
-RUN mkdir -p /data /var/log/backupgenie /app/config
+# Copy hardware detection script
+COPY scripts/detect-hardware.sh /app/scripts/detect-hardware.sh
+
+# Create necessary directories and set permissions
+RUN mkdir -p /data /var/log/backupgenie /app/config /app/scripts \
+    && chmod +x /app/entrypoint.sh /app/scripts/detect-hardware.sh
 
 # Expose port
 EXPOSE 5000
@@ -57,5 +62,5 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:5000/health || exit 1
 
-# Run application
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--timeout", "300", "run:app"]
+# Entrypoint handles hardware detection and starts gunicorn
+ENTRYPOINT ["/app/entrypoint.sh"]
