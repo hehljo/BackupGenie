@@ -4,7 +4,7 @@ Coordinates backup operations across multiple sources
 """
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 
@@ -268,7 +268,7 @@ class BackupExecutor:
                             failed_count += 1
 
                 # Update backup status
-                backup.completed_at = datetime.now(timezone.utc)
+                backup.completed_at = datetime.utcnow()
                 backup.duration = int((backup.completed_at - backup.started_at).total_seconds())
                 backup.total_size = total_size
 
@@ -310,7 +310,7 @@ class BackupExecutor:
                 logger.error(f"Backup {self.backup_id} failed: {e}")
                 backup.status = 'failed'
                 backup.error_message = str(e)
-                backup.completed_at = datetime.now(timezone.utc)
+                backup.completed_at = datetime.utcnow()
                 db.session.commit()
 
                 # Send notification: Backup failed
@@ -362,7 +362,7 @@ class BackupExecutor:
 
                 # Update result
                 result.status = 'completed'
-                result.completed_at = datetime.now(timezone.utc)
+                result.completed_at = datetime.utcnow()
                 result.duration = int((result.completed_at - result.started_at).total_seconds())
                 result.files_synced = backup_result.get('files_synced', 0)
                 result.size_synced = backup_result.get('size_synced', 0)
@@ -382,7 +382,7 @@ class BackupExecutor:
                 logger.error(f"Error backing up source {source_id}: {e}")
                 result.status = 'failed'
                 result.error_message = str(e)
-                result.completed_at = datetime.now(timezone.utc)
+                result.completed_at = datetime.utcnow()
                 result.duration = int((result.completed_at - result.started_at).total_seconds())
                 db.session.commit()
 
