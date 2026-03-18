@@ -19,7 +19,15 @@ class BackupHandler(ABC):
             source_config: Configuration dict for the source
             dest_path: Destination path for backups
         """
-        self.source_config = source_config
+        # Flatten: merge config sub-object into top level so handlers
+        # can access values directly (e.g. self.source_config.get('host'))
+        # regardless of whether the frontend nests them under 'config' or not.
+        if 'config' in source_config and isinstance(source_config['config'], dict):
+            merged = dict(source_config)
+            merged.update(source_config['config'])
+            self.source_config = merged
+        else:
+            self.source_config = source_config
         self.dest_path = dest_path
         self.logs = []
 
