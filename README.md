@@ -225,7 +225,11 @@ GITHUB_TOKEN=ghp_dein_token
 # SUPABASE_SERVICE_ROLE_KEY=...
 ```
 
-#### 4. In Portainer den Stack anlegen
+#### 4. `.env` am PC vorbereiten
+
+Die Datei `config/example.env` aus dem ZIP am PC öffnen, anpassen und als `.env` speichern (siehe Schritt 3 für die Werte). Diese Datei brauchst du gleich in Portainer.
+
+#### 5. In Portainer den Stack anlegen
 
 **Portainer** → **Stacks** → **Add Stack**:
 
@@ -234,9 +238,15 @@ GITHUB_TOKEN=ghp_dein_token
 | **Name** | `backupgenie` |
 | **Build method** | Repository |
 | **Repository URL** | `https://github.com/hehljo/BackupGenie` |
-| **Repository reference** | `refs/heads/main` |
+| **Repository reference** | `refs/heads/main` (Pflichtfeld!) |
 | **Compose path** | `docker-compose.yml` |
-| **Env variables** | Aus `.env` übertragen (Advanced mode) |
+
+> **Privates Repo?** → **Authentication** aktivieren → Username: dein GitHub-User → Password: Personal Access Token (classic, Scope: `repo`)
+
+**Environment variables:**
+- Auf **Advanced mode** klicken
+- Inhalt deiner vorbereiteten `.env` komplett reinfügen
+- Oder: **Load variables from .env file** → deine `.env` hochladen
 
 → **Deploy the stack**
 
