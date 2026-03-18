@@ -9,6 +9,7 @@
     "history": "Verlauf",
     "notifications": "Benachrichtigungen",
     "settings": "Einstellungen",
+    "logs": "Logs",
     "logout": "Abmelden"
   },
   "dashboard": {
@@ -83,6 +84,19 @@
       "saved": "Zugangsdaten erfolgreich gespeichert",
       "noChanges": "Keine Änderungen zum Speichern"
     }
+  },
+  "logs": {
+    "title": "System-Logs",
+    "subtitle": "Backend-Anwendungsprotokolle anzeigen",
+    "lines": "Zeilen",
+    "filterPlaceholder": "Logs filtern (z.B. ERROR, backup, github)...",
+    "autoRefresh": "Automatisch aktualisieren (5s)",
+    "scrollToBottom": "Nach unten scrollen",
+    "download": "Logs herunterladen",
+    "clear": "Logs löschen",
+    "confirmClear": "Sind Sie sicher, dass Sie alle Logs löschen möchten?",
+    "cleared": "Logs erfolgreich gelöscht",
+    "empty": "Keine Log-Einträge"
   },
   "login": {
     "title": "Anmeldung",

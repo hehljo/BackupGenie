@@ -6,6 +6,7 @@ All settings are persisted in the database.
 from flask import Blueprint, request, jsonify
 import shutil
 import os
+import subprocess
 
 from app import db
 from app.api.auth import token_required
@@ -181,3 +182,48 @@ def update_credentials(current_user):
         'message': 'Credentials updated',
         'updated': updated
     }), 200
+
+
+# --- System Logs ---
+
+@settings_bp.route('/logs', methods=['GET'])
+@token_required
+def get_logs(current_user):
+    """Get system log file contents"""
+    lines = request.args.get('lines', 200, type=int)
+    lines = min(lines, 2000)  # Cap at 2000
+
+    log_file = Config.LOG_FILE
+    if not os.path.isfile(log_file):
+        return jsonify({'logs': '', 'lines': 0, 'file': log_file}), 200
+
+    try:
+        # Use tail for efficient reading of last N lines
+        result = subprocess.run(
+            ['tail', '-n', str(lines), log_file],
+            capture_output=True, text=True, timeout=5
+        )
+        content = result.stdout
+        line_count = content.count('\n')
+        return jsonify({
+            'logs': content,
+            'lines': line_count,
+            'file': log_file
+        }), 200
+    except Exception as e:
+        return jsonify({'error': f'Failed to read logs: {str(e)}'}), 500
+
+
+@settings_bp.route('/logs/clear', methods=['POST'])
+@token_required
+def clear_logs(current_user):
+    """Clear the log file"""
+    log_file = Config.LOG_FILE
+    if os.path.isfile(log_file):
+        try:
+            with open(log_file, 'w') as f:
+                f.write('')
+            return jsonify({'message': 'Logs cleared'}), 200
+        except Exception as e:
+            return jsonify({'error': f'Failed to clear logs: {str(e)}'}), 500
+    return jsonify({'message': 'No log file found'}), 200

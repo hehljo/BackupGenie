@@ -333,6 +333,7 @@ class BackupExecutor:
             source_type = source.get('type')
 
             logger.info(f"Backing up source: {source_id} ({source_type})")
+            logger.debug(f"Source config: {source}")
 
             # Create source result record
             result = BackupSourceResult(
@@ -354,6 +355,7 @@ class BackupExecutor:
                 # Create destination path
                 dest_path = os.path.join(self.backup_base_path, source_id)
                 os.makedirs(dest_path, exist_ok=True)
+                logger.info(f"Backup destination: {dest_path}")
 
                 # Execute backup
                 handler = handler_class(source, dest_path)
@@ -370,7 +372,7 @@ class BackupExecutor:
 
                 db.session.commit()
 
-                logger.info(f"Source {source_id} backed up successfully")
+                logger.info(f"Source {source_id} completed: {result.files_synced} files, {result.size_synced} bytes, {result.duration}s")
 
                 return {
                     'status': 'completed',
@@ -378,7 +380,9 @@ class BackupExecutor:
                 }
 
             except Exception as e:
+                import traceback
                 logger.error(f"Error backing up source {source_id}: {e}")
+                logger.error(f"Traceback: {traceback.format_exc()}")
                 result.status = 'failed'
                 result.error_message = str(e)
                 result.completed_at = datetime.utcnow()

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Database, History, Settings, LogOut, HardDrive, Menu, X, Bell } from 'lucide-react'
+import { Home, Database, History, Settings, LogOut, HardDrive, Menu, X, Bell, FileText } from 'lucide-react'
 import clsx from 'clsx'
 import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react'
@@ -10,6 +10,7 @@ const navigation = [
   { name: 'sources', href: '/sources', icon: Database },
   { name: 'history', href: '/history', icon: History },
   { name: 'notifications', href: '/notifications', icon: Bell },
+  { name: 'logs', href: '/logs', icon: FileText },
   { name: 'settings', href: '/settings', icon: Settings },
 ]
 
@@ -86,7 +87,7 @@ export default function Layout({ children, onLogout }) {
           <LogOut className="w-5 h-5" />
           {t('nav.logout')}
         </button>
-        <p className="text-xs text-gray-400 text-center mt-2">v1.2.0</p>
+        <p className="text-xs text-gray-400 text-center mt-2">v1.3.0</p>
       </div>
     </>
   )

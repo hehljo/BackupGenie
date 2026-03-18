@@ -9,6 +9,7 @@
     "history": "History",
     "notifications": "Notifications",
     "settings": "Settings",
+    "logs": "Logs",
     "logout": "Logout"
   },
   "dashboard": {
@@ -83,6 +84,19 @@
       "saved": "Credentials saved successfully",
       "noChanges": "No changes to save"
     }
+  },
+  "logs": {
+    "title": "System Logs",
+    "subtitle": "View backend application logs",
+    "lines": "lines",
+    "filterPlaceholder": "Filter logs (e.g. ERROR, backup, github)...",
+    "autoRefresh": "Auto-refresh (5s)",
+    "scrollToBottom": "Scroll to bottom",
+    "download": "Download logs",
+    "clear": "Clear logs",
+    "confirmClear": "Are you sure you want to clear all logs?",
+    "cleared": "Logs cleared successfully",
+    "empty": "No log entries"
   },
   "login": {
     "title": "Login",

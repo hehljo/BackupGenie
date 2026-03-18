@@ -112,6 +112,12 @@ export const settingsAPI = {
 
   updateCredentials: (data) =>
     api.put('/settings/credentials', data),
+
+  getLogs: (lines = 200) =>
+    api.get(`/settings/logs?lines=${lines}`),
+
+  clearLogs: () =>
+    api.post('/settings/logs/clear'),
 }
 
 // Config Export/Import API

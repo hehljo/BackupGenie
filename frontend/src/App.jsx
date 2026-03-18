@@ -7,6 +7,7 @@ import Sources from './pages/Sources'
 import History from './pages/History'
 import Settings from './pages/Settings'
 import Notifications from './pages/Notifications'
+import Logs from './pages/Logs'
 import Login from './pages/Login'
 
 function App() {
@@ -80,6 +81,7 @@ function App() {
             <Route path="/sources" element={<Sources />} />
             <Route path="/history" element={<History />} />
             <Route path="/notifications" element={<Notifications />} />
+            <Route path="/logs" element={<Logs />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
