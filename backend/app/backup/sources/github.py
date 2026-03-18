@@ -23,8 +23,9 @@ class GitHubBackup(BackupHandler):
         Returns:
             list: Repository full_name strings (e.g. 'user/repo')
         """
-        discovery_mode = self.source_config.get('discovery_mode', 'manual')
-        exclude = set(self.source_config.get('exclude', []))
+        config = self.source_config.get('config', self.source_config)
+        discovery_mode = config.get('discovery_mode', 'manual')
+        exclude = set(config.get('exclude', []))
 
         if discovery_mode == 'all':
             # Auto-discover all repos via GitHub API
@@ -44,10 +45,10 @@ class GitHubBackup(BackupHandler):
             except Exception as e:
                 self.log(f"ERROR: Discovery failed: {e} - falling back to manual list")
                 logger.error(f"GitHub discovery failed: {e}")
-                return self.source_config.get('repositories', [])
+                return config.get('repositories', [])
         else:
             # Manual mode: use explicitly listed repos
-            return self.source_config.get('repositories', [])
+            return config.get('repositories', [])
 
     def _get_token(self):
         """Get GitHub token from DB (global credential), then env var fallback"""
@@ -70,7 +71,8 @@ class GitHubBackup(BackupHandler):
         repositories = self._resolve_repositories(token)
         files_synced = 0
         size_synced = 0
-        options = self.source_config.get('options', {})
+        config = self.source_config.get('config', self.source_config)
+        options = config.get('options', {})
 
         for repo in repositories:
             try:
