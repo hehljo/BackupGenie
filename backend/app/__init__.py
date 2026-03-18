@@ -90,9 +90,13 @@ def create_app(config_class=Config):
     app.register_blueprint(settings_bp, url_prefix='/api/v1/settings')
     app.register_blueprint(config_bp, url_prefix='/api/v1/config')
 
-    # Configure file logging
+    # Configure file logging (only on root logger, avoid duplicates)
+    root_logger = logging.getLogger()
     log_dir = os.path.dirname(Config.LOG_FILE)
-    if os.path.isdir(log_dir):
+    has_file_handler = any(
+        isinstance(h, RotatingFileHandler) for h in root_logger.handlers
+    )
+    if os.path.isdir(log_dir) and not has_file_handler:
         file_handler = RotatingFileHandler(
             Config.LOG_FILE, maxBytes=10*1024*1024, backupCount=5
         )
@@ -100,8 +104,8 @@ def create_app(config_class=Config):
         file_handler.setFormatter(logging.Formatter(
             '%(asctime)s %(levelname)s [%(name)s] %(message)s'
         ))
-        app.logger.addHandler(file_handler)
-        logging.getLogger().addHandler(file_handler)
+        root_logger.addHandler(file_handler)
+        root_logger.setLevel(getattr(logging, Config.LOG_LEVEL, logging.INFO))
 
     # Create database tables if they don't exist
     with app.app_context():

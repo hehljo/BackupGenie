@@ -32,7 +32,6 @@ from app.backup.sources.proxmox import ProxmoxBackup
 from app.backup.sources.supabase import SupabaseBackup
 from app.notifications.manager import NotificationManager
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
