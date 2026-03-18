@@ -162,27 +162,54 @@ Compose: 2.0+
 <details>
 <summary>Schritt-für-Schritt Anleitung</summary>
 
-#### Variante A: Portainer Stack (empfohlen)
+#### Verzeichnisstruktur auf der Diskstation
 
-1. **SSH auf die Diskstation** und Verzeichnis vorbereiten:
-```bash
-sudo mkdir -p /volume1/docker/backupgenie
-cd /volume1/docker/backupgenie
-sudo git clone https://github.com/hehljo/BackupGenie.git .
-cp config/example.env .env
-cp config/sources-example.json config/sources.json
+Alle Daten liegen persistent unter `/volume1/docker/backupgenie/` (Mariushosting-Konvention). Bei Updates oder Neuinstallation bleiben alle Daten erhalten.
+
+```
+/volume1/docker/backupgenie/
+├── config/          # Backup-Quellen, rclone, Notifications
+│   ├── sources.json
+│   ├── rclone.conf
+│   └── notifications.json
+├── data/            # Datenbank, User, Backup-Historie
+├── logs/            # Anwendungs-Logs
+└── backup/          # Hier landen die Backups
 ```
 
-2. **`.env` konfigurieren:**
+#### 1. Ordner per SSH anlegen
+
 ```bash
-nano .env
+sudo mkdir -p /volume1/docker/backupgenie/{config,data,logs,backup}
+```
+
+#### 2. Beispiel-Configs kopieren (einmalig)
+
+```bash
+cd /volume1/docker/backupgenie
+# Temporär Repo klonen um Config-Templates zu holen
+git clone --depth 1 https://github.com/hehljo/BackupGenie.git /tmp/backupgenie-setup
+cp /tmp/backupgenie-setup/config/sources-example.json config/sources.json
+cp /tmp/backupgenie-setup/config/example.env .env
+rm -rf /tmp/backupgenie-setup
+```
+
+#### 3. `.env` konfigurieren
+
+```bash
+nano /volume1/docker/backupgenie/.env
 ```
 ```bash
 SECRET_KEY=hier_einen_langen_zufaelligen_string_setzen
-BACKUP_BASE_PATH=/volume1/backups/backupgenie
 PLATFORM_PROFILE=auto
 
-# Optional: Ports anpassen (falls 5000/3000 belegt)
+# Pfade auf der Diskstation (persistent!)
+CONFIG_PATH=/volume1/docker/backupgenie/config
+DATA_PATH=/volume1/docker/backupgenie/data
+LOGS_PATH=/volume1/docker/backupgenie/logs
+BACKUP_BASE_PATH=/volume1/docker/backupgenie/backup
+
+# Ports (DSM belegt oft 5000/5001!)
 API_PORT=5050
 FRONTEND_PORT=3080
 
@@ -192,37 +219,57 @@ GITHUB_TOKEN=ghp_dein_token
 # SUPABASE_SERVICE_ROLE_KEY=...
 ```
 
-3. **In Portainer** → Stacks → Add Stack:
-   - **Name:** `backupgenie`
-   - **Build method:** Repository
-   - **Repository URL:** `https://github.com/hehljo/BackupGenie`
-   - **Compose path:** `docker-compose.yml`
-   - **Environment variables:** Aus `.env` übertragen oder als `.env` File hochladen
-   - **Deploy the stack**
+#### 4. In Portainer den Stack anlegen
 
-   **Alternativ** als "Web editor": Inhalt von `docker-compose.yml` einfügen und Environment Variables setzen.
+**Portainer** → **Stacks** → **Add Stack**:
 
-4. **Backup-Verzeichnis auf der NAS anlegen:**
-```bash
-sudo mkdir -p /volume1/backups/backupgenie
+| Feld | Wert |
+|------|------|
+| **Name** | `backupgenie` |
+| **Build method** | Repository |
+| **Repository URL** | `https://github.com/hehljo/BackupGenie` |
+| **Repository reference** | `refs/heads/main` |
+| **Compose path** | `docker-compose.yml` |
+| **Env variables** | Aus `.env` übertragen (Advanced mode) |
+
+→ **Deploy the stack**
+
+#### 5. Web UI öffnen
+
+```
+http://diskstation-ip:3080
 ```
 
-5. **Web UI öffnen:** `http://diskstation-ip:3080`
+**Login:** `admin` / `AdminPassword123!` (sofort ändern!)
 
 #### Variante B: Docker Compose direkt via SSH
 
 ```bash
 cd /volume1/docker/backupgenie
-docker compose up -d
+# Repo klonen
+git clone https://github.com/hehljo/BackupGenie.git /tmp/backupgenie-repo
+# docker-compose.yml von dort starten
+docker compose -f /tmp/backupgenie-repo/docker-compose.yml --env-file .env up -d
 docker compose logs -f
+```
+
+#### Updates durchführen
+
+Daten bleiben erhalten, nur das Stack-Image wird aktualisiert:
+
+In **Portainer** → Stack `backupgenie` → **Editor** → **Update the stack** → **Re-pull image and redeploy**
+
+Oder via SSH:
+```bash
+docker compose pull && docker compose up -d
 ```
 
 #### Synology-spezifische Hinweise
 
-- **Shared Folder als Backup-Ziel:** `BACKUP_BASE_PATH=/volume1/backups/backupgenie` in `.env` setzen und im `docker-compose.yml` entsprechend mounten
-- **SMB/NFS Backups von anderen NAS-Geräten:** Funktioniert, da `SYS_ADMIN` Capability gesetzt ist
-- **Ports:** Falls DSM bereits Port 5000 oder 5001 belegt, in `.env` anpassen (`API_PORT=5050`)
-- **Autostart:** Container starten automatisch nach DSM-Reboot (durch `restart: unless-stopped`)
+- **Ports:** DSM belegt 5000 (HTTP) und 5001 (HTTPS) - daher `API_PORT=5050` und `FRONTEND_PORT=3080` empfohlen
+- **SMB/NFS Backups:** Funktioniert, da `SYS_ADMIN` Capability gesetzt ist
+- **Autostart nach Reboot:** Durch `restart: unless-stopped` automatisch
+- **Berechtigungen:** Falls Permission-Fehler, Ordner mit `sudo chown -R 1000:1000 /volume1/docker/backupgenie/` anpassen
 
 </details>
 

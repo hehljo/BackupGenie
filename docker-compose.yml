@@ -44,10 +44,10 @@ services:
       - SUPABASE_DB_PASSWORD=${SUPABASE_DB_PASSWORD:-}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
     volumes:
-      - ./config:/app/config
-      - ./data:/data
+      - ${CONFIG_PATH:-./config}:/app/config
+      - ${DATA_PATH:-./data}:/data
       - ${BACKUP_BASE_PATH:-/mnt/backup}:/mnt/backup
-      - ./logs:/var/log/backupgenie
+      - ${LOGS_PATH:-./logs}:/var/log/backupgenie
       - /var/run/docker.sock:/var/run/docker.sock:ro  # Docker backups (optional)
       - /run/udev:/run/udev:ro  # USB device detection (optional)
     networks:
