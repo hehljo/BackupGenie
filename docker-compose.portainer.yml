@@ -1,0 +1,97 @@
+# BackupGenie - Portainer Stack mit pre-built Images (kein Build nötig)
+# Nutzt fertige Images von GitHub Container Registry
+#
+# Verzeichnisstruktur auf der NAS:
+# /volume1/docker/backupgenie/
+# ├── config/sources.json
+# ├── data/
+# ├── logs/
+# └── backup/
+
+services:
+  backend:
+    image: ghcr.io/hehljo/backupgenie-backend:latest
+    container_name: backupgenie-backend
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-5050}:5000"
+    environment:
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=${DEBUG:-false}
+      - DATABASE_URL=sqlite:////data/backupgenie.db
+      - BACKUP_BASE_PATH=/mnt/backup
+      - MAX_PARALLEL_TASKS=${MAX_PARALLEL_TASKS:-auto}
+      - LOG_RETENTION_DAYS=${LOG_RETENTION_DAYS:-30}
+      - SOURCES_CONFIG_PATH=/app/config/sources.json
+      - RCLONE_CONFIG_PATH=/app/config/rclone.conf
+      - NOTIFICATION_CONFIG_PATH=/app/config/notifications.json
+      - PLATFORM_PROFILE=${PLATFORM_PROFILE:-auto}
+      - NAS_PASSWORD_1=${NAS_PASSWORD_1:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - RCLONE_CONFIG_GDRIVE_TOKEN=${RCLONE_CONFIG_GDRIVE_TOKEN:-}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM=${SMTP_FROM:-}
+      - WEBHOOK_URL=${WEBHOOK_URL:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - NTFY_SERVER_URL=${NTFY_SERVER_URL:-https://ntfy.sh}
+      - NTFY_TOPIC=${NTFY_TOPIC:-}
+      - NTFY_USERNAME=${NTFY_USERNAME:-}
+      - NTFY_PASSWORD=${NTFY_PASSWORD:-}
+      - SUPABASE_DB_PASSWORD=${SUPABASE_DB_PASSWORD:-}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
+    volumes:
+      - ${CONFIG_PATH:-/volume1/docker/backupgenie/config}:/app/config
+      - ${DATA_PATH:-/volume1/docker/backupgenie/data}:/data
+      - ${BACKUP_BASE_PATH:-/volume1/docker/backupgenie/backup}:/mnt/backup
+      - ${LOGS_PATH:-/volume1/docker/backupgenie/logs}:/var/log/backupgenie
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - backupgenie
+    deploy:
+      resources:
+        limits:
+          cpus: '${BACKEND_CPU_LIMIT:-2.0}'
+          memory: ${BACKEND_MEMORY_LIMIT:-1G}
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    image: ghcr.io/hehljo/backupgenie-frontend:latest
+    container_name: backupgenie-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3080}:3000"
+    environment:
+      - VITE_API_URL=http://backend:5000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - backupgenie
+    deploy:
+      resources:
+        limits:
+          cpus: '${FRONTEND_CPU_LIMIT:-1.0}'
+          memory: ${FRONTEND_MEMORY_LIMIT:-256M}
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+networks:
+  backupgenie:
+    driver: bridge
