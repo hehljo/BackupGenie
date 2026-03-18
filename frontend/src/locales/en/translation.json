@@ -65,6 +65,7 @@
     "subtitle": "Configure your backup system",
     "general": "General Settings",
     "backupBasePath": "Backup Base Path",
+    "backupBasePathHint": "Directory inside the container where backups are stored",
     "maxParallelTasks": "Max Parallel Tasks",
     "logRetention": "Log Retention (days)",
     "user": "User Settings",
@@ -74,7 +75,14 @@
     "save": "Save Changes",
     "saving": "Saving...",
     "saved": "Settings saved successfully",
-    "error": "Error saving settings"
+    "error": "Error saving settings",
+    "credentials": {
+      "title": "Credentials",
+      "subtitle": "Global credentials used by all backup sources. Set once, used everywhere.",
+      "saveButton": "Save Credentials",
+      "saved": "Credentials saved successfully",
+      "noChanges": "No changes to save"
+    }
   },
   "login": {
     "title": "Login",

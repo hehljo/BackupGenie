@@ -65,6 +65,7 @@
     "subtitle": "Konfigurieren Sie Ihr Backup-System",
     "general": "Allgemeine Einstellungen",
     "backupBasePath": "Backup-Basispfad",
+    "backupBasePathHint": "Verzeichnis im Container, in dem Backups gespeichert werden",
     "maxParallelTasks": "Max. parallele Aufgaben",
     "logRetention": "Log-Aufbewahrung (Tage)",
     "user": "Benutzereinstellungen",
@@ -74,7 +75,14 @@
     "save": "Änderungen speichern",
     "saving": "Speichere...",
     "saved": "Einstellungen erfolgreich gespeichert",
-    "error": "Fehler beim Speichern der Einstellungen"
+    "error": "Fehler beim Speichern der Einstellungen",
+    "credentials": {
+      "title": "Zugangsdaten",
+      "subtitle": "Globale Zugangsdaten für alle Backup-Quellen. Einmal eintragen, überall nutzen.",
+      "saveButton": "Zugangsdaten speichern",
+      "saved": "Zugangsdaten erfolgreich gespeichert",
+      "noChanges": "Keine Änderungen zum Speichern"
+    }
   },
   "login": {
     "title": "Anmeldung",

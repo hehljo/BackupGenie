@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { Clock, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, FileText } from 'lucide-react'
 import { backupAPI } from '../services/api'
 import clsx from 'clsx'
 import { formatDistanceToNow } from 'date-fns'
@@ -11,6 +11,7 @@ export default function History() {
   const [total, setTotal] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(0)
+  const [expandedLogs, setExpandedLogs] = useState({})
   const limit = 10
 
   useEffect(() => {
@@ -142,25 +143,56 @@ export default function History() {
                 <p className="text-sm font-medium text-gray-700 mb-3">{t('history.sourceDetails')}</p>
                 <div className="space-y-2">
                   {backup.sources.map((source) => (
-                    <div key={source.source_id} className="flex items-center justify-between text-sm bg-gray-50 p-3 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className={clsx(
-                          'w-2 h-2 rounded-full',
-                          source.status === 'completed' ? 'bg-green-500' :
-                          source.status === 'failed' ? 'bg-red-500' :
-                          'bg-blue-500'
-                        )}></div>
-                        <span className="font-medium">{source.source_name}</span>
-                        <span className="text-gray-500">({source.source_type})</span>
+                    <div key={source.source_id} className="bg-gray-50 rounded-lg overflow-hidden">
+                      <div className="flex items-center justify-between text-sm p-3">
+                        <div className="flex items-center gap-3">
+                          <div className={clsx(
+                            'w-2 h-2 rounded-full',
+                            source.status === 'completed' ? 'bg-green-500' :
+                            source.status === 'failed' ? 'bg-red-500' :
+                            'bg-blue-500'
+                          )}></div>
+                          <span className="font-medium">{source.source_name}</span>
+                          <span className="text-gray-500">({source.source_type})</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-gray-600">
+                            {source.files_synced} files • {formatBytes(source.size_synced)}
+                          </span>
+                          <span className={clsx('badge text-xs', getStatusBadge(source.status))}>
+                            {t(`dashboard.status.${source.status}`)}
+                          </span>
+                          {(source.logs || source.error_message) && (
+                            <button
+                              onClick={() => setExpandedLogs(prev => ({
+                                ...prev,
+                                [`${backup.backup_id}-${source.source_id}`]: !prev[`${backup.backup_id}-${source.source_id}`]
+                              }))}
+                              className="text-gray-400 hover:text-gray-600"
+                            >
+                              {expandedLogs[`${backup.backup_id}-${source.source_id}`] ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-gray-600">
-                          {source.files_synced} files • {formatBytes(source.size_synced)}
-                        </span>
-                        <span className={clsx('badge text-xs', getStatusBadge(source.status))}>
-                          {t(`dashboard.status.${source.status}`)}
-                        </span>
-                      </div>
+                      {expandedLogs[`${backup.backup_id}-${source.source_id}`] && (
+                        <div className="border-t border-gray-200 p-3">
+                          {source.error_message && (
+                            <div className="mb-2 p-2 bg-red-50 rounded text-xs text-red-700 font-mono">
+                              {source.error_message}
+                            </div>
+                          )}
+                          {source.logs && (
+                            <pre className="text-xs text-gray-600 font-mono whitespace-pre-wrap max-h-48 overflow-y-auto bg-white p-2 rounded border">
+                              {source.logs}
+                            </pre>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

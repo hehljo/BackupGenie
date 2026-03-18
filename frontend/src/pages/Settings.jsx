@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Settings as SettingsIcon, User, Shield, Database, Save, Loader, Download, Upload, FileJson, CheckCircle, AlertCircle } from 'lucide-react'
+import { Settings as SettingsIcon, User, Shield, Database, Save, Loader, Download, Upload, FileJson, CheckCircle, AlertCircle, Key, Eye, EyeOff } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { authAPI, backupAPI, settingsAPI, configAPI } from '../services/api'
 import toast from 'react-hot-toast'
@@ -45,6 +45,12 @@ export default function Settings() {
   const [importMerge, setImportMerge] = useState(false)
   const [validationResult, setValidationResult] = useState(null)
 
+  // Credentials
+  const [credentials, setCredentials] = useState({})
+  const [credentialValues, setCredentialValues] = useState({})
+  const [credentialVisibility, setCredentialVisibility] = useState({})
+  const [isSavingCredentials, setIsSavingCredentials] = useState(false)
+
   // Confirm Dialogs
   const [clearBackupsConfirm, setClearBackupsConfirm] = useState(false)
   const [isClearing, setIsClearing] = useState(false)
@@ -82,11 +88,55 @@ export default function Settings() {
         })
       }
 
+      // Load credentials status
+      try {
+        const credRes = await settingsAPI.getCredentials()
+        setCredentials(credRes.data)
+      } catch (e) {
+        console.error('Error loading credentials:', e)
+      }
+
       setIsLoading(false)
     } catch (error) {
       console.error('Error loading settings:', error)
       toast.error('Failed to load settings')
       setIsLoading(false)
+    }
+  }
+
+  const credentialLabels = {
+    github_token: { label: 'GitHub Token', hint: 'Personal Access Token (Scopes: repo, gist)' },
+    nas_password_1: { label: 'NAS Password', hint: 'SMB/NFS access password' },
+    supabase_db_password: { label: 'Supabase DB Password', hint: 'Database password from Supabase dashboard' },
+    supabase_service_role_key: { label: 'Supabase Service Role Key', hint: 'For Storage & Config backup' },
+    smtp_password: { label: 'SMTP Password', hint: 'Email notification password' },
+    telegram_bot_token: { label: 'Telegram Bot Token', hint: 'From @BotFather' },
+    rclone_gdrive_token: { label: 'Google Drive Token', hint: 'rclone OAuth token for Google Drive' },
+  }
+
+  const handleCredentialsSave = async () => {
+    const toSave = {}
+    for (const [key, value] of Object.entries(credentialValues)) {
+      if (value && value.trim()) {
+        toSave[key] = value.trim()
+      }
+    }
+    if (Object.keys(toSave).length === 0) {
+      toast.error(t('settings.credentials.noChanges'))
+      return
+    }
+    setIsSavingCredentials(true)
+    try {
+      await settingsAPI.updateCredentials(toSave)
+      toast.success(t('settings.credentials.saved'))
+      setCredentialValues({})
+      // Reload credentials status
+      const credRes = await settingsAPI.getCredentials()
+      setCredentials(credRes.data)
+    } catch (error) {
+      toast.error('Failed to save credentials')
+    } finally {
+      setIsSavingCredentials(false)
     }
   }
 
@@ -151,10 +201,9 @@ export default function Settings() {
     try {
       // Call real API endpoint
       await settingsAPI.update({
+        backup_base_path: settings.backupBasePath,
         max_parallel_tasks: settings.maxParallelTasks,
         log_retention_days: settings.logRetention,
-        https_only: settings.httpsOnly,
-        auto_cleanup: settings.autoCleanup,
       })
       toast.success('Settings saved successfully!')
       setSaveStatus('success')
@@ -359,8 +408,8 @@ export default function Settings() {
           <div className="space-y-3 md:space-y-4">
             <div>
               <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">{t('settings.backupBasePath')}</label>
-              <input type="text" className="input" value={settings.backupBasePath} disabled />
-              <p className="text-xs text-gray-500 mt-1">Default location for all backups</p>
+              <input type="text" className="input" value={settings.backupBasePath} onChange={(e) => setSettings({...settings, backupBasePath: e.target.value})} />
+              <p className="text-xs text-gray-500 mt-1">{t('settings.backupBasePathHint')}</p>
             </div>
             <div>
               <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">{t('settings.maxParallelTasks')}</label>
@@ -431,6 +480,62 @@ export default function Settings() {
                 <div className="w-9 h-5 md:w-11 md:h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 md:after:h-5 md:after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
               </label>
             </div>
+          </div>
+        </div>
+
+        {/* Credentials Card */}
+        <div className="card lg:col-span-2">
+          <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+            <div className="p-1.5 md:p-2 bg-amber-100 rounded-lg shrink-0">
+              <Key className="w-5 h-5 md:w-6 md:h-6 text-amber-600" />
+            </div>
+            <div>
+              <h2 className="text-lg md:text-xl font-bold text-gray-900">{t('settings.credentials.title')}</h2>
+              <p className="text-xs text-gray-500">{t('settings.credentials.subtitle')}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+            {Object.entries(credentialLabels).map(([key, meta]) => (
+              <div key={key}>
+                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
+                  {meta.label}
+                  {credentials[key]?.configured && (
+                    <span className="ml-2 text-xs text-green-600 font-normal">
+                      ({credentials[key].source})
+                    </span>
+                  )}
+                </label>
+                <div className="relative">
+                  <input
+                    type={credentialVisibility[key] ? 'text' : 'password'}
+                    className="input pr-10"
+                    placeholder={credentials[key]?.configured ? '••••••••' : meta.hint}
+                    value={credentialValues[key] || ''}
+                    onChange={(e) => setCredentialValues({...credentialValues, [key]: e.target.value})}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCredentialVisibility({...credentialVisibility, [key]: !credentialVisibility[key]})}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {credentialVisibility[key] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={handleCredentialsSave}
+              className="btn btn-primary flex items-center gap-2"
+              disabled={isSavingCredentials || Object.values(credentialValues).every(v => !v?.trim())}
+            >
+              {isSavingCredentials ? (
+                <><Loader className="w-4 h-4 animate-spin" /><span>{t('settings.saving')}</span></>
+              ) : (
+                <><Key className="w-4 h-4" /><span>{t('settings.credentials.saveButton')}</span></>
+              )}
+            </button>
           </div>
         </div>
 

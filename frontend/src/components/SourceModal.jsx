@@ -412,33 +412,12 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
     if (type === 'github') {
       return (
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Access Token *</label>
-            <div className="relative">
-              <input
-                type={showToken ? "text" : "password"}
-                className="input pr-10"
-                value={formData.config.token || ''}
-                onChange={(e) => handleConfigChange('token', e.target.value)}
-                placeholder="ghp_xxxxxxxxxxxx"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowToken(!showToken)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700"
-              >
-                {showToken ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
-              <a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
-                Generate a personal access token
-              </a>
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              GitHub Token wird unter <strong>Settings → Credentials</strong> global konfiguriert.
+              Dort einmal eintragen, gilt für alle GitHub-Quellen.
             </p>
           </div>
-
-          <hr className="border-gray-200" />
 
           <GitHubRepoSelector
             discoveryMode={formData.config.discovery_mode || 'manual'}
