@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
-import { sourcesAPI } from '../services/api'
+import { sourcesAPI, settingsAPI } from '../services/api'
 import GitHubRepoSelector from './GitHubRepoSelector'
 
 // Complete list of 60+ backup source types organized by category
@@ -159,11 +159,9 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
   // Load credential profiles when modal opens
   useEffect(() => {
     if (isOpen) {
-      import('../services/api').then(({ settingsAPI }) => {
-        settingsAPI.getCredentials().then(res => {
-          setCredentialProfiles(res.data)
-        }).catch(() => {})
-      })
+      settingsAPI.getCredentials().then(res => {
+        setCredentialProfiles(res.data)
+      }).catch(() => {})
     }
   }, [isOpen])
 
@@ -192,6 +190,46 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
   }
 
   if (!isOpen) return null
+
+  // Credential profile selector component
+  const CredentialProfileSelect = ({ provider, label }) => {
+    const profiles = credentialProfiles[provider]?.profiles || []
+    if (profiles.length === 0) {
+      return (
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="text-sm text-amber-800">
+            Kein {label}-Profil konfiguriert. Bitte unter <strong>Einstellungen → Zugangsdaten</strong> anlegen.
+          </p>
+        </div>
+      )
+    }
+    if (profiles.length === 1) {
+      return (
+        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-sm text-green-800">
+            {label}: Profil <strong>{profiles[0].profile}</strong> wird verwendet.
+          </p>
+        </div>
+      )
+    }
+    return (
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          {label} - Profil auswählen
+        </label>
+        <select
+          className="input"
+          value={formData.config.credential_profile || ''}
+          onChange={(e) => handleConfigChange('credential_profile', e.target.value)}
+        >
+          <option value="">Automatisch (erstes Profil)</option>
+          {profiles.map(p => (
+            <option key={p.profile} value={p.profile}>{p.profile}</option>
+          ))}
+        </select>
+      </div>
+    )
+  }
 
   // Get config fields based on selected type
   const renderConfigFields = () => {
@@ -434,46 +472,6 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
             placeholder="/var/data"
             required
           />
-        </div>
-      )
-    }
-
-    // Credential profile selector component
-    const CredentialProfileSelect = ({ provider, label }) => {
-      const profiles = credentialProfiles[provider]?.profiles || []
-      if (profiles.length === 0) {
-        return (
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="text-sm text-amber-800">
-              Kein {label}-Profil konfiguriert. Bitte unter <strong>Einstellungen → Zugangsdaten</strong> anlegen.
-            </p>
-          </div>
-        )
-      }
-      if (profiles.length === 1) {
-        return (
-          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-sm text-green-800">
-              {label}: Profil <strong>{profiles[0].profile}</strong> wird verwendet.
-            </p>
-          </div>
-        )
-      }
-      return (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            {label} - Profil auswählen
-          </label>
-          <select
-            className="input"
-            value={formData.config.credential_profile || ''}
-            onChange={(e) => handleConfigChange('credential_profile', e.target.value)}
-          >
-            <option value="">Automatisch (erstes Profil)</option>
-            {profiles.map(p => (
-              <option key={p.profile} value={p.profile}>{p.profile}</option>
-            ))}
-          </select>
         </div>
       )
     }
