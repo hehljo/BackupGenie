@@ -168,3 +168,158 @@ def delete_all_backups(current_user):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Failed to delete backups: {str(e)}'}), 500
+
+
+@backup_bp.route('/restore/available/<source_id>', methods=['GET'])
+@token_required
+def get_available_restores(current_user, source_id):
+    """List available backups for restore for a given source"""
+    import os
+    import glob
+    from app.config import Config
+
+    backup_dir = os.path.join(Config.BACKUP_BASE_PATH, source_id)
+
+    if not os.path.exists(backup_dir):
+        return jsonify({'error': 'Kein Backup-Verzeichnis gefunden', 'backups': []}), 200
+
+    available = []
+
+    # Find tar.gz archives
+    for archive in sorted(glob.glob(os.path.join(backup_dir, 'supabase_*.tar.gz')), reverse=True):
+        name = os.path.basename(archive)
+        stat = os.stat(archive)
+        available.append({
+            'path': archive,
+            'filename': name,
+            'size': stat.st_size,
+            'created': datetime.fromtimestamp(stat.st_mtime).isoformat(),
+            'type': 'archive'
+        })
+
+    # Find uncompressed backup directories
+    for d in sorted(glob.glob(os.path.join(backup_dir, 'supabase_*')), reverse=True):
+        if os.path.isdir(d) and not d.endswith('_restore_tmp'):
+            name = os.path.basename(d)
+            stat = os.stat(d)
+            # Calculate directory size
+            dir_size = sum(
+                os.path.getsize(os.path.join(dirpath, f))
+                for dirpath, _, filenames in os.walk(d)
+                for f in filenames
+            )
+            available.append({
+                'path': d,
+                'filename': name,
+                'size': dir_size,
+                'created': datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                'type': 'directory'
+            })
+
+    return jsonify({
+        'source_id': source_id,
+        'backups': available
+    }), 200
+
+
+@backup_bp.route('/restore', methods=['POST'])
+@token_required
+def start_restore(current_user):
+    """Start a Supabase restore operation"""
+    data = request.get_json() or {}
+
+    backup_path = data.get('backup_path', '')
+    target_project_ref = data.get('target_project_ref', '')
+    target_region = data.get('target_region', 'aws-0-us-east-1')
+    target_db_password = data.get('target_db_password', '')
+    restore_storage = data.get('restore_storage', False)
+    target_service_role_key = data.get('target_service_role_key', '')
+
+    if not backup_path:
+        return jsonify({'error': 'backup_path ist erforderlich'}), 400
+    if not target_project_ref:
+        return jsonify({'error': 'target_project_ref ist erforderlich'}), 400
+    if not target_db_password:
+        return jsonify({'error': 'target_db_password ist erforderlich'}), 400
+
+    import os
+    if not os.path.exists(backup_path):
+        return jsonify({'error': f'Backup nicht gefunden: {backup_path}'}), 404
+
+    # Generate restore ID
+    restore_id = str(uuid.uuid4())
+
+    # Start restore in background thread
+    def run_restore():
+        from app import create_app
+        app = create_app()
+        with app.app_context():
+            from app.backup.restore import SupabaseRestore
+            restorer = SupabaseRestore()
+
+            # Store status in a simple way
+            status_file = os.path.join('/tmp', f'restore_{restore_id}.json')
+
+            try:
+                import json
+                # Write initial status
+                with open(status_file, 'w') as f:
+                    json.dump({'status': 'running', 'restore_id': restore_id}, f)
+
+                result = restorer.restore(backup_path, {
+                    'target_project_ref': target_project_ref,
+                    'target_region': target_region,
+                    'target_db_password': target_db_password,
+                    'restore_storage': restore_storage,
+                    'target_service_role_key': target_service_role_key,
+                })
+
+                # Write final status
+                with open(status_file, 'w') as f:
+                    json.dump({
+                        'status': result.get('status', 'completed'),
+                        'restore_id': restore_id,
+                        'steps_total': result.get('steps_total', 0),
+                        'steps_completed': result.get('steps_completed', 0),
+                        'errors': result.get('errors', []),
+                        'logs': result.get('logs', ''),
+                    }, f)
+
+            except Exception as e:
+                import json
+                with open(status_file, 'w') as f:
+                    json.dump({
+                        'status': 'failed',
+                        'restore_id': restore_id,
+                        'error': str(e),
+                        'logs': restorer.get_logs(),
+                    }, f)
+
+    thread = threading.Thread(target=run_restore)
+    thread.daemon = True
+    thread.start()
+
+    return jsonify({
+        'restore_id': restore_id,
+        'status': 'started',
+        'message': 'Restore gestartet'
+    }), 202
+
+
+@backup_bp.route('/restore/<restore_id>', methods=['GET'])
+@token_required
+def get_restore_status(current_user, restore_id):
+    """Get restore operation status"""
+    import os
+    import json as json_module
+
+    status_file = os.path.join('/tmp', f'restore_{restore_id}.json')
+
+    if not os.path.exists(status_file):
+        return jsonify({'error': 'Restore nicht gefunden'}), 404
+
+    with open(status_file, 'r') as f:
+        status = json_module.load(f)
+
+    return jsonify(status), 200
+

@@ -233,3 +233,72 @@ def test_source(current_user, source_id):
 
     except Exception as e:
         return jsonify({'error': f'Connection test failed: {str(e)}'}), 500
+
+
+@sources_bp.route('/supabase/test', methods=['POST'])
+@token_required
+def test_supabase_connection(current_user):
+    """Test Supabase database connection using pg_dump/psql"""
+    import subprocess
+    data = request.get_json() or {}
+
+    project_ref = data.get('project_ref', '')
+    region = data.get('region', 'aws-0-us-east-1')
+
+    if not project_ref:
+        return jsonify({'error': 'Project Ref ist erforderlich'}), 400
+
+    # 1. Check if pg_dump is available
+    try:
+        result = subprocess.run(
+            ['pg_dump', '--version'],
+            capture_output=True, text=True, timeout=5
+        )
+        if result.returncode != 0:
+            return jsonify({'error': 'pg_dump nicht verfügbar im Container'}), 500
+        pg_version = result.stdout.strip()
+    except FileNotFoundError:
+        return jsonify({'error': 'pg_dump nicht installiert'}), 500
+    except Exception as e:
+        return jsonify({'error': f'pg_dump Check fehlgeschlagen: {str(e)}'}), 500
+
+    # 2. Get DB password from credentials
+    from app.api.settings import get_credential
+    db_password = get_credential('supabase_db_password')
+
+    if not db_password:
+        return jsonify({
+            'error': 'Supabase DB Password nicht konfiguriert. Bitte unter Settings → Credentials eintragen.'
+        }), 400
+
+    # 3. Build connection string and test
+    connection_string = (
+        f"postgresql://postgres.{project_ref}:{db_password}"
+        f"@{region}.pooler.supabase.com:5432/postgres"
+    )
+
+    try:
+        result = subprocess.run(
+            ['psql', connection_string, '-c', 'SELECT 1;'],
+            capture_output=True, text=True, timeout=15
+        )
+
+        if result.returncode == 0:
+            return jsonify({
+                'status': 'success',
+                'message': f'Verbindung erfolgreich! ({pg_version})',
+            }), 200
+        else:
+            error_msg = result.stderr.strip()
+            if 'password authentication failed' in error_msg.lower():
+                return jsonify({'error': 'DB Password falsch. Prüfe Settings → Credentials.'}), 401
+            elif 'could not translate host name' in error_msg.lower():
+                return jsonify({'error': f'Region oder Project Ref falsch: {region}'}), 400
+            else:
+                return jsonify({'error': f'Verbindung fehlgeschlagen: {error_msg}'}), 503
+
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'Verbindung Timeout (15s) - prüfe Region und Project Ref'}), 504
+    except Exception as e:
+        return jsonify({'error': f'Verbindungstest fehlgeschlagen: {str(e)}'}), 500
+

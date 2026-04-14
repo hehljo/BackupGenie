@@ -95,8 +95,23 @@ export const sourcesAPI = {
   test: (sourceId) =>
     api.post(`/sources/${sourceId}/test`),
 
+  testSupabase: (data) =>
+    api.post('/sources/supabase/test', data),
+
   discoverGitHub: () =>
     api.get('/sources/github/discover'),
+}
+
+// Restore API
+export const restoreAPI = {
+  getAvailable: (sourceId) =>
+    api.get(`/backup/restore/available/${sourceId}`),
+
+  start: (data) =>
+    api.post('/backup/restore', data),
+
+  getStatus: (restoreId) =>
+    api.get(`/backup/restore/${restoreId}`),
 }
 
 // Settings API

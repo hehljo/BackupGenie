@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Clock, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, FileText } from 'lucide-react'
-import { backupAPI } from '../services/api'
+import { Clock, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, FileText, RotateCcw, Eye, EyeOff, Loader2, X } from 'lucide-react'
+import { backupAPI, restoreAPI } from '../services/api'
 import clsx from 'clsx'
 import { formatDistanceToNow } from 'date-fns'
 import { useTranslation } from 'react-i18next'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function History() {
   const { t } = useTranslation()
@@ -13,6 +14,24 @@ export default function History() {
   const [page, setPage] = useState(0)
   const [expandedLogs, setExpandedLogs] = useState({})
   const limit = 10
+
+  // Restore state
+  const [restoreModal, setRestoreModal] = useState(null) // { sourceId, sourceType, backupId }
+  const [restoreBackups, setRestoreBackups] = useState([])
+  const [restoreLoading, setRestoreLoading] = useState(false)
+  const [restoreForm, setRestoreForm] = useState({
+    backup_path: '',
+    target_project_ref: '',
+    target_region: 'aws-0-us-east-1',
+    target_db_password: '',
+    restore_storage: false,
+    target_service_role_key: '',
+  })
+  const [showRestorePassword, setShowRestorePassword] = useState(false)
+  const [showServiceKey, setShowServiceKey] = useState(false)
+  const [restoreStatus, setRestoreStatus] = useState(null) // null, 'starting', 'running', 'completed', 'failed'
+  const [restoreResult, setRestoreResult] = useState(null)
+  const [confirmRestore, setConfirmRestore] = useState(false)
 
   useEffect(() => {
     loadHistory()
@@ -73,6 +92,64 @@ export default function History() {
       partial: 'badge-warning',
     }
     return badges[status] || 'badge-info'
+  }
+
+  // Restore functions
+  const openRestoreModal = async (sourceId, sourceType) => {
+    setRestoreModal({ sourceId, sourceType })
+    setRestoreLoading(true)
+    setRestoreStatus(null)
+    setRestoreResult(null)
+    setRestoreForm({
+      backup_path: '',
+      target_project_ref: '',
+      target_region: 'aws-0-us-east-1',
+      target_db_password: '',
+      restore_storage: false,
+      target_service_role_key: '',
+    })
+
+    try {
+      const response = await restoreAPI.getAvailable(sourceId)
+      setRestoreBackups(response.data.backups || [])
+      if (response.data.backups?.length > 0) {
+        setRestoreForm(prev => ({ ...prev, backup_path: response.data.backups[0].path }))
+      }
+    } catch (error) {
+      console.error('Error loading available backups:', error)
+      setRestoreBackups([])
+    }
+    setRestoreLoading(false)
+  }
+
+  const handleRestore = async () => {
+    setConfirmRestore(false)
+    setRestoreStatus('starting')
+
+    try {
+      const response = await restoreAPI.start(restoreForm)
+      const restoreId = response.data.restore_id
+      setRestoreStatus('running')
+
+      // Poll for status
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusResponse = await restoreAPI.getStatus(restoreId)
+          const data = statusResponse.data
+
+          if (data.status !== 'running') {
+            clearInterval(pollInterval)
+            setRestoreStatus(data.status)
+            setRestoreResult(data)
+          }
+        } catch (e) {
+          // Keep polling
+        }
+      }, 2000)
+    } catch (error) {
+      setRestoreStatus('failed')
+      setRestoreResult({ error: error.response?.data?.error || 'Restore fehlgeschlagen' })
+    }
   }
 
   if (isLoading) {
@@ -170,6 +247,17 @@ export default function History() {
                           <span className={clsx('badge text-xs', getStatusBadge(source.status))}>
                             {t(`dashboard.status.${source.status}`)}
                           </span>
+                          {/* Restore Button for Supabase sources */}
+                          {source.source_type === 'supabase' && source.status === 'completed' && (
+                            <button
+                              onClick={() => openRestoreModal(source.source_id, source.source_type)}
+                              className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium"
+                              title="Restore"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              Restore
+                            </button>
+                          )}
                           <button
                             onClick={() => setExpandedLogs(prev => ({
                               ...prev,
@@ -242,6 +330,243 @@ export default function History() {
           </button>
         </div>
       )}
+
+      {/* Restore Modal */}
+      {restoreModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="fixed inset-0 bg-black/50" onClick={() => !restoreStatus && setRestoreModal(null)} />
+
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg">
+              {/* Header */}
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
+                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <RotateCcw className="w-5 h-5" />
+                  Supabase Restore
+                </h2>
+                {!restoreStatus && (
+                  <button onClick={() => setRestoreModal(null)} className="p-2 hover:bg-gray-100 rounded-lg">
+                    <X className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="p-6 space-y-4">
+                {/* Restore Status Display */}
+                {restoreStatus && (
+                  <div className={clsx(
+                    'p-4 rounded-lg border',
+                    restoreStatus === 'running' || restoreStatus === 'starting' ? 'bg-blue-50 border-blue-200' :
+                    restoreStatus === 'completed' ? 'bg-green-50 border-green-200' :
+                    restoreStatus === 'partial' ? 'bg-yellow-50 border-yellow-200' :
+                    'bg-red-50 border-red-200'
+                  )}>
+                    <div className="flex items-center gap-3">
+                      {(restoreStatus === 'running' || restoreStatus === 'starting') && (
+                        <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                      )}
+                      {restoreStatus === 'completed' && <CheckCircle className="w-5 h-5 text-green-600" />}
+                      {restoreStatus === 'partial' && <AlertCircle className="w-5 h-5 text-yellow-600" />}
+                      {restoreStatus === 'failed' && <XCircle className="w-5 h-5 text-red-600" />}
+                      <div>
+                        <p className="font-semibold text-gray-900">
+                          {restoreStatus === 'starting' && 'Restore wird gestartet...'}
+                          {restoreStatus === 'running' && 'Restore läuft...'}
+                          {restoreStatus === 'completed' && 'Restore erfolgreich!'}
+                          {restoreStatus === 'partial' && 'Restore teilweise erfolgreich'}
+                          {restoreStatus === 'failed' && 'Restore fehlgeschlagen'}
+                        </p>
+                        {restoreResult?.steps_total && (
+                          <p className="text-sm text-gray-600">
+                            {restoreResult.steps_completed}/{restoreResult.steps_total} Schritte
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {restoreResult?.errors?.length > 0 && (
+                      <div className="mt-3 space-y-1">
+                        {restoreResult.errors.map((err, i) => (
+                          <p key={i} className="text-xs text-red-700">{err}</p>
+                        ))}
+                      </div>
+                    )}
+
+                    {restoreResult?.error && (
+                      <p className="mt-2 text-sm text-red-700">{restoreResult.error}</p>
+                    )}
+
+                    {restoreResult?.logs && (
+                      <pre className="mt-3 text-xs text-gray-600 font-mono whitespace-pre-wrap max-h-48 overflow-y-auto bg-white p-2 rounded border">
+                        {restoreResult.logs}
+                      </pre>
+                    )}
+
+                    {(restoreStatus === 'completed' || restoreStatus === 'partial' || restoreStatus === 'failed') && (
+                      <button
+                        onClick={() => { setRestoreModal(null); setRestoreStatus(null); setRestoreResult(null) }}
+                        className="mt-3 btn btn-secondary text-sm"
+                      >
+                        Schließen
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Restore Form */}
+                {!restoreStatus && (
+                  <>
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-sm text-amber-800">
+                        <strong>⚠️ Achtung:</strong> Restore überschreibt Daten im Ziel-Projekt. Nur auf leere oder Test-Projekte anwenden!
+                      </p>
+                    </div>
+
+                    {/* Backup Selection */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Backup auswählen</label>
+                      {restoreLoading ? (
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <Loader2 className="w-4 h-4 animate-spin" /> Lade Backups...
+                        </div>
+                      ) : restoreBackups.length === 0 ? (
+                        <p className="text-sm text-gray-500">Keine Backups gefunden</p>
+                      ) : (
+                        <select
+                          className="input"
+                          value={restoreForm.backup_path}
+                          onChange={(e) => setRestoreForm(prev => ({ ...prev, backup_path: e.target.value }))}
+                        >
+                          {restoreBackups.map((b) => (
+                            <option key={b.path} value={b.path}>
+                              {b.filename} ({formatBytes(b.size)}) - {new Date(b.created).toLocaleString()}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+
+                    {/* Target Config */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Ziel-Project Ref *</label>
+                      <input
+                        type="text"
+                        className="input"
+                        value={restoreForm.target_project_ref}
+                        onChange={(e) => setRestoreForm(prev => ({ ...prev, target_project_ref: e.target.value }))}
+                        placeholder="abcdefghijklmnop"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Ziel-Region</label>
+                      <select
+                        className="input"
+                        value={restoreForm.target_region}
+                        onChange={(e) => setRestoreForm(prev => ({ ...prev, target_region: e.target.value }))}
+                      >
+                        <option value="aws-0-us-east-1">US East (N. Virginia)</option>
+                        <option value="aws-0-us-west-1">US West (N. California)</option>
+                        <option value="aws-0-eu-west-1">EU West (Ireland)</option>
+                        <option value="aws-0-eu-west-2">EU West (London)</option>
+                        <option value="aws-0-eu-central-1">EU Central (Frankfurt)</option>
+                        <option value="aws-0-ap-southeast-1">Asia Pacific (Singapore)</option>
+                        <option value="aws-0-ap-northeast-1">Asia Pacific (Tokyo)</option>
+                        <option value="aws-0-ap-south-1">Asia Pacific (Mumbai)</option>
+                        <option value="aws-0-sa-east-1">South America (São Paulo)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Ziel-DB Password *</label>
+                      <div className="relative">
+                        <input
+                          type={showRestorePassword ? "text" : "password"}
+                          className="input pr-10"
+                          value={restoreForm.target_db_password}
+                          onChange={(e) => setRestoreForm(prev => ({ ...prev, target_db_password: e.target.value }))}
+                          placeholder="••••••••"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowRestorePassword(!showRestorePassword)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700"
+                        >
+                          {showRestorePassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+                        checked={restoreForm.restore_storage}
+                        onChange={(e) => setRestoreForm(prev => ({ ...prev, restore_storage: e.target.checked }))}
+                      />
+                      <span className="text-sm text-gray-700">Storage-Objekte wiederherstellen</span>
+                    </label>
+
+                    {restoreForm.restore_storage && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Ziel-Service Role Key</label>
+                        <div className="relative">
+                          <input
+                            type={showServiceKey ? "text" : "password"}
+                            className="input pr-10"
+                            value={restoreForm.target_service_role_key}
+                            onChange={(e) => setRestoreForm(prev => ({ ...prev, target_service_role_key: e.target.value }))}
+                            placeholder="eyJ..."
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowServiceKey(!showServiceKey)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700"
+                          >
+                            {showServiceKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        onClick={() => setRestoreModal(null)}
+                        className="btn btn-secondary flex-1"
+                      >
+                        Abbrechen
+                      </button>
+                      <button
+                        onClick={() => setConfirmRestore(true)}
+                        disabled={!restoreForm.backup_path || !restoreForm.target_project_ref || !restoreForm.target_db_password}
+                        className="btn btn-primary flex-1 disabled:opacity-50"
+                      >
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        Restore starten
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmRestore}
+        title="Restore bestätigen"
+        message={`Daten werden auf Projekt ${restoreForm.target_project_ref} wiederhergestellt. ${restoreForm.restore_storage ? 'Storage-Objekte werden ebenfalls überschrieben!' : ''} Fortfahren?`}
+        confirmText="Ja, Restore starten"
+        cancelText="Abbrechen"
+        onConfirm={handleRestore}
+        onClose={() => setConfirmRestore(false)}
+        confirmVariant="danger"
+      />
     </div>
   )
 }

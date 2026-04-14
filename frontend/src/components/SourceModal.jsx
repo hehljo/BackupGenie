@@ -3,10 +3,12 @@ import {
   X, HardDrive, Cloud, Folder, Database, Eye, EyeOff,
   GitBranch, Server, Lock, Mail, Image, Home, FileText,
   Package, Cpu, Globe, Archive, Book, Users, Shield,
-  Activity, Boxes, Film, Music, Camera, MessageSquare, AlertCircle
+  Activity, Boxes, Film, Music, Camera, MessageSquare, AlertCircle,
+  Search, Zap, CheckCircle, Loader2
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
+import { sourcesAPI } from '../services/api'
 import GitHubRepoSelector from './GitHubRepoSelector'
 
 // Complete list of 60+ backup source types organized by category
@@ -91,6 +93,9 @@ const SOURCE_TYPES = [
   { value: 'wallabag', label: 'Wallabag', icon: Book, category: 'Content Management' },
   { value: 'linkding', label: 'Linkding', icon: Globe, category: 'Content Management' },
 
+  // Cloud Platforms (1)
+  { value: 'supabase', label: 'Supabase', icon: Zap, category: 'Cloud Platforms' },
+
   // Management Tools (4)
   { value: 'portainer', label: 'Portainer', icon: Package, category: 'Management Tools' },
   { value: 'yacht', label: 'Yacht', icon: Package, category: 'Management Tools' },
@@ -111,6 +116,9 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
   const [showToken, setShowToken] = useState(false)
   const [showApiKey, setShowApiKey] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('Network Storage')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [connectionTestStatus, setConnectionTestStatus] = useState(null) // null, 'testing', 'success', 'error'
+  const [connectionTestMessage, setConnectionTestMessage] = useState('')
   const [formData, setFormData] = useState({
     name: '',
     type: 'nas',
@@ -928,6 +936,161 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
       )
     }
 
+    // Supabase
+    if (type === 'supabase') {
+      const testConnection = async () => {
+        setConnectionTestStatus('testing')
+        setConnectionTestMessage('')
+        try {
+          // We need to save first to test, or test with inline data
+          // For now, test via a temporary source creation approach
+          const testData = {
+            project_ref: formData.config.project_ref || '',
+            region: formData.config.region || 'aws-0-us-east-1',
+          }
+          const response = await sourcesAPI.testSupabase(testData)
+          setConnectionTestStatus('success')
+          setConnectionTestMessage(response.data.message || 'Verbindung erfolgreich!')
+        } catch (error) {
+          setConnectionTestStatus('error')
+          setConnectionTestMessage(error.response?.data?.error || 'Verbindungstest fehlgeschlagen')
+        }
+      }
+
+      return (
+        <div className="space-y-4">
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              DB Password und Service Role Key werden unter <strong>Settings → Credentials</strong> global konfiguriert.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Project Ref *</label>
+            <input
+              type="text"
+              className="input"
+              value={formData.config.project_ref || ''}
+              onChange={(e) => handleConfigChange('project_ref', e.target.value)}
+              placeholder="abcdefghijklmnop"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">Findest du in deinem Supabase Dashboard unter Project Settings</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Region</label>
+            <select
+              className="input"
+              value={formData.config.region || 'aws-0-us-east-1'}
+              onChange={(e) => handleConfigChange('region', e.target.value)}
+            >
+              <option value="aws-0-us-east-1">US East (N. Virginia)</option>
+              <option value="aws-0-us-west-1">US West (N. California)</option>
+              <option value="aws-0-eu-west-1">EU West (Ireland)</option>
+              <option value="aws-0-eu-west-2">EU West (London)</option>
+              <option value="aws-0-eu-central-1">EU Central (Frankfurt)</option>
+              <option value="aws-0-ap-southeast-1">Asia Pacific (Singapore)</option>
+              <option value="aws-0-ap-northeast-1">Asia Pacific (Tokyo)</option>
+              <option value="aws-0-ap-south-1">Asia Pacific (Mumbai)</option>
+              <option value="aws-0-sa-east-1">South America (São Paulo)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Backup Mode</label>
+            <select
+              className="input"
+              value={formData.config.backup_mode || 'db_only'}
+              onChange={(e) => handleConfigChange('backup_mode', e.target.value)}
+            >
+              <option value="db_only">Database Only (Roles + Schema + Data)</option>
+              <option value="full">Full (DB + Storage + Config)</option>
+            </select>
+          </div>
+
+          {formData.config.backup_mode === 'full' && (
+            <div className="space-y-3 pl-4 border-l-2 border-blue-200">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+                  checked={formData.config.options?.include_storage !== false}
+                  onChange={(e) => handleConfigChange('options', {
+                    ...formData.config.options,
+                    include_storage: e.target.checked
+                  })}
+                />
+                <span className="text-sm text-gray-700">Storage Buckets einschließen</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+                  checked={formData.config.options?.include_auth_config !== false}
+                  onChange={(e) => handleConfigChange('options', {
+                    ...formData.config.options,
+                    include_auth_config: e.target.checked
+                  })}
+                />
+                <span className="text-sm text-gray-700">Auth/RLS Config einschließen</span>
+              </label>
+            </div>
+          )}
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+              checked={formData.config.options?.compress !== false}
+              onChange={(e) => handleConfigChange('options', {
+                ...formData.config.options,
+                compress: e.target.checked
+              })}
+            />
+            <span className="text-sm text-gray-700">Backup komprimieren (tar.gz)</span>
+          </label>
+
+          {/* Connection Test Button */}
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={testConnection}
+              disabled={!formData.config.project_ref || connectionTestStatus === 'testing'}
+              className={clsx(
+                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                connectionTestStatus === 'success'
+                  ? 'bg-green-100 text-green-700 border border-green-300'
+                  : connectionTestStatus === 'error'
+                  ? 'bg-red-100 text-red-700 border border-red-300'
+                  : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200',
+                (!formData.config.project_ref || connectionTestStatus === 'testing') && 'opacity-50 cursor-not-allowed'
+              )}
+            >
+              {connectionTestStatus === 'testing' ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : connectionTestStatus === 'success' ? (
+                <CheckCircle className="w-4 h-4" />
+              ) : connectionTestStatus === 'error' ? (
+                <AlertCircle className="w-4 h-4" />
+              ) : (
+                <Zap className="w-4 h-4" />
+              )}
+              {connectionTestStatus === 'testing' ? 'Teste...' : 'Verbindung testen'}
+            </button>
+            {connectionTestMessage && (
+              <p className={clsx(
+                'text-xs mt-2',
+                connectionTestStatus === 'success' ? 'text-green-600' : 'text-red-600'
+              )}>
+                {connectionTestMessage}
+              </p>
+            )}
+          </div>
+        </div>
+      )
+    }
+
     // Default fallback
     return (
       <div className="p-4 bg-blue-50 rounded-lg">
@@ -986,52 +1149,140 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
                   Source Type * ({SOURCE_TYPES.length}+ types)
                 </label>
 
-                {/* Category Selector */}
-                <div className="flex overflow-x-auto gap-2 mb-3 pb-2">
-                  {Object.keys(SOURCE_CATEGORIES).map((category) => (
+                {/* Search Field */}
+                <div className="relative mb-3">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    className="input pl-10 pr-8"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Suche: z.B. Supabase, GitHub, Docker..."
+                  />
+                  {searchQuery && (
                     <button
-                      key={category}
                       type="button"
-                      onClick={() => setSelectedCategory(category)}
-                      className={clsx(
-                        'px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all',
-                        selectedCategory === category
-                          ? 'bg-primary-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      )}
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
                     >
-                      {category} ({SOURCE_CATEGORIES[category].length})
+                      <X className="w-4 h-4" />
                     </button>
-                  ))}
+                  )}
                 </div>
 
-                {/* Type Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                  {SOURCE_CATEGORIES[selectedCategory]?.map(({ value, label, icon: Icon }) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => handleTypeChange(value)}
-                      className={clsx(
-                        'flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all text-left',
-                        formData.type === value
-                          ? 'border-primary-600 bg-primary-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      )}
-                    >
-                      <Icon className={clsx(
-                        'w-5 h-5 md:w-6 md:h-6',
-                        formData.type === value ? 'text-primary-600' : 'text-gray-600'
-                      )} />
-                      <span className={clsx(
-                        'text-xs md:text-sm font-medium text-center',
-                        formData.type === value ? 'text-primary-700' : 'text-gray-700'
-                      )}>
-                        {label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+                {(() => {
+                  const q = searchQuery.toLowerCase().trim()
+
+                  if (q) {
+                    // Search mode: show all matching types grouped by category
+                    const filtered = SOURCE_TYPES.filter(t =>
+                      t.label.toLowerCase().includes(q) ||
+                      t.category.toLowerCase().includes(q) ||
+                      t.value.toLowerCase().includes(q)
+                    )
+                    const groupedResults = filtered.reduce((acc, t) => {
+                      if (!acc[t.category]) acc[t.category] = []
+                      acc[t.category].push(t)
+                      return acc
+                    }, {})
+
+                    if (filtered.length === 0) {
+                      return (
+                        <div className="text-center py-6 text-gray-500 text-sm">
+                          Kein Source-Typ gefunden für "{searchQuery}"
+                        </div>
+                      )
+                    }
+
+                    return (
+                      <div className="space-y-3">
+                        {Object.entries(groupedResults).map(([category, types]) => (
+                          <div key={category}>
+                            <p className="text-xs font-semibold text-gray-500 uppercase mb-2">{category}</p>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                              {types.map(({ value, label, icon: Icon }) => (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => { handleTypeChange(value); setSearchQuery('') }}
+                                  className={clsx(
+                                    'flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all text-left',
+                                    formData.type === value
+                                      ? 'border-primary-600 bg-primary-50'
+                                      : 'border-gray-200 hover:border-gray-300'
+                                  )}
+                                >
+                                  <Icon className={clsx(
+                                    'w-5 h-5 md:w-6 md:h-6',
+                                    formData.type === value ? 'text-primary-600' : 'text-gray-600'
+                                  )} />
+                                  <span className={clsx(
+                                    'text-xs md:text-sm font-medium text-center',
+                                    formData.type === value ? 'text-primary-700' : 'text-gray-700'
+                                  )}>
+                                    {label}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  }
+
+                  // Normal category mode
+                  return (
+                    <>
+                      {/* Category Selector */}
+                      <div className="flex overflow-x-auto gap-2 mb-3 pb-2">
+                        {Object.keys(SOURCE_CATEGORIES).map((category) => (
+                          <button
+                            key={category}
+                            type="button"
+                            onClick={() => setSelectedCategory(category)}
+                            className={clsx(
+                              'px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all',
+                              selectedCategory === category
+                                ? 'bg-primary-600 text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            )}
+                          >
+                            {category} ({SOURCE_CATEGORIES[category].length})
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Type Grid */}
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                        {SOURCE_CATEGORIES[selectedCategory]?.map(({ value, label, icon: Icon }) => (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => handleTypeChange(value)}
+                            className={clsx(
+                              'flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all text-left',
+                              formData.type === value
+                                ? 'border-primary-600 bg-primary-50'
+                                : 'border-gray-200 hover:border-gray-300'
+                            )}
+                          >
+                            <Icon className={clsx(
+                              'w-5 h-5 md:w-6 md:h-6',
+                              formData.type === value ? 'text-primary-600' : 'text-gray-600'
+                            )} />
+                            <span className={clsx(
+                              'text-xs md:text-sm font-medium text-center',
+                              formData.type === value ? 'text-primary-700' : 'text-gray-700'
+                            )}>
+                              {label}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )
+                })()}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
