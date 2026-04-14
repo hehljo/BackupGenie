@@ -1,45 +1,72 @@
-# Claude Code Guidelines for BackupGenie
+# CLAUDE.md
 
-## IMPORTANT: No Claude References in Code
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Effective Date:** November 16, 2025
+## Project Overview
 
-### Strict Rules:
+BackupGenie is an automated multi-source backup manager originally designed for Raspberry Pi. Flask/Python backend with React/Vite frontend, deployed via Docker Compose. Supports 60+ backup sources (NAS, GitHub, Cloud, Docker, Self-Hosted Apps, Databases).
 
-1. **No Claude/Anthropic References**
-   - Do NOT add "Generated with Claude Code" in commits
-   - Do NOT add "Co-Authored-By: Claude" in commits
-   - Do NOT mention Claude or Anthropic in any code files
-   - Do NOT mention Claude in documentation unless specifically about AI tooling
+## Build & Run
 
-2. **Git Commit Messages**
-   - Use standard commit messages without AI attribution
-   - Focus on what was changed, not who/what made the change
-   - Example: "Add password change endpoint" instead of "🤖 Generated with Claude Code"
+```bash
+# Start all services
+docker compose up -d
 
-3. **Code Comments**
-   - Write comments as if written by a human developer
-   - Avoid meta-references to AI assistance
-   - Focus on explaining the code, not its origin
+# Start with Pi 3 optimized config
+docker compose -f docker-compose.rpi3.yml up -d
 
-4. **Documentation**
-   - Write docs in first-person plural ("we", "our")
-   - Avoid mentioning the development process unless relevant
-   - Focus on user-facing information
+# Backend only (development)
+cd backend && pip install -r requirements.txt && python run.py
 
-### Exceptions:
+# Frontend only (development)
+cd frontend && npm ci && npm run dev
 
-- This file (claude.md) - internal development notes
-- .gitignore or .claudeignore - configuration files
-- Private development notes not committed to the repository
+# Build Docker images
+docker compose build
+```
 
-### Reasoning:
+## Architecture
 
-- Users don't need to know how code was created
-- Focus should be on code quality, not tools used
-- Professional appearance in public repository
-- Avoid confusion about project ownership and contributions
+### Backend (`backend/`)
+- **Framework**: Flask 3.1 with SQLAlchemy (SQLite), served via Gunicorn
+- **App Factory**: `app/__init__.py` → `create_app()` registers all blueprints
+- **API Blueprints** (`app/api/`): `backup`, `sources`, `auth`, `notifications`, `settings`, `config` — all under `/api/v1/`
+- **Backup Engine** (`app/backup/`):
+  - `base.py` — `BackupHandler` ABC: all source handlers extend this
+  - `executor.py` — `BackupExecutor`: coordinates parallel/sequential backup runs, manages lifecycle, sends notifications
+  - `sources/` — One handler per source type (github, docker, smb, rclone, selfhosted, database, etc.)
+- **Handler Registry**: `executor.py` maps type strings (e.g. `'github'`, `'portainer'`, `'docker-volume'`) to handler classes. `SelfHostedBackup` is a generic handler used for ~30 self-hosted service types.
+- **Notifications** (`app/notifications/`): Uses Apprise for email, Telegram, ntfy, webhooks
 
----
+### Frontend (`frontend/`)
+- **Stack**: React + Vite + Tailwind CSS, served via nginx in production
+- **i18n**: German and English (`src/locales/`)
+- **Structure**: `src/pages/`, `src/components/`, `src/services/`
 
-**Last Updated:** November 16, 2025
+### Configuration
+- `config/sources.json` — Backup sources definition (copy from `sources-example.json`)
+- `config/rclone.conf` — Rclone remotes for cloud storage
+- `config/notifications.json` — Notification channels
+- `.env` — Environment variables (copy from `config/example.env`)
+- Credentials are passed via env vars (e.g. `GITHUB_TOKEN`, `NAS_PASSWORD_1`)
+
+### Docker
+- Backend Dockerfile: Python 3.13-slim + rsync + git + rclone, multi-arch (amd64/arm64/arm)
+- Frontend Dockerfile: Node 22 build stage → nginx:alpine
+- `docker-compose.yml`: Standard config with resource limits, healthchecks, Docker socket mount
+- `docker-compose.rpi3.yml`: Pi 3 optimized (reduced memory/CPU limits)
+
+## Key Patterns
+
+- All backup handlers return `{'files_synced': int, 'size_synced': int, 'logs': str}`
+- GitHub backup uses `--mirror` clone, not regular clone — preserves all refs
+- GitHub repos must be manually listed in config; no auto-discovery via API
+- `SelfHostedBackup` dispatches to different methods based on `backup_method` option: `docker-volume`, `api`, `rsync`
+- Rate limiting: 200/day, 50/hour default; health endpoint exempt
+- Auth: JWT-based (`PyJWT`), admin bootstrap on first run with default password
+
+## Important Rules (from claude.md)
+
+- **No AI attribution** in commits, code, or docs — no "Generated with Claude", no "Co-Authored-By: Claude"
+- Write as if written by a human developer
+- Use standard commit messages focused on what changed
