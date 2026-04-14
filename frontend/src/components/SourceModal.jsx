@@ -110,13 +110,13 @@ const SOURCE_CATEGORIES = SOURCE_TYPES.reduce((acc, type) => {
   return acc
 }, {})
 
-// Map source types to which credential type they need
+// Map source types to which credential provider they need
 const SOURCE_CREDENTIAL_MAP = {
-  'github': 'github_token',
-  'nas': 'nas_password_1',
-  'smb': 'nas_password_1',
-  'nfs': 'nas_password_1',
-  'supabase': 'supabase_db_password',
+  'github': 'github',
+  'nas': 'nas',
+  'smb': 'nas',
+  'nfs': 'nas',
+  'supabase': 'supabase',
 }
 
 export default function SourceModal({ isOpen, onClose, onSave, editingSource }) {
@@ -201,7 +201,7 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
     if (type === 'nas') {
       return (
         <div className="space-y-4">
-          <CredentialProfileSelect credType="nas_password_1" label="NAS Passwort" />
+          <CredentialProfileSelect provider="nas" label="NAS" />
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Host/IP *</label>
             <input
@@ -439,13 +439,13 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
     }
 
     // Credential profile selector component
-    const CredentialProfileSelect = ({ credType, label }) => {
-      const profiles = credentialProfiles[credType]?.profiles || []
+    const CredentialProfileSelect = ({ provider, label }) => {
+      const profiles = credentialProfiles[provider]?.profiles || []
       if (profiles.length === 0) {
         return (
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
             <p className="text-sm text-amber-800">
-              Kein {label} konfiguriert. Bitte unter <strong>Einstellungen → Zugangsdaten</strong> anlegen.
+              Kein {label}-Profil konfiguriert. Bitte unter <strong>Einstellungen → Zugangsdaten</strong> anlegen.
             </p>
           </div>
         )
@@ -482,7 +482,7 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
     if (type === 'github') {
       return (
         <div className="space-y-4">
-          <CredentialProfileSelect credType="github_token" label="GitHub Token" />
+          <CredentialProfileSelect provider="github" label="GitHub Token" />
 
           <GitHubRepoSelector
             discoveryMode={formData.config.discovery_mode || 'manual'}
@@ -1016,7 +1016,7 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
 
       return (
         <div className="space-y-4">
-          <CredentialProfileSelect credType="supabase_db_password" label="Supabase DB Passwort" />
+          <CredentialProfileSelect provider="supabase" label="Supabase" />
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Project Ref *</label>

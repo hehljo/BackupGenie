@@ -46,22 +46,33 @@ def get_credential(name, profile=None):
     """Get credential from DB, fall back to env var.
 
     Args:
-        name: Credential type (e.g. 'github_token')
+        name: Legacy credential key (e.g. 'github_token') or provider.field (e.g. 'github.token')
         profile: Optional profile name. If None, returns first available.
     """
+    # Resolve provider-based key: convert legacy names to provider.field
+    legacy_to_provider = {}
+    for provider, meta in CREDENTIAL_PROVIDERS.items():
+        for field, legacy_key in meta['legacy_map'].items():
+            legacy_to_provider[legacy_key] = f'{provider}.{field}'
+
+    provider_key = legacy_to_provider.get(name, name)
+
     if profile:
-        # Specific profile requested
-        db_val = Setting.get(f'credential.{name}.{profile}')
+        db_val = Setting.get(f'credential.{provider_key}.{profile}')
         if db_val:
             return db_val
     else:
-        # Try legacy single-key format first (backward compat)
+        # Try legacy single-key format (backward compat)
         db_val = Setting.get(f'credential.{name}')
+        if db_val:
+            return db_val
+        # Try provider-based keys
+        db_val = Setting.get(f'credential.{provider_key}')
         if db_val:
             return db_val
         # Try first available profile
         all_settings = Setting.query.filter(
-            Setting.key.like(f'credential.{name}.%')
+            Setting.key.like(f'credential.{provider_key}.%')
         ).first()
         if all_settings:
             from app.crypto import decrypt_value
@@ -85,51 +96,70 @@ def get_credential(name, profile=None):
     return ''
 
 
-def get_credential_profiles(name):
-    """Get all profiles for a credential type.
+def get_provider_profiles(provider):
+    """Get all profiles for a provider (e.g. 'supabase').
 
     Returns:
-        list of dicts: [{'profile': 'privat', 'configured': True, 'source': 'database'}, ...]
+        list of dicts with profile name and which fields are configured.
     """
+    meta = CREDENTIAL_PROVIDERS.get(provider)
+    if not meta:
+        return []
+
+    # Collect all profile names from DB
+    profile_names = set()
+    for field in meta['fields']:
+        key_prefix = f'credential.{provider}.{field}.'
+        settings = Setting.query.filter(Setting.key.like(key_prefix + '%')).all()
+        for s in settings:
+            profile_name = s.key.split(key_prefix, 1)[1]
+            profile_names.add(profile_name)
+
+    # Check legacy single-key entries
+    has_legacy = False
+    for field, legacy_key in meta['legacy_map'].items():
+        if Setting.query.filter_by(key=f'credential.{legacy_key}').first():
+            has_legacy = True
+            break
+
     profiles = []
-    # Check legacy single-key
-    legacy = Setting.query.filter_by(key=f'credential.{name}').first()
-    if legacy:
+    if has_legacy:
+        fields_status = {}
+        for field, legacy_key in meta['legacy_map'].items():
+            fields_status[field] = bool(Setting.get(f'credential.{legacy_key}'))
         profiles.append({
             'profile': 'default',
-            'configured': True,
-            'source': 'database'
+            'source': 'database',
+            'fields': fields_status
         })
-    # Check profiled keys
-    profiled = Setting.query.filter(
-        Setting.key.like(f'credential.{name}.%')
-    ).all()
-    for s in profiled:
-        profile_name = s.key.split(f'credential.{name}.', 1)[1]
+
+    for pname in sorted(profile_names):
+        fields_status = {}
+        for field in meta['fields']:
+            val = Setting.get(f'credential.{provider}.{field}.{pname}')
+            fields_status[field] = bool(val)
         profiles.append({
-            'profile': profile_name,
-            'configured': True,
-            'source': 'database'
+            'profile': pname,
+            'source': 'database',
+            'fields': fields_status
         })
-    # Check env fallback
-    env_map = {
-        'github_token': 'GITHUB_TOKEN',
-        'nas_password_1': 'NAS_PASSWORD_1',
-        'supabase_db_password': 'SUPABASE_DB_PASSWORD',
-        'supabase_service_role_key': 'SUPABASE_SERVICE_ROLE_KEY',
-        'smtp_password': 'SMTP_PASSWORD',
-        'telegram_bot_token': 'TELEGRAM_BOT_TOKEN',
-        'rclone_gdrive_token': 'RCLONE_CONFIG_GDRIVE_TOKEN',
-    }
-    env_key = env_map.get(name)
-    if env_key and os.environ.get(env_key):
-        # Only add env profile if no DB profiles exist
-        if not profiles:
+
+    # Env fallback
+    if not profiles:
+        has_env = False
+        fields_status = {}
+        for field, env_key in meta['env_map'].items():
+            val = os.environ.get(env_key, '')
+            fields_status[field] = bool(val)
+            if val:
+                has_env = True
+        if has_env:
             profiles.append({
                 'profile': 'default',
-                'configured': True,
-                'source': 'environment'
+                'source': 'environment',
+                'fields': fields_status
             })
+
     return profiles
 
 
@@ -207,6 +237,41 @@ def update_settings(current_user):
 
 # --- Global Credentials ---
 
+# Credential providers with their fields
+CREDENTIAL_PROVIDERS = {
+    'github': {
+        'fields': ['token'],
+        'legacy_map': {'token': 'github_token'},
+        'env_map': {'token': 'GITHUB_TOKEN'},
+    },
+    'nas': {
+        'fields': ['password'],
+        'legacy_map': {'password': 'nas_password_1'},
+        'env_map': {'password': 'NAS_PASSWORD_1'},
+    },
+    'supabase': {
+        'fields': ['db_password', 'service_role_key'],
+        'legacy_map': {'db_password': 'supabase_db_password', 'service_role_key': 'supabase_service_role_key'},
+        'env_map': {'db_password': 'SUPABASE_DB_PASSWORD', 'service_role_key': 'SUPABASE_SERVICE_ROLE_KEY'},
+    },
+    'smtp': {
+        'fields': ['password'],
+        'legacy_map': {'password': 'smtp_password'},
+        'env_map': {'password': 'SMTP_PASSWORD'},
+    },
+    'telegram': {
+        'fields': ['bot_token'],
+        'legacy_map': {'bot_token': 'telegram_bot_token'},
+        'env_map': {'bot_token': 'TELEGRAM_BOT_TOKEN'},
+    },
+    'gdrive': {
+        'fields': ['token'],
+        'legacy_map': {'token': 'rclone_gdrive_token'},
+        'env_map': {'token': 'RCLONE_CONFIG_GDRIVE_TOKEN'},
+    },
+}
+
+# Flat list for backward compat
 CREDENTIAL_TYPES = [
     'github_token', 'nas_password_1',
     'supabase_db_password', 'supabase_service_role_key',
@@ -217,11 +282,12 @@ CREDENTIAL_TYPES = [
 @settings_bp.route('/credentials', methods=['GET'])
 @token_required
 def get_credentials(current_user):
-    """Get all credential profiles per type (never returns actual values)"""
+    """Get all credential providers with their profiles (never returns actual values)"""
     credentials = {}
-    for name in CREDENTIAL_TYPES:
-        profiles = get_credential_profiles(name)
-        credentials[name] = {
+    for provider, meta in CREDENTIAL_PROVIDERS.items():
+        profiles = get_provider_profiles(provider)
+        credentials[provider] = {
+            'fields': meta['fields'],
             'profiles': profiles,
             'configured': len(profiles) > 0
         }
@@ -232,7 +298,7 @@ def get_credentials(current_user):
 @settings_bp.route('/credentials', methods=['PUT'])
 @token_required
 def update_credentials(current_user):
-    """Update credentials - supports legacy flat format and new profile format"""
+    """Legacy: Update credentials with flat key-value format"""
     data = request.get_json()
 
     if not data:
@@ -242,14 +308,8 @@ def update_credentials(current_user):
     for key, value in data.items():
         if key not in CREDENTIAL_TYPES:
             continue
-        # Legacy format: flat value string → save as default profile
         if isinstance(value, str) and value.strip():
-            Setting.set(f'credential.{key}.default', value.strip())
-            # Remove legacy single-key if exists
-            legacy = Setting.query.filter_by(key=f'credential.{key}').first()
-            if legacy:
-                db.session.delete(legacy)
-                db.session.commit()
+            Setting.set(f'credential.{key}', value.strip())
             updated.append(key)
 
     return jsonify({
@@ -261,54 +321,81 @@ def update_credentials(current_user):
 @settings_bp.route('/credentials/profile', methods=['POST'])
 @token_required
 def add_credential_profile(current_user):
-    """Add a new credential profile"""
+    """Add or update a credential profile for a provider"""
     data = request.get_json()
-    cred_type = data.get('type')
+    provider = data.get('provider', '').strip()
     profile = data.get('profile', '').strip()
-    value = data.get('value', '').strip()
+    values = data.get('values', {})
 
-    if not cred_type or cred_type not in CREDENTIAL_TYPES:
-        return jsonify({'error': 'Invalid credential type'}), 400
+    if not provider or provider not in CREDENTIAL_PROVIDERS:
+        return jsonify({'error': 'Invalid provider'}), 400
     if not profile:
         return jsonify({'error': 'Profile name is required'}), 400
-    if not value:
-        return jsonify({'error': 'Value is required'}), 400
+    if not values:
+        return jsonify({'error': 'At least one field value is required'}), 400
+
+    meta = CREDENTIAL_PROVIDERS[provider]
 
     # Sanitize profile name
     profile = profile.lower().replace(' ', '_')
     if len(profile) > 50:
         return jsonify({'error': 'Profile name too long (max 50 chars)'}), 400
 
-    Setting.set(f'credential.{cred_type}.{profile}', value)
+    saved_fields = []
+    for field, value in values.items():
+        if field not in meta['fields']:
+            continue
+        if value and value.strip():
+            Setting.set(f'credential.{provider}.{field}.{profile}', value.strip())
+            saved_fields.append(field)
+
+    if not saved_fields:
+        return jsonify({'error': 'No valid fields provided'}), 400
 
     return jsonify({
-        'message': f'Profile "{profile}" saved for {cred_type}',
-        'profile': profile
+        'message': f'Profile "{profile}" saved for {provider}',
+        'profile': profile,
+        'fields': saved_fields
     }), 200
 
 
 @settings_bp.route('/credentials/profile', methods=['DELETE'])
 @token_required
 def delete_credential_profile(current_user):
-    """Delete a credential profile"""
+    """Delete a credential profile (all fields)"""
     data = request.get_json()
-    cred_type = data.get('type')
+    provider = data.get('provider', '').strip()
     profile = data.get('profile', '').strip()
 
-    if not cred_type or cred_type not in CREDENTIAL_TYPES:
-        return jsonify({'error': 'Invalid credential type'}), 400
+    if not provider or provider not in CREDENTIAL_PROVIDERS:
+        return jsonify({'error': 'Invalid provider'}), 400
     if not profile:
         return jsonify({'error': 'Profile name is required'}), 400
 
-    key = f'credential.{cred_type}.{profile}'
-    setting = Setting.query.filter_by(key=key).first()
-    if not setting:
+    meta = CREDENTIAL_PROVIDERS[provider]
+    deleted = 0
+
+    # Delete all fields for this profile
+    for field in meta['fields']:
+        key = f'credential.{provider}.{field}.{profile}'
+        setting = Setting.query.filter_by(key=key).first()
+        if setting:
+            db.session.delete(setting)
+            deleted += 1
+
+    # Also check legacy keys if profile is 'default'
+    if profile == 'default':
+        for field, legacy_key in meta['legacy_map'].items():
+            setting = Setting.query.filter_by(key=f'credential.{legacy_key}').first()
+            if setting:
+                db.session.delete(setting)
+                deleted += 1
+
+    if deleted == 0:
         return jsonify({'error': 'Profile not found'}), 404
 
-    db.session.delete(setting)
     db.session.commit()
-
-    return jsonify({'message': f'Profile "{profile}" deleted'}), 200
+    return jsonify({'message': f'Profile "{profile}" deleted ({deleted} fields)'}), 200
 
 
 # --- System Logs ---

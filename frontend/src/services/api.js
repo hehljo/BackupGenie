@@ -128,11 +128,11 @@ export const settingsAPI = {
   updateCredentials: (data) =>
     api.put('/settings/credentials', data),
 
-  addCredentialProfile: (type, profile, value) =>
-    api.post('/settings/credentials/profile', { type, profile, value }),
+  addCredentialProfile: (provider, profile, values) =>
+    api.post('/settings/credentials/profile', { provider, profile, values }),
 
-  deleteCredentialProfile: (type, profile) =>
-    api.delete('/settings/credentials/profile', { data: { type, profile } }),
+  deleteCredentialProfile: (provider, profile) =>
+    api.delete('/settings/credentials/profile', { data: { provider, profile } }),
 
   getLogs: (lines = 200) =>
     api.get(`/settings/logs?lines=${lines}`),

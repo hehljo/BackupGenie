@@ -105,26 +105,67 @@ export default function Settings() {
     }
   }
 
-  const credentialLabels = {
-    github_token: { label: 'GitHub Token', hint: 'Personal Access Token (Scopes: repo, gist)' },
-    nas_password_1: { label: 'NAS Passwort', hint: 'SMB/NFS Zugangspasswort' },
-    supabase_db_password: { label: 'Supabase DB Passwort', hint: 'Datenbank-Passwort aus dem Supabase Dashboard' },
-    supabase_service_role_key: { label: 'Supabase Service Role Key', hint: 'Für Storage & Config Backup' },
-    smtp_password: { label: 'SMTP Passwort', hint: 'E-Mail-Benachrichtigungspasswort' },
-    telegram_bot_token: { label: 'Telegram Bot Token', hint: 'Von @BotFather' },
-    rclone_gdrive_token: { label: 'Google Drive Token', hint: 'rclone OAuth Token für Google Drive' },
+  const providerLabels = {
+    github: {
+      label: 'GitHub',
+      icon: '🔑',
+      fields: {
+        token: { label: 'Access Token', hint: 'Personal Access Token (Scopes: repo, gist)' }
+      }
+    },
+    nas: {
+      label: 'NAS / SMB',
+      icon: '💾',
+      fields: {
+        password: { label: 'Passwort', hint: 'SMB/NFS Zugangspasswort' }
+      }
+    },
+    supabase: {
+      label: 'Supabase',
+      icon: '⚡',
+      fields: {
+        db_password: { label: 'DB Passwort', hint: 'Datenbank-Passwort aus dem Supabase Dashboard' },
+        service_role_key: { label: 'Service Role Key', hint: 'Für Storage & Config Backup' }
+      }
+    },
+    smtp: {
+      label: 'SMTP / E-Mail',
+      icon: '📧',
+      fields: {
+        password: { label: 'Passwort', hint: 'E-Mail-Benachrichtigungspasswort' }
+      }
+    },
+    telegram: {
+      label: 'Telegram',
+      icon: '📱',
+      fields: {
+        bot_token: { label: 'Bot Token', hint: 'Von @BotFather' }
+      }
+    },
+    gdrive: {
+      label: 'Google Drive',
+      icon: '☁️',
+      fields: {
+        token: { label: 'OAuth Token', hint: 'rclone OAuth Token für Google Drive' }
+      }
+    },
   }
 
   const handleAddProfile = async () => {
-    if (!newProfile.name.trim() || !newProfile.value.trim()) {
-      toast.error('Profilname und Wert erforderlich')
+    if (!newProfile.name.trim()) {
+      toast.error('Profilname erforderlich')
+      return
+    }
+    const hasValues = Object.values(newProfile.values || {}).some(v => v?.trim())
+    if (!hasValues) {
+      toast.error('Mindestens ein Feld ausfüllen')
       return
     }
     setIsSavingCredentials(true)
     try {
-      await settingsAPI.addCredentialProfile(showAddProfile, newProfile.name, newProfile.value)
+      await settingsAPI.addCredentialProfile(showAddProfile, newProfile.name, newProfile.values)
       toast.success(`Profil "${newProfile.name}" gespeichert`)
-      setNewProfile({ type: '', name: '', value: '' })
+      setNewProfile({ name: '', values: {} })
       setShowAddProfile(null)
       const credRes = await settingsAPI.getCredentials()
       setCredentials(credRes.data)
@@ -135,10 +176,10 @@ export default function Settings() {
     }
   }
 
-  const handleDeleteProfile = async (type, profile) => {
+  const handleDeleteProfile = async (provider, profile) => {
     if (!confirm(`Profil "${profile}" wirklich löschen?`)) return
     try {
-      await settingsAPI.deleteCredentialProfile(type, profile)
+      await settingsAPI.deleteCredentialProfile(provider, profile)
       toast.success(`Profil "${profile}" gelöscht`)
       const credRes = await settingsAPI.getCredentials()
       setCredentials(credRes.data)
@@ -502,35 +543,43 @@ export default function Settings() {
             </div>
           </div>
           <div className="space-y-4">
-            {Object.entries(credentialLabels).map(([type, meta]) => (
-              <div key={type} className="border border-gray-200 rounded-lg p-3 md:p-4">
+            {Object.entries(providerLabels).map(([provider, meta]) => (
+              <div key={provider} className="border border-gray-200 rounded-lg p-3 md:p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-semibold text-gray-800">{meta.label}</h3>
+                  <h3 className="text-sm font-semibold text-gray-800">
+                    <span className="mr-2">{meta.icon}</span>{meta.label}
+                  </h3>
                   <button
                     onClick={() => {
-                      setShowAddProfile(showAddProfile === type ? null : type)
-                      setNewProfile({ type: '', name: '', value: '' })
+                      setShowAddProfile(showAddProfile === provider ? null : provider)
+                      setNewProfile({ name: '', values: {} })
                     }}
                     className="text-xs flex items-center gap-1 text-primary-600 hover:text-primary-800"
                   >
-                    {showAddProfile === type ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                    {showAddProfile === type ? 'Abbrechen' : 'Profil hinzufügen'}
+                    {showAddProfile === provider ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                    {showAddProfile === provider ? 'Abbrechen' : 'Profil hinzufügen'}
                   </button>
                 </div>
-                <p className="text-xs text-gray-500 mb-3">{meta.hint}</p>
 
                 {/* Existing profiles */}
-                {credentials[type]?.profiles?.length > 0 ? (
+                {credentials[provider]?.profiles?.length > 0 ? (
                   <div className="space-y-2">
-                    {credentials[type].profiles.map((p) => (
+                    {credentials[provider].profiles.map((p) => (
                       <div key={p.profile} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
                         <span className="text-sm font-medium text-gray-700 flex-1">{p.profile}</span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-                          {p.source}
-                        </span>
+                        {p.fields && (
+                          <div className="flex gap-1">
+                            {Object.entries(p.fields).map(([field, configured]) => (
+                              <span key={field} className={`text-xs px-1.5 py-0.5 rounded ${configured ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                                {meta.fields[field]?.label || field}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <span className="text-xs text-gray-400">{p.source}</span>
                         {p.source === 'database' && (
                           <button
-                            onClick={() => handleDeleteProfile(type, p.profile)}
+                            onClick={() => handleDeleteProfile(provider, p.profile)}
                             className="text-gray-400 hover:text-red-500"
                             title="Profil löschen"
                           >
@@ -541,12 +590,12 @@ export default function Settings() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-400 italic">Kein Profil konfiguriert</p>
+                  <p className="text-xs text-gray-400 italic mt-1">Kein Profil konfiguriert</p>
                 )}
 
                 {/* Add new profile form */}
-                {showAddProfile === type && (
-                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+                {showAddProfile === provider && (
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
                     <input
                       type="text"
                       className="input text-sm"
@@ -554,26 +603,34 @@ export default function Settings() {
                       value={newProfile.name}
                       onChange={(e) => setNewProfile({...newProfile, name: e.target.value})}
                     />
-                    <div className="relative">
-                      <input
-                        type={credentialVisibility[`new_${type}`] ? 'text' : 'password'}
-                        className="input text-sm pr-10"
-                        placeholder={meta.hint}
-                        value={newProfile.value}
-                        onChange={(e) => setNewProfile({...newProfile, value: e.target.value})}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setCredentialVisibility({...credentialVisibility, [`new_${type}`]: !credentialVisibility[`new_${type}`]})}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        {credentialVisibility[`new_${type}`] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
+                    {Object.entries(meta.fields).map(([field, fieldMeta]) => (
+                      <div key={field}>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">{fieldMeta.label}</label>
+                        <div className="relative">
+                          <input
+                            type={credentialVisibility[`${provider}_${field}`] ? 'text' : 'password'}
+                            className="input text-sm pr-10"
+                            placeholder={fieldMeta.hint}
+                            value={newProfile.values?.[field] || ''}
+                            onChange={(e) => setNewProfile({
+                              ...newProfile,
+                              values: { ...newProfile.values, [field]: e.target.value }
+                            })}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setCredentialVisibility({...credentialVisibility, [`${provider}_${field}`]: !credentialVisibility[`${provider}_${field}`]})}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          >
+                            {credentialVisibility[`${provider}_${field}`] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                     <button
                       onClick={handleAddProfile}
                       className="btn btn-primary text-sm w-full flex items-center justify-center gap-2"
-                      disabled={isSavingCredentials || !newProfile.name.trim() || !newProfile.value.trim()}
+                      disabled={isSavingCredentials || !newProfile.name.trim()}
                     >
                       {isSavingCredentials ? (
                         <Loader className="w-4 h-4 animate-spin" />
