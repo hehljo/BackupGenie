@@ -74,7 +74,8 @@ class BackupHandler(ABC):
             return 0
 
     def _get_env_credential(self, key, required=True):
-        """Get credential: DB (global) first, then environment variable"""
+        """Get credential: DB (global) first, then environment variable.
+        Respects credential_profile from source config for multi-account support."""
         # Map env var names to DB credential keys
         env_to_db = {
             'GITHUB_TOKEN': 'github_token',
@@ -89,7 +90,8 @@ class BackupHandler(ABC):
         if db_key:
             try:
                 from app.api.settings import get_credential
-                value = get_credential(db_key)
+                profile = self.source_config.get('credential_profile')
+                value = get_credential(db_key, profile=profile)
                 if value:
                     return value
             except Exception:

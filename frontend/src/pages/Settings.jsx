@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Settings as SettingsIcon, User, Shield, Database, Save, Loader, Download, Upload, FileJson, CheckCircle, AlertCircle, Key, Eye, EyeOff } from 'lucide-react'
+import { Settings as SettingsIcon, User, Shield, Database, Save, Loader, Download, Upload, FileJson, CheckCircle, AlertCircle, Key, Eye, EyeOff, Plus, Trash2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { authAPI, backupAPI, settingsAPI, configAPI } from '../services/api'
 import toast from 'react-hot-toast'
@@ -47,9 +47,10 @@ export default function Settings() {
 
   // Credentials
   const [credentials, setCredentials] = useState({})
-  const [credentialValues, setCredentialValues] = useState({})
   const [credentialVisibility, setCredentialVisibility] = useState({})
   const [isSavingCredentials, setIsSavingCredentials] = useState(false)
+  const [newProfile, setNewProfile] = useState({ type: '', name: '', value: '' })
+  const [showAddProfile, setShowAddProfile] = useState(null) // which type is adding
 
   // Confirm Dialogs
   const [clearBackupsConfirm, setClearBackupsConfirm] = useState(false)
@@ -106,37 +107,43 @@ export default function Settings() {
 
   const credentialLabels = {
     github_token: { label: 'GitHub Token', hint: 'Personal Access Token (Scopes: repo, gist)' },
-    nas_password_1: { label: 'NAS Password', hint: 'SMB/NFS access password' },
-    supabase_db_password: { label: 'Supabase DB Password', hint: 'Database password from Supabase dashboard' },
-    supabase_service_role_key: { label: 'Supabase Service Role Key', hint: 'For Storage & Config backup' },
-    smtp_password: { label: 'SMTP Password', hint: 'Email notification password' },
-    telegram_bot_token: { label: 'Telegram Bot Token', hint: 'From @BotFather' },
-    rclone_gdrive_token: { label: 'Google Drive Token', hint: 'rclone OAuth token for Google Drive' },
+    nas_password_1: { label: 'NAS Passwort', hint: 'SMB/NFS Zugangspasswort' },
+    supabase_db_password: { label: 'Supabase DB Passwort', hint: 'Datenbank-Passwort aus dem Supabase Dashboard' },
+    supabase_service_role_key: { label: 'Supabase Service Role Key', hint: 'Für Storage & Config Backup' },
+    smtp_password: { label: 'SMTP Passwort', hint: 'E-Mail-Benachrichtigungspasswort' },
+    telegram_bot_token: { label: 'Telegram Bot Token', hint: 'Von @BotFather' },
+    rclone_gdrive_token: { label: 'Google Drive Token', hint: 'rclone OAuth Token für Google Drive' },
   }
 
-  const handleCredentialsSave = async () => {
-    const toSave = {}
-    for (const [key, value] of Object.entries(credentialValues)) {
-      if (value && value.trim()) {
-        toSave[key] = value.trim()
-      }
-    }
-    if (Object.keys(toSave).length === 0) {
-      toast.error(t('settings.credentials.noChanges'))
+  const handleAddProfile = async () => {
+    if (!newProfile.name.trim() || !newProfile.value.trim()) {
+      toast.error('Profilname und Wert erforderlich')
       return
     }
     setIsSavingCredentials(true)
     try {
-      await settingsAPI.updateCredentials(toSave)
-      toast.success(t('settings.credentials.saved'))
-      setCredentialValues({})
-      // Reload credentials status
+      await settingsAPI.addCredentialProfile(showAddProfile, newProfile.name, newProfile.value)
+      toast.success(`Profil "${newProfile.name}" gespeichert`)
+      setNewProfile({ type: '', name: '', value: '' })
+      setShowAddProfile(null)
       const credRes = await settingsAPI.getCredentials()
       setCredentials(credRes.data)
     } catch (error) {
-      toast.error('Failed to save credentials')
+      toast.error(error.response?.data?.error || 'Fehler beim Speichern')
     } finally {
       setIsSavingCredentials(false)
+    }
+  }
+
+  const handleDeleteProfile = async (type, profile) => {
+    if (!confirm(`Profil "${profile}" wirklich löschen?`)) return
+    try {
+      await settingsAPI.deleteCredentialProfile(type, profile)
+      toast.success(`Profil "${profile}" gelöscht`)
+      const credRes = await settingsAPI.getCredentials()
+      setCredentials(credRes.data)
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Fehler beim Löschen')
     }
   }
 
@@ -494,48 +501,90 @@ export default function Settings() {
               <p className="text-xs text-gray-500">{t('settings.credentials.subtitle')}</p>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-            {Object.entries(credentialLabels).map(([key, meta]) => (
-              <div key={key}>
-                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">
-                  {meta.label}
-                  {credentials[key]?.configured && (
-                    <span className="ml-2 text-xs text-green-600 font-normal">
-                      ({credentials[key].source})
-                    </span>
-                  )}
-                </label>
-                <div className="relative">
-                  <input
-                    type={credentialVisibility[key] ? 'text' : 'password'}
-                    className="input pr-10"
-                    placeholder={credentials[key]?.configured ? '••••••••' : meta.hint}
-                    value={credentialValues[key] || ''}
-                    onChange={(e) => setCredentialValues({...credentialValues, [key]: e.target.value})}
-                  />
+          <div className="space-y-4">
+            {Object.entries(credentialLabels).map(([type, meta]) => (
+              <div key={type} className="border border-gray-200 rounded-lg p-3 md:p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold text-gray-800">{meta.label}</h3>
                   <button
-                    type="button"
-                    onClick={() => setCredentialVisibility({...credentialVisibility, [key]: !credentialVisibility[key]})}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onClick={() => {
+                      setShowAddProfile(showAddProfile === type ? null : type)
+                      setNewProfile({ type: '', name: '', value: '' })
+                    }}
+                    className="text-xs flex items-center gap-1 text-primary-600 hover:text-primary-800"
                   >
-                    {credentialVisibility[key] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showAddProfile === type ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                    {showAddProfile === type ? 'Abbrechen' : 'Profil hinzufügen'}
                   </button>
                 </div>
+                <p className="text-xs text-gray-500 mb-3">{meta.hint}</p>
+
+                {/* Existing profiles */}
+                {credentials[type]?.profiles?.length > 0 ? (
+                  <div className="space-y-2">
+                    {credentials[type].profiles.map((p) => (
+                      <div key={p.profile} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+                        <span className="text-sm font-medium text-gray-700 flex-1">{p.profile}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                          {p.source}
+                        </span>
+                        {p.source === 'database' && (
+                          <button
+                            onClick={() => handleDeleteProfile(type, p.profile)}
+                            className="text-gray-400 hover:text-red-500"
+                            title="Profil löschen"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400 italic">Kein Profil konfiguriert</p>
+                )}
+
+                {/* Add new profile form */}
+                {showAddProfile === type && (
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+                    <input
+                      type="text"
+                      className="input text-sm"
+                      placeholder="Profilname (z.B. Privat, Arbeit, Server-1)"
+                      value={newProfile.name}
+                      onChange={(e) => setNewProfile({...newProfile, name: e.target.value})}
+                    />
+                    <div className="relative">
+                      <input
+                        type={credentialVisibility[`new_${type}`] ? 'text' : 'password'}
+                        className="input text-sm pr-10"
+                        placeholder={meta.hint}
+                        value={newProfile.value}
+                        onChange={(e) => setNewProfile({...newProfile, value: e.target.value})}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setCredentialVisibility({...credentialVisibility, [`new_${type}`]: !credentialVisibility[`new_${type}`]})}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {credentialVisibility[`new_${type}`] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <button
+                      onClick={handleAddProfile}
+                      className="btn btn-primary text-sm w-full flex items-center justify-center gap-2"
+                      disabled={isSavingCredentials || !newProfile.name.trim() || !newProfile.value.trim()}
+                    >
+                      {isSavingCredentials ? (
+                        <Loader className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <><Key className="w-4 h-4" /><span>Profil speichern</span></>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
-          </div>
-          <div className="mt-4 flex justify-end">
-            <button
-              onClick={handleCredentialsSave}
-              className="btn btn-primary flex items-center gap-2"
-              disabled={isSavingCredentials || Object.values(credentialValues).every(v => !v?.trim())}
-            >
-              {isSavingCredentials ? (
-                <><Loader className="w-4 h-4 animate-spin" /><span>{t('settings.saving')}</span></>
-              ) : (
-                <><Key className="w-4 h-4" /><span>{t('settings.credentials.saveButton')}</span></>
-              )}
-            </button>
           </div>
         </div>
 

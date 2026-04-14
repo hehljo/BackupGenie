@@ -110,6 +110,15 @@ const SOURCE_CATEGORIES = SOURCE_TYPES.reduce((acc, type) => {
   return acc
 }, {})
 
+// Map source types to which credential type they need
+const SOURCE_CREDENTIAL_MAP = {
+  'github': 'github_token',
+  'nas': 'nas_password_1',
+  'smb': 'nas_password_1',
+  'nfs': 'nas_password_1',
+  'supabase': 'supabase_db_password',
+}
+
 export default function SourceModal({ isOpen, onClose, onSave, editingSource }) {
   const { t } = useTranslation()
   const [showPassword, setShowPassword] = useState(false)
@@ -119,6 +128,7 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
   const [searchQuery, setSearchQuery] = useState('')
   const [connectionTestStatus, setConnectionTestStatus] = useState(null) // null, 'testing', 'success', 'error'
   const [connectionTestMessage, setConnectionTestMessage] = useState('')
+  const [credentialProfiles, setCredentialProfiles] = useState({})
   const [formData, setFormData] = useState({
     name: '',
     type: 'nas',
@@ -145,6 +155,17 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
       setSelectedCategory('Network Storage')
     }
   }, [editingSource, isOpen])
+
+  // Load credential profiles when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      import('../services/api').then(({ settingsAPI }) => {
+        settingsAPI.getCredentials().then(res => {
+          setCredentialProfiles(res.data)
+        }).catch(() => {})
+      })
+    }
+  }, [isOpen])
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -180,6 +201,7 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
     if (type === 'nas') {
       return (
         <div className="space-y-4">
+          <CredentialProfileSelect credType="nas_password_1" label="NAS Passwort" />
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Host/IP *</label>
             <input
@@ -416,16 +438,51 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
       )
     }
 
+    // Credential profile selector component
+    const CredentialProfileSelect = ({ credType, label }) => {
+      const profiles = credentialProfiles[credType]?.profiles || []
+      if (profiles.length === 0) {
+        return (
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-sm text-amber-800">
+              Kein {label} konfiguriert. Bitte unter <strong>Einstellungen → Zugangsdaten</strong> anlegen.
+            </p>
+          </div>
+        )
+      }
+      if (profiles.length === 1) {
+        return (
+          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-sm text-green-800">
+              {label}: Profil <strong>{profiles[0].profile}</strong> wird verwendet.
+            </p>
+          </div>
+        )
+      }
+      return (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {label} - Profil auswählen
+          </label>
+          <select
+            className="input"
+            value={formData.config.credential_profile || ''}
+            onChange={(e) => handleConfigChange('credential_profile', e.target.value)}
+          >
+            <option value="">Automatisch (erstes Profil)</option>
+            {profiles.map(p => (
+              <option key={p.profile} value={p.profile}>{p.profile}</option>
+            ))}
+          </select>
+        </div>
+      )
+    }
+
     // GitHub with auto-discovery
     if (type === 'github') {
       return (
         <div className="space-y-4">
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              GitHub Token wird unter <strong>Settings → Credentials</strong> global konfiguriert.
-              Dort einmal eintragen, gilt für alle GitHub-Quellen.
-            </p>
-          </div>
+          <CredentialProfileSelect credType="github_token" label="GitHub Token" />
 
           <GitHubRepoSelector
             discoveryMode={formData.config.discovery_mode || 'manual'}
@@ -959,11 +1016,7 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
 
       return (
         <div className="space-y-4">
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              DB Password und Service Role Key werden unter <strong>Settings → Credentials</strong> global konfiguriert.
-            </p>
-          </div>
+          <CredentialProfileSelect credType="supabase_db_password" label="Supabase DB Passwort" />
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Project Ref *</label>

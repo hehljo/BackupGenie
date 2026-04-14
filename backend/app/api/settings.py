@@ -42,11 +42,34 @@ def get_setting(key, default=None):
     return default
 
 
-def get_credential(name):
-    """Get credential from DB, fall back to env var"""
-    db_val = Setting.get(f'credential.{name}')
-    if db_val:
-        return db_val
+def get_credential(name, profile=None):
+    """Get credential from DB, fall back to env var.
+
+    Args:
+        name: Credential type (e.g. 'github_token')
+        profile: Optional profile name. If None, returns first available.
+    """
+    if profile:
+        # Specific profile requested
+        db_val = Setting.get(f'credential.{name}.{profile}')
+        if db_val:
+            return db_val
+    else:
+        # Try legacy single-key format first (backward compat)
+        db_val = Setting.get(f'credential.{name}')
+        if db_val:
+            return db_val
+        # Try first available profile
+        all_settings = Setting.query.filter(
+            Setting.key.like(f'credential.{name}.%')
+        ).first()
+        if all_settings:
+            from app.crypto import decrypt_value
+            decrypted = decrypt_value(all_settings.value)
+            if decrypted:
+                return decrypted
+
+    # Env fallback
     env_map = {
         'github_token': 'GITHUB_TOKEN',
         'nas_password_1': 'NAS_PASSWORD_1',
@@ -60,6 +83,54 @@ def get_credential(name):
     if env_key:
         return os.environ.get(env_key, '')
     return ''
+
+
+def get_credential_profiles(name):
+    """Get all profiles for a credential type.
+
+    Returns:
+        list of dicts: [{'profile': 'privat', 'configured': True, 'source': 'database'}, ...]
+    """
+    profiles = []
+    # Check legacy single-key
+    legacy = Setting.query.filter_by(key=f'credential.{name}').first()
+    if legacy:
+        profiles.append({
+            'profile': 'default',
+            'configured': True,
+            'source': 'database'
+        })
+    # Check profiled keys
+    profiled = Setting.query.filter(
+        Setting.key.like(f'credential.{name}.%')
+    ).all()
+    for s in profiled:
+        profile_name = s.key.split(f'credential.{name}.', 1)[1]
+        profiles.append({
+            'profile': profile_name,
+            'configured': True,
+            'source': 'database'
+        })
+    # Check env fallback
+    env_map = {
+        'github_token': 'GITHUB_TOKEN',
+        'nas_password_1': 'NAS_PASSWORD_1',
+        'supabase_db_password': 'SUPABASE_DB_PASSWORD',
+        'supabase_service_role_key': 'SUPABASE_SERVICE_ROLE_KEY',
+        'smtp_password': 'SMTP_PASSWORD',
+        'telegram_bot_token': 'TELEGRAM_BOT_TOKEN',
+        'rclone_gdrive_token': 'RCLONE_CONFIG_GDRIVE_TOKEN',
+    }
+    env_key = env_map.get(name)
+    if env_key and os.environ.get(env_key):
+        # Only add env profile if no DB profiles exist
+        if not profiles:
+            profiles.append({
+                'profile': 'default',
+                'configured': True,
+                'source': 'environment'
+            })
+    return profiles
 
 
 @settings_bp.route('', methods=['GET'])
@@ -136,21 +207,23 @@ def update_settings(current_user):
 
 # --- Global Credentials ---
 
+CREDENTIAL_TYPES = [
+    'github_token', 'nas_password_1',
+    'supabase_db_password', 'supabase_service_role_key',
+    'smtp_password', 'telegram_bot_token', 'rclone_gdrive_token'
+]
+
+
 @settings_bp.route('/credentials', methods=['GET'])
 @token_required
 def get_credentials(current_user):
-    """Get which credentials are configured (never returns actual values)"""
+    """Get all credential profiles per type (never returns actual values)"""
     credentials = {}
-    cred_names = [
-        'github_token', 'nas_password_1',
-        'supabase_db_password', 'supabase_service_role_key',
-        'smtp_password', 'telegram_bot_token', 'rclone_gdrive_token'
-    ]
-    for name in cred_names:
-        val = get_credential(name)
+    for name in CREDENTIAL_TYPES:
+        profiles = get_credential_profiles(name)
         credentials[name] = {
-            'configured': bool(val),
-            'source': 'database' if Setting.get(f'credential.{name}') else ('environment' if val else 'not set')
+            'profiles': profiles,
+            'configured': len(profiles) > 0
         }
 
     return jsonify(credentials), 200
@@ -159,29 +232,83 @@ def get_credentials(current_user):
 @settings_bp.route('/credentials', methods=['PUT'])
 @token_required
 def update_credentials(current_user):
-    """Update global credentials - stored in database"""
+    """Update credentials - supports legacy flat format and new profile format"""
     data = request.get_json()
 
     if not data:
         return jsonify({'error': 'No data provided'}), 400
 
-    allowed = [
-        'github_token', 'nas_password_1',
-        'supabase_db_password', 'supabase_service_role_key',
-        'smtp_password', 'telegram_bot_token', 'rclone_gdrive_token'
-    ]
-
     updated = []
     for key, value in data.items():
-        if key not in allowed:
+        if key not in CREDENTIAL_TYPES:
             continue
-        Setting.set(f'credential.{key}', value)
-        updated.append(key)
+        # Legacy format: flat value string → save as default profile
+        if isinstance(value, str) and value.strip():
+            Setting.set(f'credential.{key}.default', value.strip())
+            # Remove legacy single-key if exists
+            legacy = Setting.query.filter_by(key=f'credential.{key}').first()
+            if legacy:
+                db.session.delete(legacy)
+                db.session.commit()
+            updated.append(key)
 
     return jsonify({
         'message': 'Credentials updated',
         'updated': updated
     }), 200
+
+
+@settings_bp.route('/credentials/profile', methods=['POST'])
+@token_required
+def add_credential_profile(current_user):
+    """Add a new credential profile"""
+    data = request.get_json()
+    cred_type = data.get('type')
+    profile = data.get('profile', '').strip()
+    value = data.get('value', '').strip()
+
+    if not cred_type or cred_type not in CREDENTIAL_TYPES:
+        return jsonify({'error': 'Invalid credential type'}), 400
+    if not profile:
+        return jsonify({'error': 'Profile name is required'}), 400
+    if not value:
+        return jsonify({'error': 'Value is required'}), 400
+
+    # Sanitize profile name
+    profile = profile.lower().replace(' ', '_')
+    if len(profile) > 50:
+        return jsonify({'error': 'Profile name too long (max 50 chars)'}), 400
+
+    Setting.set(f'credential.{cred_type}.{profile}', value)
+
+    return jsonify({
+        'message': f'Profile "{profile}" saved for {cred_type}',
+        'profile': profile
+    }), 200
+
+
+@settings_bp.route('/credentials/profile', methods=['DELETE'])
+@token_required
+def delete_credential_profile(current_user):
+    """Delete a credential profile"""
+    data = request.get_json()
+    cred_type = data.get('type')
+    profile = data.get('profile', '').strip()
+
+    if not cred_type or cred_type not in CREDENTIAL_TYPES:
+        return jsonify({'error': 'Invalid credential type'}), 400
+    if not profile:
+        return jsonify({'error': 'Profile name is required'}), 400
+
+    key = f'credential.{cred_type}.{profile}'
+    setting = Setting.query.filter_by(key=key).first()
+    if not setting:
+        return jsonify({'error': 'Profile not found'}), 404
+
+    db.session.delete(setting)
+    db.session.commit()
+
+    return jsonify({'message': f'Profile "{profile}" deleted'}), 200
 
 
 # --- System Logs ---

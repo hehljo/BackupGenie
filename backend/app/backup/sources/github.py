@@ -52,7 +52,8 @@ class GitHubBackup(BackupHandler):
     def _get_token(self):
         """Get GitHub token from DB (global credential), then env var fallback"""
         from app.api.settings import get_credential
-        token = get_credential('github_token')
+        profile = self.source_config.get('credential_profile')
+        token = get_credential('github_token', profile=profile)
         if token:
             return token
         # Legacy: token_env reference in source config
