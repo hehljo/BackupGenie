@@ -37,6 +37,11 @@ services:
       - ${LOGS_PATH:-./logs}:/var/log/backupgenie
       - /var/run/docker.sock:/var/run/docker.sock:ro  # Docker backups (optional)
       - /run/udev:/run/udev:ro  # USB device detection (optional)
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
     networks:
       - backupgenie
     deploy:
