@@ -273,7 +273,8 @@ def test_supabase_connection(current_user):
             return jsonify({
                 'error': 'Supabase DB Password nicht konfiguriert. Bitte unter Settings → Credentials eintragen.'
             }), 400
-        connection_string = connection_string.replace('[YOUR-PASSWORD]', db_password)
+        from urllib.parse import quote
+        connection_string = connection_string.replace('[YOUR-PASSWORD]', quote(db_password, safe=''))
     elif ':postgres@' in connection_string or connection_string.count(':') < 3:
         # No password in string and no placeholder
         if not db_password:

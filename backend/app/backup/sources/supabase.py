@@ -39,7 +39,8 @@ class SupabaseBackup(BackupHandler):
             credentials.get('db_password_env', 'SUPABASE_DB_PASSWORD')
         )
         if '[YOUR-PASSWORD]' in connection_string:
-            connection_string = connection_string.replace('[YOUR-PASSWORD]', db_password)
+            from urllib.parse import quote
+            connection_string = connection_string.replace('[YOUR-PASSWORD]', quote(db_password, safe=''))
 
         # Extract project_ref from connection string for API URL
         project_ref = self._extract_project_ref(connection_string)
