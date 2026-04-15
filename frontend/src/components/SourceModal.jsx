@@ -94,7 +94,7 @@ const SOURCE_TYPES = [
   { value: 'linkding', label: 'Linkding', icon: Globe, category: 'Content Management' },
 
   // Cloud Platforms (1)
-  { value: 'supabase', label: 'Supabase', icon: Zap, category: 'Cloud Platforms' },
+  { value: 'supabase', label: 'Supabase', icon: Zap, category: 'Databases' },
 
   // Management Tools (4)
   { value: 'portainer', label: 'Portainer', icon: Package, category: 'Management Tools' },
@@ -1036,14 +1036,22 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
               value={formData.config.region || 'aws-0-us-east-1'}
               onChange={(e) => handleConfigChange('region', e.target.value)}
             >
-              <option value="aws-0-us-east-1">US East (N. Virginia)</option>
-              <option value="aws-0-us-west-1">US West (N. California)</option>
-              <option value="aws-0-eu-west-1">EU West (Ireland)</option>
-              <option value="aws-0-eu-west-2">EU West (London)</option>
-              <option value="aws-0-eu-central-1">EU Central (Frankfurt)</option>
-              <option value="aws-0-ap-southeast-1">Asia Pacific (Singapore)</option>
-              <option value="aws-0-ap-northeast-1">Asia Pacific (Tokyo)</option>
-              <option value="aws-0-ap-south-1">Asia Pacific (Mumbai)</option>
+              <option value="aws-0-us-east-1">East US (North Virginia)</option>
+              <option value="aws-0-us-east-2">East US (Ohio)</option>
+              <option value="aws-0-us-west-1">West US (North California)</option>
+              <option value="aws-0-us-west-2">West US (Oregon)</option>
+              <option value="aws-0-ca-central-1">Canada (Central)</option>
+              <option value="aws-0-eu-west-1">West EU (Ireland)</option>
+              <option value="aws-0-eu-west-2">West Europe (London)</option>
+              <option value="aws-0-eu-west-3">West EU (Paris)</option>
+              <option value="aws-0-eu-central-1">Central EU (Frankfurt)</option>
+              <option value="aws-0-eu-central-2">Central Europe (Zurich)</option>
+              <option value="aws-0-eu-north-1">North EU (Stockholm)</option>
+              <option value="aws-0-ap-south-1">South Asia (Mumbai)</option>
+              <option value="aws-0-ap-southeast-1">Southeast Asia (Singapore)</option>
+              <option value="aws-0-ap-southeast-2">Oceania (Sydney)</option>
+              <option value="aws-0-ap-northeast-1">Northeast Asia (Tokyo)</option>
+              <option value="aws-0-ap-northeast-2">Northeast Asia (Seoul)</option>
               <option value="aws-0-sa-east-1">South America (São Paulo)</option>
             </select>
           </div>
