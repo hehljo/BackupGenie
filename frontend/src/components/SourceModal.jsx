@@ -1024,8 +1024,26 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
               required
             />
             <p className="text-xs text-gray-500 mt-1">
-              Supabase Dashboard → Suchfeld "connection string" → <strong>Session Pooler</strong> wählen → URI kopieren.
-              Das Passwort wird automatisch aus dem Credential-Profil genommen.
+              {(() => {
+                const cs = formData.config.connection_string || ''
+                const match = cs.match(/postgres\.([a-z]+)[:@]/)
+                const ref = match ? match[1] : null
+                return ref ? (
+                  <>
+                    <a
+                      href={`https://supabase.com/dashboard/project/${ref}?showConnect=true&connectTab=direct&method=session`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:text-blue-700 underline"
+                    >
+                      Connection String im Dashboard öffnen
+                    </a>
+                    {' — '}Session Pooler URI kopieren. Passwort wird aus dem Credential-Profil genommen.
+                  </>
+                ) : (
+                  <>Supabase Dashboard → Suchfeld "connection string" → <strong>Session Pooler</strong> wählen → URI kopieren. Passwort wird aus dem Credential-Profil genommen.</>
+                )
+              })()}
             </p>
           </div>
 
