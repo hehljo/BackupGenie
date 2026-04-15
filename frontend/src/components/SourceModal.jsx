@@ -1014,6 +1014,33 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
           <CredentialProfileSelect provider="supabase" label="Supabase" />
 
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Project Ref (optional)</label>
+            <input
+              type="text"
+              className="input text-sm"
+              value={formData.config.project_ref || ''}
+              onChange={(e) => handleConfigChange('project_ref', e.target.value)}
+              placeholder="z.B. mmeiajrqshbuanngavko"
+            />
+            {formData.config.project_ref && (
+              <p className="text-xs mt-1">
+                <a
+                  href={`https://supabase.com/dashboard/project/${formData.config.project_ref}?showConnect=true&connectTab=direct&method=session`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:text-blue-700 underline"
+                >
+                  Connection String im Dashboard öffnen
+                </a>
+                {' → '}Session Pooler URI kopieren
+              </p>
+            )}
+            {!formData.config.project_ref && (
+              <p className="text-xs text-gray-500 mt-1">Findest du in der Supabase URL: supabase.com/dashboard/project/<strong>[Project Ref]</strong></p>
+            )}
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Connection String *</label>
             <input
               type="text"
@@ -1024,26 +1051,7 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
               required
             />
             <p className="text-xs text-gray-500 mt-1">
-              {(() => {
-                const cs = formData.config.connection_string || ''
-                const match = cs.match(/postgres\.([a-z]+)[:@]/)
-                const ref = match ? match[1] : null
-                return ref ? (
-                  <>
-                    <a
-                      href={`https://supabase.com/dashboard/project/${ref}?showConnect=true&connectTab=direct&method=session`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500 hover:text-blue-700 underline"
-                    >
-                      Connection String im Dashboard öffnen
-                    </a>
-                    {' — '}Session Pooler URI kopieren. Passwort wird aus dem Credential-Profil genommen.
-                  </>
-                ) : (
-                  <>Supabase Dashboard → Suchfeld "connection string" → <strong>Session Pooler</strong> wählen → URI kopieren. Passwort wird aus dem Credential-Profil genommen.</>
-                )
-              })()}
+              Session Pooler URI aus dem Supabase Dashboard kopieren. Passwort wird automatisch aus dem Credential-Profil genommen.
             </p>
           </div>
 
