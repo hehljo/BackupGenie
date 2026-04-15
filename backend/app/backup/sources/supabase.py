@@ -41,9 +41,17 @@ class SupabaseBackup(BackupHandler):
         )
 
         # Build direct connection string (not pooler)
+        # Resolve to IPv4 to avoid IPv6 issues in Docker
+        import socket
+        host = f"db.{project_ref}.supabase.co"
+        try:
+            ipv4_addr = socket.getaddrinfo(host, 5432, socket.AF_INET)[0][4][0]
+        except socket.gaierror:
+            raise Exception(f"DNS-Auflösung fehlgeschlagen für {host}")
+
         connection_string = (
             f"postgresql://postgres:{db_password}"
-            f"@db.{project_ref}.supabase.co:5432/postgres"
+            f"@{ipv4_addr}:5432/postgres?sslmode=require"
         )
 
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')

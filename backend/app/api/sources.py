@@ -272,15 +272,26 @@ def test_supabase_connection(current_user):
         }), 400
 
     # 3. Build direct connection string (not pooler)
+    host = f"db.{project_ref}.supabase.co"
+
+    # Resolve hostname to IPv4 to avoid IPv6 issues in Docker
+    import socket
+    try:
+        ipv4_addr = socket.getaddrinfo(host, 5432, socket.AF_INET)[0][4][0]
+    except socket.gaierror:
+        return jsonify({'error': f'DNS-Auflösung fehlgeschlagen für {host}'}), 400
+
     connection_string = (
         f"postgresql://postgres:{db_password}"
-        f"@db.{project_ref}.supabase.co:5432/postgres"
+        f"@{ipv4_addr}:5432/postgres"
     )
 
     try:
+        env = os.environ.copy()
+        env['PGSSLMODE'] = 'require'
         result = subprocess.run(
             ['psql', connection_string, '-c', 'SELECT 1;'],
-            capture_output=True, text=True, timeout=15
+            capture_output=True, text=True, timeout=15, env=env
         )
 
         if result.returncode == 0:
