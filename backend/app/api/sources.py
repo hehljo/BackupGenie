@@ -271,10 +271,10 @@ def test_supabase_connection(current_user):
             'error': 'Supabase DB Password nicht konfiguriert. Bitte unter Settings → Credentials eintragen.'
         }), 400
 
-    # 3. Build connection string and test
+    # 3. Build direct connection string (not pooler)
     connection_string = (
-        f"postgresql://postgres.{project_ref}:{db_password}"
-        f"@{region}.pooler.supabase.com:5432/postgres"
+        f"postgresql://postgres:{db_password}"
+        f"@db.{project_ref}.supabase.co:5432/postgres"
     )
 
     try:

@@ -40,10 +40,10 @@ class SupabaseBackup(BackupHandler):
             credentials.get('db_password_env', 'SUPABASE_DB_PASSWORD')
         )
 
-        # Build connection string
+        # Build direct connection string (not pooler)
         connection_string = (
-            f"postgresql://postgres.{project_ref}:{db_password}"
-            f"@{region}.pooler.supabase.com:5432/postgres"
+            f"postgresql://postgres:{db_password}"
+            f"@db.{project_ref}.supabase.co:5432/postgres"
         )
 
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
