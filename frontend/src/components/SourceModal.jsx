@@ -1051,7 +1051,7 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
               required
             />
             <p className="text-xs text-gray-500 mt-1">
-              Session Pooler URI aus dem Supabase Dashboard kopieren. Passwort wird automatisch aus dem Credential-Profil genommen.
+              Supabase Dashboard → Suchfeld "connection string" → <strong>Session Pooler</strong> → URI kopieren. Passwort wird automatisch aus dem Credential-Profil genommen.
             </p>
           </div>
 
