@@ -27,32 +27,22 @@ class SupabaseBackup(BackupHandler):
     def backup(self):
         """Execute Supabase backup"""
         credentials = self.source_config.get('credentials', {})
-        project_ref = self.source_config.get('project_ref', '')
-        region = self.source_config.get('region', 'aws-0-us-east-1')
         backup_mode = self.source_config.get('backup_mode', 'db_only')
         options = self.source_config.get('options', {})
 
-        if not project_ref:
-            raise Exception("project_ref is required for Supabase backup")
+        connection_string = self.source_config.get('connection_string', '')
+        if not connection_string:
+            raise Exception("Connection String ist erforderlich. Kopiere ihn aus dem Supabase Dashboard.")
 
-        # Get DB password (always required)
+        # Replace [YOUR-PASSWORD] placeholder with credential from DB
         db_password = self._get_env_credential(
             credentials.get('db_password_env', 'SUPABASE_DB_PASSWORD')
         )
+        if '[YOUR-PASSWORD]' in connection_string:
+            connection_string = connection_string.replace('[YOUR-PASSWORD]', db_password)
 
-        # Build direct connection string (not pooler)
-        # Resolve to IPv4 to avoid IPv6 issues in Docker
-        import socket
-        host = f"db.{project_ref}.supabase.co"
-        try:
-            ipv4_addr = socket.getaddrinfo(host, 5432, socket.AF_INET)[0][4][0]
-        except socket.gaierror:
-            raise Exception(f"DNS-Auflösung fehlgeschlagen für {host}")
-
-        connection_string = (
-            f"postgresql://postgres:{db_password}"
-            f"@{ipv4_addr}:5432/postgres?sslmode=require"
-        )
+        # Extract project_ref from connection string for API URL
+        project_ref = self._extract_project_ref(connection_string)
 
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         backup_dir = os.path.join(self.dest_path, f"supabase_{timestamp}")
@@ -349,6 +339,23 @@ ORDER BY schemaname, tablename, policyname;
             self.log(f"WARNING: Auth Schema Export: {result.stderr}")
 
         return total_size, files
+
+    def _extract_project_ref(self, connection_string):
+        """Extract project ref from connection string.
+        Handles both formats:
+        - pooler: postgres.PROJECTREF@...pooler.supabase.com
+        - direct: @db.PROJECTREF.supabase.co
+        """
+        import re
+        # Try pooler format: postgres.XXXXX:
+        match = re.search(r'postgres\.([a-z]+)[:@]', connection_string)
+        if match:
+            return match.group(1)
+        # Try direct format: db.XXXXX.supabase
+        match = re.search(r'db\.([a-z]+)\.supabase', connection_string)
+        if match:
+            return match.group(1)
+        return ''
 
     def _api_get(self, url, headers):
         """Simple GET request, returns parsed JSON or empty list."""

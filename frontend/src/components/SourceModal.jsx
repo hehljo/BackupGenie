@@ -997,11 +997,8 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
         setConnectionTestStatus('testing')
         setConnectionTestMessage('')
         try {
-          // We need to save first to test, or test with inline data
-          // For now, test via a temporary source creation approach
           const testData = {
-            project_ref: formData.config.project_ref || '',
-            region: formData.config.region || 'aws-0-us-east-1',
+            connection_string: formData.config.connection_string || '',
           }
           const response = await sourcesAPI.testSupabase(testData)
           setConnectionTestStatus('success')
@@ -1017,43 +1014,19 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
           <CredentialProfileSelect provider="supabase" label="Supabase" />
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Project Ref *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Connection String *</label>
             <input
               type="text"
-              className="input"
-              value={formData.config.project_ref || ''}
-              onChange={(e) => handleConfigChange('project_ref', e.target.value)}
-              placeholder="abcdefghijklmnop"
+              className="input font-mono text-sm"
+              value={formData.config.connection_string || ''}
+              onChange={(e) => handleConfigChange('connection_string', e.target.value)}
+              placeholder="postgresql://postgres.xxxxx:[YOUR-PASSWORD]@aws-1-eu-north-1.pooler.supabase.com:5432/postgres"
               required
             />
-            <p className="text-xs text-gray-500 mt-1">Findest du in deinem Supabase Dashboard unter Project Settings</p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Region</label>
-            <select
-              className="input"
-              value={formData.config.region || 'aws-0-us-east-1'}
-              onChange={(e) => handleConfigChange('region', e.target.value)}
-            >
-              <option value="aws-0-us-east-1">East US (North Virginia)</option>
-              <option value="aws-0-us-east-2">East US (Ohio)</option>
-              <option value="aws-0-us-west-1">West US (North California)</option>
-              <option value="aws-0-us-west-2">West US (Oregon)</option>
-              <option value="aws-0-ca-central-1">Canada (Central)</option>
-              <option value="aws-0-eu-west-1">West EU (Ireland)</option>
-              <option value="aws-0-eu-west-2">West Europe (London)</option>
-              <option value="aws-0-eu-west-3">West EU (Paris)</option>
-              <option value="aws-0-eu-central-1">Central EU (Frankfurt)</option>
-              <option value="aws-0-eu-central-2">Central Europe (Zurich)</option>
-              <option value="aws-0-eu-north-1">North EU (Stockholm)</option>
-              <option value="aws-0-ap-south-1">South Asia (Mumbai)</option>
-              <option value="aws-0-ap-southeast-1">Southeast Asia (Singapore)</option>
-              <option value="aws-0-ap-southeast-2">Oceania (Sydney)</option>
-              <option value="aws-0-ap-northeast-1">Northeast Asia (Tokyo)</option>
-              <option value="aws-0-ap-northeast-2">Northeast Asia (Seoul)</option>
-              <option value="aws-0-sa-east-1">South America (São Paulo)</option>
-            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Supabase Dashboard → Suchfeld "connection string" → <strong>Session Pooler</strong> wählen → URI kopieren.
+              Das Passwort wird automatisch aus dem Credential-Profil genommen.
+            </p>
           </div>
 
           <div>
@@ -1115,7 +1088,7 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
             <button
               type="button"
               onClick={testConnection}
-              disabled={!formData.config.project_ref || connectionTestStatus === 'testing'}
+              disabled={!formData.config.connection_string || connectionTestStatus === 'testing'}
               className={clsx(
                 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
                 connectionTestStatus === 'success'
@@ -1123,7 +1096,7 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
                   : connectionTestStatus === 'error'
                   ? 'bg-red-100 text-red-700 border border-red-300'
                   : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200',
-                (!formData.config.project_ref || connectionTestStatus === 'testing') && 'opacity-50 cursor-not-allowed'
+                (!formData.config.connection_string || connectionTestStatus === 'testing') && 'opacity-50 cursor-not-allowed'
               )}
             >
               {connectionTestStatus === 'testing' ? (

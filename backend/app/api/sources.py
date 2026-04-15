@@ -238,60 +238,54 @@ def test_source(current_user, source_id):
 @sources_bp.route('/supabase/test', methods=['POST'])
 @token_required
 def test_supabase_connection(current_user):
-    """Test Supabase database connection using pg_dump/psql"""
+    """Test Supabase database connection using psql with user-provided connection string"""
     import subprocess
     data = request.get_json() or {}
 
-    project_ref = data.get('project_ref', '')
-    region = data.get('region', 'aws-0-us-east-1')
+    connection_string = data.get('connection_string', '').strip()
 
-    if not project_ref:
-        return jsonify({'error': 'Project Ref ist erforderlich'}), 400
+    if not connection_string:
+        return jsonify({'error': 'Connection String ist erforderlich'}), 400
 
-    # 1. Check if pg_dump is available
+    if not connection_string.startswith('postgresql://'):
+        return jsonify({'error': 'Connection String muss mit postgresql:// beginnen'}), 400
+
+    # 1. Check if psql is available
     try:
         result = subprocess.run(
-            ['pg_dump', '--version'],
+            ['psql', '--version'],
             capture_output=True, text=True, timeout=5
         )
         if result.returncode != 0:
-            return jsonify({'error': 'pg_dump nicht verfügbar im Container'}), 500
+            return jsonify({'error': 'psql nicht verfügbar im Container'}), 500
         pg_version = result.stdout.strip()
     except FileNotFoundError:
-        return jsonify({'error': 'pg_dump nicht installiert'}), 500
+        return jsonify({'error': 'psql nicht installiert'}), 500
     except Exception as e:
-        return jsonify({'error': f'pg_dump Check fehlgeschlagen: {str(e)}'}), 500
+        return jsonify({'error': f'psql Check fehlgeschlagen: {str(e)}'}), 500
 
-    # 2. Get DB password from credentials
+    # 2. Replace [YOUR-PASSWORD] placeholder with credential from DB
     from app.api.settings import get_credential
     db_password = get_credential('supabase_db_password')
 
-    if not db_password:
-        return jsonify({
-            'error': 'Supabase DB Password nicht konfiguriert. Bitte unter Settings → Credentials eintragen.'
-        }), 400
+    if '[YOUR-PASSWORD]' in connection_string:
+        if not db_password:
+            return jsonify({
+                'error': 'Supabase DB Password nicht konfiguriert. Bitte unter Settings → Credentials eintragen.'
+            }), 400
+        connection_string = connection_string.replace('[YOUR-PASSWORD]', db_password)
+    elif ':postgres@' in connection_string or connection_string.count(':') < 3:
+        # No password in string and no placeholder
+        if not db_password:
+            return jsonify({
+                'error': 'Kein Passwort im Connection String und kein Credential-Profil konfiguriert.'
+            }), 400
 
-    # 3. Build direct connection string (not pooler)
-    host = f"db.{project_ref}.supabase.co"
-
-    # Resolve hostname to IPv4 to avoid IPv6 issues in Docker
-    import socket
+    # 3. Test connection
     try:
-        ipv4_addr = socket.getaddrinfo(host, 5432, socket.AF_INET)[0][4][0]
-    except socket.gaierror:
-        return jsonify({'error': f'DNS-Auflösung fehlgeschlagen für {host}'}), 400
-
-    connection_string = (
-        f"postgresql://postgres:{db_password}"
-        f"@{ipv4_addr}:5432/postgres"
-    )
-
-    try:
-        env = os.environ.copy()
-        env['PGSSLMODE'] = 'require'
         result = subprocess.run(
             ['psql', connection_string, '-c', 'SELECT 1;'],
-            capture_output=True, text=True, timeout=15, env=env
+            capture_output=True, text=True, timeout=15
         )
 
         if result.returncode == 0:
@@ -304,12 +298,12 @@ def test_supabase_connection(current_user):
             if 'password authentication failed' in error_msg.lower():
                 return jsonify({'error': 'DB Password falsch. Prüfe Settings → Credentials.'}), 401
             elif 'could not translate host name' in error_msg.lower():
-                return jsonify({'error': f'Region oder Project Ref falsch: {region}'}), 400
+                return jsonify({'error': 'Hostname nicht auflösbar. Prüfe den Connection String.'}), 400
             else:
                 return jsonify({'error': f'Verbindung fehlgeschlagen: {error_msg}'}), 503
 
     except subprocess.TimeoutExpired:
-        return jsonify({'error': 'Verbindung Timeout (15s) - prüfe Region und Project Ref'}), 504
+        return jsonify({'error': 'Verbindung Timeout (15s) - prüfe den Connection String'}), 504
     except Exception as e:
         return jsonify({'error': f'Verbindungstest fehlgeschlagen: {str(e)}'}), 500
 
