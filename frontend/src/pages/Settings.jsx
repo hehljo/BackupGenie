@@ -51,6 +51,7 @@ export default function Settings() {
   const [isSavingCredentials, setIsSavingCredentials] = useState(false)
   const [newProfile, setNewProfile] = useState({ type: '', name: '', value: '' })
   const [showAddProfile, setShowAddProfile] = useState(null) // which type is adding
+  const [editingProfile, setEditingProfile] = useState(null) // { provider, profile } when editing
 
   // Confirm Dialogs
   const [clearBackupsConfirm, setClearBackupsConfirm] = useState(false)
@@ -167,6 +168,7 @@ export default function Settings() {
       toast.success(`Profil "${newProfile.name}" gespeichert`)
       setNewProfile({ name: '', values: {} })
       setShowAddProfile(null)
+      setEditingProfile(null)
       const credRes = await settingsAPI.getCredentials()
       setCredentials(credRes.data)
     } catch (error) {
@@ -553,6 +555,7 @@ export default function Settings() {
                     onClick={() => {
                       setShowAddProfile(showAddProfile === provider ? null : provider)
                       setNewProfile({ name: '', values: {} })
+                      setEditingProfile(null)
                     }}
                     className="text-xs flex items-center gap-1 text-primary-600 hover:text-primary-800"
                   >
@@ -565,26 +568,43 @@ export default function Settings() {
                 {credentials[provider]?.profiles?.length > 0 ? (
                   <div className="space-y-2">
                     {credentials[provider].profiles.map((p) => (
-                      <div key={p.profile} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
-                        <span className="text-sm font-medium text-gray-700 flex-1">{p.profile}</span>
+                      <div key={p.profile} className="bg-gray-50 rounded-lg px-3 py-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium text-gray-700">{p.profile}</span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {p.source === 'database' && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setEditingProfile({ provider, profile: p.profile })
+                                    setShowAddProfile(provider)
+                                    setNewProfile({ name: p.profile, values: {} })
+                                  }}
+                                  className="text-gray-400 hover:text-blue-500"
+                                  title="Profil bearbeiten"
+                                >
+                                  <Save className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteProfile(provider, p.profile)}
+                                  className="text-gray-400 hover:text-red-500"
+                                  title="Profil löschen"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
                         {p.fields && (
-                          <div className="flex gap-1">
+                          <div className="flex flex-wrap gap-1 mt-1.5">
                             {Object.entries(p.fields).map(([field, configured]) => (
                               <span key={field} className={`text-xs px-1.5 py-0.5 rounded ${configured ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
                                 {meta.fields[field]?.label || field}
                               </span>
                             ))}
+                            <span className="text-xs text-gray-400 ml-1">{p.source}</span>
                           </div>
-                        )}
-                        <span className="text-xs text-gray-400">{p.source}</span>
-                        {p.source === 'database' && (
-                          <button
-                            onClick={() => handleDeleteProfile(provider, p.profile)}
-                            className="text-gray-400 hover:text-red-500"
-                            title="Profil löschen"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
                         )}
                       </div>
                     ))}
@@ -593,15 +613,19 @@ export default function Settings() {
                   <p className="text-xs text-gray-400 italic mt-1">Kein Profil konfiguriert</p>
                 )}
 
-                {/* Add new profile form */}
+                {/* Add/Edit profile form */}
                 {showAddProfile === provider && (
                   <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+                    <div className="text-xs font-semibold text-blue-700 mb-1">
+                      {editingProfile ? `Profil "${editingProfile.profile}" bearbeiten` : 'Neues Profil'}
+                    </div>
                     <input
                       type="text"
                       className="input text-sm"
                       placeholder="Profilname (z.B. Privat, Arbeit, Server-1)"
                       value={newProfile.name}
                       onChange={(e) => setNewProfile({...newProfile, name: e.target.value})}
+                      disabled={!!editingProfile}
                     />
                     {Object.entries(meta.fields).map(([field, fieldMeta]) => (
                       <div key={field}>
