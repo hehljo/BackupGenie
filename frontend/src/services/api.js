@@ -29,8 +29,13 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      window.location.href = '/login'
+      // Don't logout on source connection test failures (e.g. wrong DB password)
+      const url = error.config?.url || ''
+      const isConnectionTest = url.includes('/test') || url.includes('/discover')
+      if (!isConnectionTest) {
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   }

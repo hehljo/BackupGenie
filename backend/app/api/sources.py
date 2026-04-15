@@ -217,7 +217,7 @@ def test_source(current_user, source_id):
                     'source_id': source_id
                 }), 200
             elif response.status_code == 401:
-                return jsonify({'error': 'Invalid GitHub token'}), 401
+                return jsonify({'error': 'Invalid GitHub token'}), 400
             elif response.status_code == 404:
                 return jsonify({'error': f'Repository {repo} not found'}), 404
             else:
@@ -297,7 +297,7 @@ def test_supabase_connection(current_user):
         else:
             error_msg = result.stderr.strip()
             if 'password authentication failed' in error_msg.lower():
-                return jsonify({'error': 'DB Password falsch. Prüfe Settings → Credentials.'}), 401
+                return jsonify({'error': 'DB Password falsch. Prüfe Settings → Credentials.'}), 400
             elif 'could not translate host name' in error_msg.lower():
                 return jsonify({'error': 'Hostname nicht auflösbar. Prüfe den Connection String.'}), 400
             else:
