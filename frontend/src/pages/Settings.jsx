@@ -619,6 +619,9 @@ export default function Settings() {
                     <div className="text-xs font-semibold text-blue-700 mb-1">
                       {editingProfile ? `Profil "${editingProfile.profile}" bearbeiten` : 'Neues Profil'}
                     </div>
+                    {editingProfile && (
+                      <p className="text-xs text-blue-600 italic">Nur ausgefüllte Felder werden überschrieben. Leere Felder bleiben unverändert.</p>
+                    )}
                     <input
                       type="text"
                       className="input text-sm"
