@@ -268,6 +268,10 @@ def test_supabase_connection(current_user):
     from app.api.settings import get_credential
     db_password = get_credential('supabase_db_password')
 
+    # Supabase Dashboard URL-encodes brackets: %5BYOUR-PASSWORD%5D → [YOUR-PASSWORD]
+    from urllib.parse import unquote
+    connection_string = unquote(connection_string)
+
     if '[YOUR-PASSWORD]' in connection_string:
         if not db_password:
             return jsonify({

@@ -35,6 +35,10 @@ class SupabaseBackup(BackupHandler):
             raise Exception("Connection String ist erforderlich. Kopiere ihn aus dem Supabase Dashboard.")
 
         # Replace [YOUR-PASSWORD] placeholder with credential from DB
+        # Supabase Dashboard URL-encodes brackets: %5BYOUR-PASSWORD%5D
+        from urllib.parse import unquote
+        connection_string = unquote(connection_string)
+
         db_password = self._get_env_credential(
             credentials.get('db_password_env', 'SUPABASE_DB_PASSWORD')
         )
