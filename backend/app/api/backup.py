@@ -229,18 +229,22 @@ def start_restore(current_user):
     data = request.get_json() or {}
 
     backup_path = data.get('backup_path', '')
-    target_project_ref = data.get('target_project_ref', '')
-    target_region = data.get('target_region', 'aws-0-us-east-1')
+    target_connection_string = data.get('target_connection_string', '')
     target_db_password = data.get('target_db_password', '')
     restore_storage = data.get('restore_storage', False)
     target_service_role_key = data.get('target_service_role_key', '')
 
     if not backup_path:
         return jsonify({'error': 'backup_path ist erforderlich'}), 400
-    if not target_project_ref:
-        return jsonify({'error': 'target_project_ref ist erforderlich'}), 400
-    if not target_db_password:
-        return jsonify({'error': 'target_db_password ist erforderlich'}), 400
+    if not target_connection_string:
+        return jsonify({'error': 'target_connection_string ist erforderlich'}), 400
+
+    # If credential profile is requested, use the configured password
+    if not target_db_password and '[YOUR-PASSWORD]' in target_connection_string:
+        from app.api.settings import get_credential
+        target_db_password = get_credential('supabase_db_password')
+        if not target_db_password:
+            return jsonify({'error': 'Kein DB Passwort. Setze es in den Credentials oder gib es direkt mit.'}), 400
 
     import os
     if not os.path.exists(backup_path):
@@ -267,8 +271,7 @@ def start_restore(current_user):
                     json.dump({'status': 'running', 'restore_id': restore_id}, f)
 
                 result = restorer.restore(backup_path, {
-                    'target_project_ref': target_project_ref,
-                    'target_region': target_region,
+                    'target_connection_string': target_connection_string,
                     'target_db_password': target_db_password,
                     'restore_storage': restore_storage,
                     'target_service_role_key': target_service_role_key,

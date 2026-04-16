@@ -303,17 +303,17 @@ class SupabaseBackup(BackupHandler):
         files = 0
         env = os.environ.copy()
 
-        # Dump RLS policies
+        # Dump RLS policies (no trailing semicolon — \copy doesn't allow it)
         rls_file = os.path.join(config_dir, f"rls_policies_{timestamp}.sql")
-        rls_query = """
-SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual, with_check
-FROM pg_policies
-ORDER BY schemaname, tablename, policyname;
-"""
+        rls_query = (
+            "SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual, with_check "
+            "FROM pg_policies "
+            "ORDER BY schemaname, tablename, policyname"
+        )
         self.log("Exporting RLS Policies...")
         result = subprocess.run(
             ['psql', connection_string, '-c',
-             f"\\copy ({rls_query.strip()}) TO STDOUT WITH CSV HEADER"],
+             f"\\copy ({rls_query}) TO STDOUT WITH CSV HEADER"],
             capture_output=True, text=True, env=env, timeout=120
         )
 

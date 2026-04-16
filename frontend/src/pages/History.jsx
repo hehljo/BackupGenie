@@ -21,8 +21,7 @@ export default function History() {
   const [restoreLoading, setRestoreLoading] = useState(false)
   const [restoreForm, setRestoreForm] = useState({
     backup_path: '',
-    target_project_ref: '',
-    target_region: 'aws-0-us-east-1',
+    target_connection_string: '',
     target_db_password: '',
     restore_storage: false,
     target_service_role_key: '',
@@ -102,8 +101,7 @@ export default function History() {
     setRestoreResult(null)
     setRestoreForm({
       backup_path: '',
-      target_project_ref: '',
-      target_region: 'aws-0-us-east-1',
+      target_connection_string: '',
       target_db_password: '',
       restore_storage: false,
       target_service_role_key: '',
@@ -446,48 +444,31 @@ export default function History() {
                       )}
                     </div>
 
-                    {/* Target Config */}
+                    {/* Target Connection String */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Ziel-Project Ref *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Ziel Connection String *</label>
                       <input
                         type="text"
-                        className="input"
-                        value={restoreForm.target_project_ref}
-                        onChange={(e) => setRestoreForm(prev => ({ ...prev, target_project_ref: e.target.value }))}
-                        placeholder="abcdefghijklmnop"
+                        className="input font-mono text-sm"
+                        value={restoreForm.target_connection_string}
+                        onChange={(e) => setRestoreForm(prev => ({ ...prev, target_connection_string: e.target.value }))}
+                        placeholder="postgresql://postgres.xxxxx:[YOUR-PASSWORD]@aws-1-eu-north-1.pooler.supabase.com:5432/postgres"
                         required
                       />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Aus dem Supabase Dashboard des Ziel-Projekts → Session Pooler URI kopieren
+                      </p>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Ziel-Region</label>
-                      <select
-                        className="input"
-                        value={restoreForm.target_region}
-                        onChange={(e) => setRestoreForm(prev => ({ ...prev, target_region: e.target.value }))}
-                      >
-                        <option value="aws-0-us-east-1">US East (N. Virginia)</option>
-                        <option value="aws-0-us-west-1">US West (N. California)</option>
-                        <option value="aws-0-eu-west-1">EU West (Ireland)</option>
-                        <option value="aws-0-eu-west-2">EU West (London)</option>
-                        <option value="aws-0-eu-central-1">EU Central (Frankfurt)</option>
-                        <option value="aws-0-ap-southeast-1">Asia Pacific (Singapore)</option>
-                        <option value="aws-0-ap-northeast-1">Asia Pacific (Tokyo)</option>
-                        <option value="aws-0-ap-south-1">Asia Pacific (Mumbai)</option>
-                        <option value="aws-0-sa-east-1">South America (São Paulo)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Ziel-DB Password *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Ziel-DB Password</label>
                       <div className="relative">
                         <input
                           type={showRestorePassword ? "text" : "password"}
                           className="input pr-10"
                           value={restoreForm.target_db_password}
                           onChange={(e) => setRestoreForm(prev => ({ ...prev, target_db_password: e.target.value }))}
-                          placeholder="••••••••"
-                          required
+                          placeholder="Leer lassen wenn aus Credential-Profil oder im String"
                         />
                         <button
                           type="button"
@@ -497,6 +478,9 @@ export default function History() {
                           {showRestorePassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                         </button>
                       </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Wenn der String [YOUR-PASSWORD] enthält, wird hier oder das Credential-Profil verwendet
+                      </p>
                     </div>
 
                     <label className="flex items-center gap-2 cursor-pointer">
@@ -541,7 +525,7 @@ export default function History() {
                       </button>
                       <button
                         onClick={() => setConfirmRestore(true)}
-                        disabled={!restoreForm.backup_path || !restoreForm.target_project_ref || !restoreForm.target_db_password}
+                        disabled={!restoreForm.backup_path || !restoreForm.target_connection_string}
                         className="btn btn-primary flex-1 disabled:opacity-50"
                       >
                         <RotateCcw className="w-4 h-4 mr-2" />
@@ -560,7 +544,7 @@ export default function History() {
       <ConfirmDialog
         isOpen={confirmRestore}
         title="Restore bestätigen"
-        message={`Daten werden auf Projekt ${restoreForm.target_project_ref} wiederhergestellt. ${restoreForm.restore_storage ? 'Storage-Objekte werden ebenfalls überschrieben!' : ''} Fortfahren?`}
+        message={`Daten werden auf das Ziel-Projekt wiederhergestellt. ${restoreForm.restore_storage ? 'Storage-Objekte werden ebenfalls überschrieben!' : ''} Fortfahren?`}
         confirmText="Ja, Restore starten"
         cancelText="Abbrechen"
         onConfirm={handleRestore}

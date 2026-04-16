@@ -40,25 +40,34 @@ class SupabaseRestore:
 
         Args:
             backup_path: Path to backup directory or .tar.gz archive
-            target_config: dict with target_project_ref, target_region, target_db_password,
+            target_config: dict with target_connection_string, target_db_password,
                           and optionally target_service_role_key for storage restore
         Returns:
             dict with status, logs
         """
-        target_ref = target_config.get('target_project_ref', '')
-        target_region = target_config.get('target_region', 'aws-0-us-east-1')
+        from urllib.parse import quote, unquote
+        import re
+
+        target_conn = target_config.get('target_connection_string', '').strip()
         target_password = target_config.get('target_db_password', '')
         restore_storage = target_config.get('restore_storage', False)
         target_service_key = target_config.get('target_service_role_key', '')
 
-        if not target_ref or not target_password:
-            raise Exception("target_project_ref and target_db_password are required")
+        if not target_conn:
+            raise Exception("target_connection_string is required")
 
-        # Build target connection string
-        target_conn = (
-            f"postgresql://postgres.{target_ref}:{target_password}"
-            f"@{target_region}.pooler.supabase.com:5432/postgres"
-        )
+        # Decode URL-encoded brackets from Supabase Dashboard
+        target_conn = unquote(target_conn)
+
+        # Replace [YOUR-PASSWORD] placeholder
+        if '[YOUR-PASSWORD]' in target_conn:
+            if not target_password:
+                raise Exception("target_db_password required when [YOUR-PASSWORD] placeholder used")
+            target_conn = target_conn.replace('[YOUR-PASSWORD]', quote(target_password, safe=''))
+
+        # Extract target ref for storage restore
+        match = re.search(r'postgres\.([a-z]+)[:@]', target_conn) or re.search(r'db\.([a-z]+)\.supabase', target_conn)
+        target_ref = match.group(1) if match else ''
 
         # Handle tar.gz archives
         working_dir = backup_path
