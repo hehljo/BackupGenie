@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Clock, CheckCircle, XCircle, AlertCircle, ChevronDown, ChevronUp, FileText, RotateCcw, Eye, EyeOff, Loader2, X } from 'lucide-react'
-import { backupAPI, restoreAPI } from '../services/api'
+import { backupAPI, restoreAPI, settingsAPI } from '../services/api'
 import clsx from 'clsx'
 import { formatDistanceToNow } from 'date-fns'
 import { useTranslation } from 'react-i18next'
@@ -21,11 +21,14 @@ export default function History() {
   const [restoreLoading, setRestoreLoading] = useState(false)
   const [restoreForm, setRestoreForm] = useState({
     backup_path: '',
+    profile: '',
     target_connection_string: '',
     target_db_password: '',
     restore_storage: false,
     target_service_role_key: '',
   })
+  const [supabaseProfiles, setSupabaseProfiles] = useState([])
+  const [useManualConnection, setUseManualConnection] = useState(false)
   const [showRestorePassword, setShowRestorePassword] = useState(false)
   const [showServiceKey, setShowServiceKey] = useState(false)
   const [restoreStatus, setRestoreStatus] = useState(null) // null, 'starting', 'running', 'completed', 'failed'
@@ -99,8 +102,10 @@ export default function History() {
     setRestoreLoading(true)
     setRestoreStatus(null)
     setRestoreResult(null)
+    setUseManualConnection(false)
     setRestoreForm({
       backup_path: '',
+      profile: '',
       target_connection_string: '',
       target_db_password: '',
       restore_storage: false,
@@ -108,13 +113,21 @@ export default function History() {
     })
 
     try {
-      const response = await restoreAPI.getAvailable(sourceId)
-      setRestoreBackups(response.data.backups || [])
-      if (response.data.backups?.length > 0) {
-        setRestoreForm(prev => ({ ...prev, backup_path: response.data.backups[0].path }))
-      }
+      const [restoresRes, credsRes] = await Promise.all([
+        restoreAPI.getAvailable(sourceId),
+        settingsAPI.getCredentials().catch(() => ({ data: {} })),
+      ])
+      setRestoreBackups(restoresRes.data.backups || [])
+      const profiles = credsRes.data?.supabase?.profiles || []
+      setSupabaseProfiles(profiles)
+      const defaultProfile = profiles[0]?.profile || ''
+      setRestoreForm(prev => ({
+        ...prev,
+        backup_path: restoresRes.data.backups?.[0]?.path || '',
+        profile: defaultProfile,
+      }))
     } catch (error) {
-      console.error('Error loading available backups:', error)
+      console.error('Error loading restore data:', error)
       setRestoreBackups([])
     }
     setRestoreLoading(false)
@@ -444,44 +457,86 @@ export default function History() {
                       )}
                     </div>
 
-                    {/* Target Connection String */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Ziel Connection String *</label>
-                      <input
-                        type="text"
-                        className="input font-mono text-sm"
-                        value={restoreForm.target_connection_string}
-                        onChange={(e) => setRestoreForm(prev => ({ ...prev, target_connection_string: e.target.value }))}
-                        placeholder="postgresql://postgres.xxxxx:[YOUR-PASSWORD]@aws-1-eu-north-1.pooler.supabase.com:5432/postgres"
-                        required
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Aus dem Supabase Dashboard des Ziel-Projekts → Session Pooler URI kopieren
-                      </p>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Ziel-DB Password</label>
-                      <div className="relative">
-                        <input
-                          type={showRestorePassword ? "text" : "password"}
-                          className="input pr-10"
-                          value={restoreForm.target_db_password}
-                          onChange={(e) => setRestoreForm(prev => ({ ...prev, target_db_password: e.target.value }))}
-                          placeholder="Leer lassen wenn aus Credential-Profil oder im String"
-                        />
+                    {/* Profile / Manual Connection */}
+                    {!useManualConnection ? (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Ziel-Profil *</label>
+                        {supabaseProfiles.length === 0 ? (
+                          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                            <p className="text-sm text-amber-800">
+                              Kein Supabase-Profil. Leg eins unter <strong>Settings → Credentials</strong> an oder gib unten manuell einen Connection String ein.
+                            </p>
+                          </div>
+                        ) : (
+                          <>
+                            <select
+                              className="input"
+                              value={restoreForm.profile}
+                              onChange={(e) => setRestoreForm(prev => ({ ...prev, profile: e.target.value }))}
+                            >
+                              {supabaseProfiles.map((p) => (
+                                <option key={p.profile} value={p.profile}>{p.profile}</option>
+                              ))}
+                            </select>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Connection String + DB Passwort kommen aus dem Profil. Achtung: Das Backup wird auf dieses Ziel-Projekt eingespielt!
+                            </p>
+                          </>
+                        )}
                         <button
                           type="button"
-                          onClick={() => setShowRestorePassword(!showRestorePassword)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700"
+                          onClick={() => setUseManualConnection(true)}
+                          className="mt-2 text-xs text-blue-600 hover:text-blue-800 underline"
                         >
-                          {showRestorePassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                          Stattdessen manuell Connection String eingeben
                         </button>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Wenn der String [YOUR-PASSWORD] enthält, wird hier oder das Credential-Profil verwendet
-                      </p>
-                    </div>
+                    ) : (
+                      <>
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="block text-sm font-medium text-gray-700">Ziel Connection String *</label>
+                            <button
+                              type="button"
+                              onClick={() => setUseManualConnection(false)}
+                              className="text-xs text-blue-600 hover:text-blue-800 underline"
+                            >
+                              Profil verwenden
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            className="input font-mono text-sm"
+                            value={restoreForm.target_connection_string}
+                            onChange={(e) => setRestoreForm(prev => ({ ...prev, target_connection_string: e.target.value }))}
+                            placeholder="postgresql://postgres.xxxxx:[YOUR-PASSWORD]@aws-1-eu-north-1.pooler.supabase.com:5432/postgres"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Aus dem Supabase Dashboard des Ziel-Projekts → Session Pooler URI kopieren
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Ziel-DB Password</label>
+                          <div className="relative">
+                            <input
+                              type={showRestorePassword ? "text" : "password"}
+                              className="input pr-10"
+                              value={restoreForm.target_db_password}
+                              onChange={(e) => setRestoreForm(prev => ({ ...prev, target_db_password: e.target.value }))}
+                              placeholder="Wird in [YOUR-PASSWORD] eingesetzt"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowRestorePassword(!showRestorePassword)}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700"
+                            >
+                              {showRestorePassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
 
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -525,7 +580,12 @@ export default function History() {
                       </button>
                       <button
                         onClick={() => setConfirmRestore(true)}
-                        disabled={!restoreForm.backup_path || !restoreForm.target_connection_string}
+                        disabled={
+                          !restoreForm.backup_path ||
+                          (useManualConnection
+                            ? !restoreForm.target_connection_string
+                            : !restoreForm.profile)
+                        }
                         className="btn btn-primary flex-1 disabled:opacity-50"
                       >
                         <RotateCcw className="w-4 h-4 mr-2" />

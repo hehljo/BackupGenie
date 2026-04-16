@@ -250,9 +250,9 @@ CREDENTIAL_PROVIDERS = {
         'env_map': {'password': 'NAS_PASSWORD_1'},
     },
     'supabase': {
-        'fields': ['db_password', 'service_role_key'],
-        'legacy_map': {'db_password': 'supabase_db_password', 'service_role_key': 'supabase_service_role_key'},
-        'env_map': {'db_password': 'SUPABASE_DB_PASSWORD', 'service_role_key': 'SUPABASE_SERVICE_ROLE_KEY'},
+        'fields': ['connection_string', 'db_password', 'service_role_key'],
+        'legacy_map': {'connection_string': 'supabase_connection_string', 'db_password': 'supabase_db_password', 'service_role_key': 'supabase_service_role_key'},
+        'env_map': {'connection_string': 'SUPABASE_CONNECTION_STRING', 'db_password': 'SUPABASE_DB_PASSWORD', 'service_role_key': 'SUPABASE_SERVICE_ROLE_KEY'},
     },
     'smtp': {
         'fields': ['password'],

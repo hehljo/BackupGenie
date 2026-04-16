@@ -125,8 +125,13 @@ export default function Settings() {
       label: 'Supabase',
       icon: '⚡',
       fields: {
-        db_password: { label: 'DB Passwort', hint: 'Datenbank-Passwort aus dem Supabase Dashboard' },
-        service_role_key: { label: 'Service Role Key', hint: 'Für Storage & Config Backup' }
+        connection_string: {
+          label: 'Connection String (Session Pooler)',
+          hint: 'postgresql://postgres.xxxxx:[YOUR-PASSWORD]@aws-1-eu-north-1.pooler.supabase.com:5432/postgres',
+          help: 'Im Supabase Dashboard auf "Connect" → Tab "Session Pooler" → URI kopieren. Das Passwort darin als [YOUR-PASSWORD] lassen — wird automatisch eingesetzt.'
+        },
+        db_password: { label: 'DB Passwort', hint: 'Datenbank-Passwort aus dem Supabase Dashboard (ersetzt [YOUR-PASSWORD] im Connection String)' },
+        service_role_key: { label: 'Service Role Key (optional)', hint: 'Nur für Storage-Restore notwendig' }
       }
     },
     smtp: {
@@ -636,7 +641,7 @@ export default function Settings() {
                         <div className="relative">
                           <input
                             type={credentialVisibility[`${provider}_${field}`] ? 'text' : 'password'}
-                            className="input text-sm pr-10"
+                            className="input text-sm pr-10 font-mono"
                             placeholder={fieldMeta.hint}
                             value={newProfile.values?.[field] || ''}
                             onChange={(e) => setNewProfile({
@@ -652,6 +657,9 @@ export default function Settings() {
                             {credentialVisibility[`${provider}_${field}`] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
                         </div>
+                        {fieldMeta.help && (
+                          <p className="text-xs text-blue-700 mt-1">{fieldMeta.help}</p>
+                        )}
                       </div>
                     ))}
                     <button

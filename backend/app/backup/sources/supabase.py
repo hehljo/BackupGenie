@@ -26,24 +26,29 @@ class SupabaseBackup(BackupHandler):
 
     def backup(self):
         """Execute Supabase backup"""
-        credentials = self.source_config.get('credentials', {})
         backup_mode = self.source_config.get('backup_mode', 'db_only')
         options = self.source_config.get('options', {})
 
-        connection_string = self.source_config.get('connection_string', '')
-        if not connection_string:
-            raise Exception("Connection String ist erforderlich. Kopiere ihn aus dem Supabase Dashboard.")
+        # Get all credentials from profile (provider-based)
+        from app.api.settings import get_credential
+        profile = self.source_config.get('credential_profile')
 
-        # Replace [YOUR-PASSWORD] placeholder with credential from DB
-        # Supabase Dashboard URL-encodes brackets: %5BYOUR-PASSWORD%5D
-        from urllib.parse import unquote
+        connection_string = (
+            self.source_config.get('connection_string', '')
+            or get_credential('supabase_connection_string', profile=profile)
+        )
+        if not connection_string:
+            raise Exception("Connection String fehlt. Wähle ein Supabase-Profil mit konfiguriertem Connection String.")
+
+        # Decode URL-encoded brackets from Supabase Dashboard
+        from urllib.parse import unquote, quote
         connection_string = unquote(connection_string)
 
-        db_password = self._get_env_credential(
-            credentials.get('db_password_env', 'SUPABASE_DB_PASSWORD')
-        )
+        # Replace [YOUR-PASSWORD] placeholder
         if '[YOUR-PASSWORD]' in connection_string:
-            from urllib.parse import quote
+            db_password = get_credential('supabase_db_password', profile=profile)
+            if not db_password:
+                raise Exception("DB Passwort fehlt im Profil. Trage es in den Credentials ein.")
             connection_string = connection_string.replace('[YOUR-PASSWORD]', quote(db_password, safe=''))
 
         # Extract project_ref from connection string for API URL

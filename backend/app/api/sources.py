@@ -238,14 +238,20 @@ def test_source(current_user, source_id):
 @sources_bp.route('/supabase/test', methods=['POST'])
 @token_required
 def test_supabase_connection(current_user):
-    """Test Supabase database connection using psql with user-provided connection string"""
+    """Test Supabase database connection. Connection String + Password come from credential profile."""
     import subprocess
     data = request.get_json() or {}
 
-    connection_string = data.get('connection_string', '').strip()
+    profile = (data.get('profile') or '').strip() or None
+    connection_string = (data.get('connection_string') or '').strip()
+
+    from app.api.settings import get_credential
 
     if not connection_string:
-        return jsonify({'error': 'Connection String ist erforderlich'}), 400
+        connection_string = get_credential('supabase_connection_string', profile=profile) or ''
+
+    if not connection_string:
+        return jsonify({'error': 'Connection String fehlt. Trag ihn im Credential-Profil ein oder wähle ein Profil.'}), 400
 
     if not connection_string.startswith('postgresql://'):
         return jsonify({'error': 'Connection String muss mit postgresql:// beginnen'}), 400
@@ -264,27 +270,19 @@ def test_supabase_connection(current_user):
     except Exception as e:
         return jsonify({'error': f'psql Check fehlgeschlagen: {str(e)}'}), 500
 
-    # 2. Replace [YOUR-PASSWORD] placeholder with credential from DB
-    from app.api.settings import get_credential
-    db_password = get_credential('supabase_db_password')
+    # 2. Replace [YOUR-PASSWORD] placeholder with credential from profile
+    db_password = get_credential('supabase_db_password', profile=profile)
 
     # Supabase Dashboard URL-encodes brackets: %5BYOUR-PASSWORD%5D → [YOUR-PASSWORD]
-    from urllib.parse import unquote
+    from urllib.parse import unquote, quote
     connection_string = unquote(connection_string)
 
     if '[YOUR-PASSWORD]' in connection_string:
         if not db_password:
             return jsonify({
-                'error': 'Supabase DB Password nicht konfiguriert. Bitte unter Settings → Credentials eintragen.'
+                'error': 'DB Passwort fehlt im Profil. Trag es unter Settings → Credentials ein.'
             }), 400
-        from urllib.parse import quote
         connection_string = connection_string.replace('[YOUR-PASSWORD]', quote(db_password, safe=''))
-    elif ':postgres@' in connection_string or connection_string.count(':') < 3:
-        # No password in string and no placeholder
-        if not db_password:
-            return jsonify({
-                'error': 'Kein Passwort im Connection String und kein Credential-Profil konfiguriert.'
-            }), 400
 
     # 3. Test connection
     try:

@@ -40,21 +40,32 @@ class SupabaseRestore:
 
         Args:
             backup_path: Path to backup directory or .tar.gz archive
-            target_config: dict with target_connection_string, target_db_password,
-                          and optionally target_service_role_key for storage restore
+            target_config: dict with optional 'profile' (credential profile name) and/or
+                          target_connection_string, target_db_password,
+                          target_service_role_key (override profile values)
         Returns:
             dict with status, logs
         """
         from urllib.parse import quote, unquote
         import re
+        from app.api.settings import get_credential
 
-        target_conn = target_config.get('target_connection_string', '').strip()
-        target_password = target_config.get('target_db_password', '')
+        profile = target_config.get('profile') or None
+        target_conn = (target_config.get('target_connection_string') or '').strip()
+        target_password = target_config.get('target_db_password') or ''
         restore_storage = target_config.get('restore_storage', False)
-        target_service_key = target_config.get('target_service_role_key', '')
+        target_service_key = target_config.get('target_service_role_key') or ''
+
+        # Fallback: fetch missing values from credential profile
+        if not target_conn:
+            target_conn = get_credential('supabase_connection_string', profile=profile) or ''
+        if not target_password:
+            target_password = get_credential('supabase_db_password', profile=profile) or ''
+        if restore_storage and not target_service_key:
+            target_service_key = get_credential('supabase_service_role_key', profile=profile) or ''
 
         if not target_conn:
-            raise Exception("target_connection_string is required")
+            raise Exception("Connection String fehlt. Wähle ein Profil oder gib einen Connection String an.")
 
         # Decode URL-encoded brackets from Supabase Dashboard
         target_conn = unquote(target_conn)

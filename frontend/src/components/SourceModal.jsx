@@ -998,7 +998,7 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
         setConnectionTestMessage('')
         try {
           const testData = {
-            connection_string: formData.config.connection_string || '',
+            profile: formData.config.credential_profile || '',
           }
           const response = await sourcesAPI.testSupabase(testData)
           setConnectionTestStatus('success')
@@ -1011,49 +1011,17 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
 
       return (
         <div className="space-y-4">
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-900 font-semibold mb-2">So legst du ein Supabase-Profil an:</p>
+            <ol className="text-xs text-blue-800 space-y-1 list-decimal list-inside">
+              <li>In <strong>Settings → Credentials</strong> ein neues Supabase-Profil anlegen</li>
+              <li>Im Supabase Dashboard auf "Connect" klicken → <strong>Session Pooler</strong> → URI kopieren</li>
+              <li>Connection String + DB Passwort ins Profil eintragen, speichern</li>
+              <li>Hier dann das Profil auswählen — fertig</li>
+            </ol>
+          </div>
+
           <CredentialProfileSelect provider="supabase" label="Supabase" />
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Project Ref (optional)</label>
-            <input
-              type="text"
-              className="input text-sm"
-              value={formData.config.project_ref || ''}
-              onChange={(e) => handleConfigChange('project_ref', e.target.value)}
-              placeholder="z.B. mmeiajrqshbuanngavko"
-            />
-            {formData.config.project_ref && (
-              <p className="text-xs mt-1">
-                <a
-                  href={`https://supabase.com/dashboard/project/${formData.config.project_ref}?showConnect=true&connectTab=direct&method=session`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:text-blue-700 underline"
-                >
-                  Connection String im Dashboard öffnen
-                </a>
-                {' → '}Session Pooler URI kopieren
-              </p>
-            )}
-            {!formData.config.project_ref && (
-              <p className="text-xs text-gray-500 mt-1">Findest du in der Supabase URL: supabase.com/dashboard/project/<strong>[Project Ref]</strong></p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Connection String *</label>
-            <input
-              type="text"
-              className="input font-mono text-sm"
-              value={formData.config.connection_string || ''}
-              onChange={(e) => handleConfigChange('connection_string', e.target.value)}
-              placeholder="postgresql://postgres.xxxxx:[YOUR-PASSWORD]@aws-1-eu-north-1.pooler.supabase.com:5432/postgres"
-              required
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Supabase Dashboard → Suchfeld "connection string" → <strong>Session Pooler</strong> → URI kopieren. Passwort wird automatisch aus dem Credential-Profil genommen.
-            </p>
-          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Backup Mode</label>
@@ -1114,7 +1082,7 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
             <button
               type="button"
               onClick={testConnection}
-              disabled={!formData.config.connection_string || connectionTestStatus === 'testing'}
+              disabled={connectionTestStatus === 'testing'}
               className={clsx(
                 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
                 connectionTestStatus === 'success'
@@ -1122,7 +1090,7 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
                   : connectionTestStatus === 'error'
                   ? 'bg-red-100 text-red-700 border border-red-300'
                   : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200',
-                (!formData.config.connection_string || connectionTestStatus === 'testing') && 'opacity-50 cursor-not-allowed'
+                connectionTestStatus === 'testing' && 'opacity-50 cursor-not-allowed'
               )}
             >
               {connectionTestStatus === 'testing' ? (

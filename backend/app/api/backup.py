@@ -229,6 +229,7 @@ def start_restore(current_user):
     data = request.get_json() or {}
 
     backup_path = data.get('backup_path', '')
+    profile = (data.get('profile') or '').strip() or None
     target_connection_string = data.get('target_connection_string', '')
     target_db_password = data.get('target_db_password', '')
     restore_storage = data.get('restore_storage', False)
@@ -236,15 +237,18 @@ def start_restore(current_user):
 
     if not backup_path:
         return jsonify({'error': 'backup_path ist erforderlich'}), 400
-    if not target_connection_string:
-        return jsonify({'error': 'target_connection_string ist erforderlich'}), 400
 
-    # If credential profile is requested, use the configured password
+    # Fetch missing values from credential profile (if provided)
+    from app.api.settings import get_credential
+    if not target_connection_string:
+        target_connection_string = get_credential('supabase_connection_string', profile=profile) or ''
+    if not target_connection_string:
+        return jsonify({'error': 'Connection String fehlt. Wähle ein Profil oder trag den Connection String ein.'}), 400
+
     if not target_db_password and '[YOUR-PASSWORD]' in target_connection_string:
-        from app.api.settings import get_credential
-        target_db_password = get_credential('supabase_db_password')
+        target_db_password = get_credential('supabase_db_password', profile=profile)
         if not target_db_password:
-            return jsonify({'error': 'Kein DB Passwort. Setze es in den Credentials oder gib es direkt mit.'}), 400
+            return jsonify({'error': 'Kein DB Passwort im Profil. Trag es in den Credentials ein.'}), 400
 
     import os
     if not os.path.exists(backup_path):
@@ -271,6 +275,7 @@ def start_restore(current_user):
                     json.dump({'status': 'running', 'restore_id': restore_id}, f)
 
                 result = restorer.restore(backup_path, {
+                    'profile': profile,
                     'target_connection_string': target_connection_string,
                     'target_db_password': target_db_password,
                     'restore_storage': restore_storage,
