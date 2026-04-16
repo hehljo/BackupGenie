@@ -15,9 +15,9 @@
 
 ---
 
-Ein selbstgehostetes Backup-System mit moderner Weboberfläche zur automatischen Synchronisierung von 60+ Quellen (NAS, GitHub, Supabase, Cloud-Services, Docker, Self-Hosted Apps). Läuft auf Raspberry Pi, Synology NAS, jedem Linux-Server oder als Docker-Container auf jeder Plattform.
+A self-hosted backup manager with a modern web UI that automatically syncs 60+ source types (NAS, GitHub, Supabase, cloud services, Docker, self-hosted apps). Runs on Raspberry Pi, Synology NAS, any Linux server, or as a Docker container on any platform.
 
-Web UI ist in Deutsch und Englisch verfügbar.
+> 🌍 Web UI available in **English** and **German**.
 
 </div>
 
@@ -31,28 +31,28 @@ Web UI ist in Deutsch und Englisch verfügbar.
 
 ### 🔄 60+ Backup Sources
 - **Network Storage**: NAS (SMB/NFS), rsync over SSH
-- **Git Platforms**: GitHub (Auto-Discovery), GitLab, Bitbucket, Gitea
+- **Git Platforms**: GitHub (auto-discovery), GitLab, Bitbucket, Gitea
 - **BaaS/PaaS**: Supabase (DB + Storage + Config)
 - **Databases**: MySQL, PostgreSQL, MongoDB, Redis
 - **Cloud Storage**: Google Drive, Dropbox, OneDrive, S3
 - **Self-Hosted**: Nextcloud, Plex, Home Assistant, Vaultwarden, Portainer
-- **Docker**: Volumes, Containers, Images
-- **Local**: Filesystems, Home Directories
+- **Docker**: volumes, containers, images
+- **Local**: filesystems, home directories
 
-📚 [Vollständige Quellenliste →](docs/BACKUP_SOURCES.md)
+📚 [Full source list →](docs/BACKUP_SOURCES.md)
 
 </td>
 <td width="50%">
 
 ### 🎯 Smart Automation
-- ⚡ **USB-Trigger**: Automatischer Start beim Einstecken (Pi)
-- 🔍 **Auto-Discovery**: GitHub Repos automatisch erkennen
-- 🌐 **Modern Web UI**: React-basierte SPA
-- 🔐 **Secure**: SSH-Key Auth, SSL/TLS, RBAC
-- 📊 **Real-time Monitoring**: Live Dashboard & Logs
-- 🐳 **Docker-based**: One-command deployment
+- ⚡ **USB trigger**: auto-start when a drive is plugged in (Pi)
+- 🔍 **Auto-discovery**: detect GitHub repos automatically
+- 🌐 **Modern Web UI**: React-based SPA
+- 🔐 **Secure**: SSH key auth, SSL/TLS, RBAC
+- 📊 **Real-time monitoring**: live dashboard & logs
+- 🐳 **Docker-based**: one-command deployment
 - 🖥️ **Universal**: Raspberry Pi, Synology, Linux, Docker
-- 🌍 **Multi-Language**: 🇩🇪 German & 🇬🇧 English
+- 🌍 **Multi-language**: 🇬🇧 English & 🇩🇪 German
 
 </td>
 </tr>
@@ -63,35 +63,35 @@ Web UI ist in Deutsch und Englisch verfügbar.
 ## 🚀 Quick Start
 
 > [!NOTE]
-> Requires Docker 20.10+ and 2GB+ RAM. Runs on Raspberry Pi, Synology NAS, Linux servers, or any Docker host.
+> Requires Docker 20.10+ and 2 GB+ RAM. Runs on Raspberry Pi, Synology NAS, Linux servers, or any Docker host.
 
-### One-Line Install
+### One-line install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hehljo/BackupGenie/main/install.sh | bash
 ```
 
-### Manual Setup
+### Manual setup
 
 ```bash
-# 1. Clone repository
+# 1. Clone the repository
 git clone https://github.com/hehljo/BackupGenie.git
 cd BackupGenie
 
 # 2. Set SECRET_KEY (mandatory)
 export SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
 
-# 3. Start services
+# 3. Start the services
 SECRET_KEY=$SECRET_KEY docker compose up -d
 
-# 4. Get admin password from logs
+# 4. Get the admin password from logs
 docker compose logs backend | grep "INIT"
 
-# 5. Open Web UI → configure credentials and sources
+# 5. Open the Web UI → configure credentials and sources
 open http://localhost:3000
 ```
 
-**Login**: `admin` / Passwort aus den Container-Logs (Schritt 4). Alle Credentials (Tokens, Passwörter) werden über die Web UI verwaltet.
+**Login**: `admin` / password from the container logs (step 4). All credentials (tokens, passwords) are managed via the Web UI.
 
 ---
 
@@ -105,7 +105,7 @@ open http://localhost:3000
   - [Synology NAS / Portainer](#-synology-nas--portainer)
   - [Linux Server / VPS](#-linux-server--vps)
   - [Raspberry Pi](#-raspberry-pi)
-  - [Docker (Generic)](#-docker-generic)
+  - [Docker (generic)](#-docker-generic)
   - [Initial Configuration](#initial-configuration)
 - [Configuration](#️-configuration)
   - [Backup Sources](#backup-sources)
@@ -130,14 +130,14 @@ open http://localhost:3000
 ## 🔧 Requirements
 
 ### Hardware
-| Platform | RAM | Architektur |
-|----------|-----|-------------|
+| Platform | RAM | Architecture |
+|----------|-----|--------------|
 | **Raspberry Pi 3/4/5** | 2 GB+ | ARM/ARM64 |
 | **Synology NAS** | 2 GB+ | x86_64/ARM64 |
 | **Linux Server** | 2 GB+ | x86_64/ARM64 |
 | **Docker Host** | 2 GB+ | x86_64/ARM64/ARM |
 
-Hardware wird automatisch erkannt und Ressourcen entsprechend angepasst.
+Hardware is detected automatically and resources are tuned to match.
 
 ### Software
 ```
@@ -149,102 +149,102 @@ Compose: 2.0+
 - 🔑 **NAS**: SMB/NFS credentials
 - 🔑 **GitHub**: Personal Access Token
 - 🔑 **Cloud**: OAuth2 credentials or API keys
-- 🔑 **SSH**: Private key for rsync
+- 🔑 **SSH**: private key for rsync
 
 ---
 
 ## 🚀 Installation
 
 > [!TIP]
-> BackupGenie erkennt die Hardware automatisch und passt Ressourcen (Worker, RAM-Limits, Parallel-Tasks) selbstständig an.
+> BackupGenie detects your hardware automatically and adjusts resources (workers, RAM limits, parallel tasks) on its own.
 
 ### 📦 Synology NAS / Portainer
 
 <details>
-<summary>Schritt-für-Schritt Anleitung</summary>
+<summary>Step-by-step guide</summary>
 
-#### 1. Ordner auf der Diskstation anlegen (SSH)
+#### 1. Create folders on the Diskstation (SSH)
 
 ```bash
 sudo mkdir -p /volume1/docker/backupgenie/{config,data,logs,backup}
 ```
 
-#### 2. SECRET_KEY generieren
+#### 2. Generate a SECRET_KEY
 
 ```bash
 python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
-#### 3. Stack in Portainer anlegen
+#### 3. Create the stack in Portainer
 
 **Portainer** → **Stacks** → **Add Stack**:
 
-| Feld | Wert |
-|------|------|
+| Field | Value |
+|-------|-------|
 | **Name** | `backupgenie` |
 | **Build method** | Repository |
 | **Repository URL** | `https://github.com/hehljo/BackupGenie` |
 | **Repository reference** | `refs/heads/main` |
 | **Compose path** | `docker-compose.portainer.yml` |
 
-> **Privates Repo?** → **Authentication** aktivieren → Username: dein GitHub-User → Password: Personal Access Token (classic, Scope: `repo`)
+> **Private repo?** → enable **Authentication** → username: your GitHub user → password: Personal Access Token (classic, scope: `repo`)
 
-**Environment variables** (Advanced mode):
+**Environment variables** (advanced mode):
 
 ```
-SECRET_KEY=dein_generierter_key
+SECRET_KEY=your_generated_key
 PLATFORM_PROFILE=auto
 API_PORT=5050
 FRONTEND_PORT=3080
 ```
 
-> Keine `.env`-Datei nötig! Nur diese 4 Variablen. Alle Credentials (GitHub Token, Supabase etc.) werden über die Web UI verwaltet.
+> No `.env` file required! Just these four variables. All credentials (GitHub token, Supabase etc.) are managed through the Web UI.
 
 → **Deploy the stack**
 
-#### 4. Einloggen
+#### 4. Log in
 
 ```
 http://diskstation-ip:3080
 ```
 
-**Passwort:** Wird beim ersten Start zufällig generiert. Findest du in Portainer → Container `backupgenie-backend` → **Logs** → suche nach `[INIT] Admin user created. Password:`
+**Password:** generated randomly on first start. Find it in Portainer → container `backupgenie-backend` → **Logs** → search for `[INIT] Admin user created. Password:`
 
-Passwort sofort ändern unter **Settings → User**.
+Change the password immediately under **Settings → User**.
 
-#### 5. Einrichten
+#### 5. Configure
 
-1. **Settings → Credentials** → GitHub Token, NAS-Passwörter etc. eintragen (verschlüsselt gespeichert)
-2. **Sources → Add Source** → Backup-Quellen konfigurieren
-3. **Backup starten** → Dashboard → Start Backup
+1. **Settings → Credentials** → enter GitHub token, NAS passwords etc. (stored encrypted)
+2. **Sources → Add Source** → configure backup sources
+3. **Start backup** → Dashboard → Start Backup
 
 #### Updates
 
-In **Portainer** → Stack `backupgenie` → **Update the stack** → **Re-pull image and redeploy**
+In **Portainer** → stack `backupgenie` → **Update the stack** → **Re-pull image and redeploy**
 
-#### Synology-Hinweise
+#### Synology notes
 
-- **Ports:** DSM belegt 5000/5001 - daher `API_PORT=5050` und `FRONTEND_PORT=3080`
-- **Autostart nach Reboot:** Durch `restart: unless-stopped` automatisch
-- **Berechtigungen:** Falls Permission-Fehler: `sudo chown -R 1000:1000 /volume1/docker/backupgenie/`
-- **Daten persistent:** Alle Daten unter `/volume1/docker/backupgenie/` bleiben bei Updates erhalten
+- **Ports:** DSM occupies 5000/5001 — use `API_PORT=5050` and `FRONTEND_PORT=3080`
+- **Autostart after reboot:** handled automatically via `restart: unless-stopped`
+- **Permissions:** if you hit permission errors, run `sudo chown -R 1000:1000 /volume1/docker/backupgenie/`
+- **Persistent data:** everything under `/volume1/docker/backupgenie/` survives updates
 
 </details>
 
 ### 🐧 Linux Server / VPS
 
 <details>
-<summary>Schritt-für-Schritt Anleitung</summary>
+<summary>Step-by-step guide</summary>
 
-#### 1. Docker installieren (falls noch nicht vorhanden)
+#### 1. Install Docker (if not already installed)
 
 ```bash
 curl -fsSL https://get.docker.com | bash
 sudo usermod -aG docker $USER
-# Neu einloggen damit Gruppenänderung greift
+# Log in again so the group change takes effect
 ```
 
-#### 2. BackupGenie installieren
+#### 2. Install BackupGenie
 
 ```bash
 cd /opt
@@ -256,7 +256,7 @@ cp config/example.env .env
 cp config/sources-example.json config/sources.json
 ```
 
-#### 3. Konfigurieren
+#### 3. Configure
 
 ```bash
 nano .env
@@ -266,14 +266,14 @@ SECRET_KEY=$(openssl rand -base64 32)
 BACKUP_BASE_PATH=/mnt/backups
 ```
 
-#### 4. Starten
+#### 4. Start
 
 ```bash
 docker compose up -d
 docker compose ps
 ```
 
-#### 5. Web UI öffnen
+#### 5. Open the Web UI
 
 ```
 http://server-ip:3000
@@ -284,24 +284,24 @@ http://server-ip:3000
 ### 🥧 Raspberry Pi
 
 <details>
-<summary>Schritt-für-Schritt Anleitung</summary>
+<summary>Step-by-step guide</summary>
 
-#### 1. System vorbereiten
+#### 1. Prepare the system
 
 ```bash
 sudo apt update && sudo apt upgrade -y
 
-# Docker installieren
+# Install Docker
 curl -fsSL https://get.docker.com | bash
 sudo usermod -aG docker pi
 
-# Für USB Auto-Trigger (optional)
+# For USB auto-trigger (optional)
 sudo apt install -y usbmount
 
 sudo reboot
 ```
 
-#### 2. BackupGenie installieren
+#### 2. Install BackupGenie
 
 ```bash
 cd /opt
@@ -313,39 +313,39 @@ cp config/example.env .env
 cp config/sources-example.json config/sources.json
 ```
 
-#### 3. Konfigurieren
+#### 3. Configure
 
 ```bash
 nano .env
 ```
 ```bash
-SECRET_KEY=ein_langer_zufaelliger_string
+SECRET_KEY=a_long_random_string
 BACKUP_BASE_PATH=/mnt/backup
 
-# Pi 3 mit wenig RAM: Limits anpassen
+# Pi 3 with limited RAM: tune the limits
 # BACKEND_MEMORY_LIMIT=512M
 # BACKEND_CPU_LIMIT=1.5
 # FRONTEND_MEMORY_LIMIT=128M
 ```
 
-#### 4. Starten
+#### 4. Start
 
 ```bash
 docker compose up -d
 ```
 
-#### 5. Web UI öffnen
+#### 5. Open the Web UI
 
 ```
 http://raspberrypi.local:3000
 ```
 
-#### USB Auto-Trigger einrichten (optional)
+#### Set up USB auto-trigger (optional)
 
-USB-Festplatte einstecken → Backup startet automatisch:
+Plug in a USB drive → backup starts automatically:
 
 ```bash
-# udev-Regel erstellen
+# Create the udev rule
 sudo nano /etc/udev/rules.d/99-backupgenie-backup.rules
 ```
 ```
@@ -355,14 +355,14 @@ ACTION=="add", KERNEL=="sd[a-z][0-9]", TAG+="systemd", ENV{SYSTEMD_WANTS}="backu
 sudo udevadm control --reload-rules
 ```
 
-Detaillierte Anleitung: [USB Auto-Trigger →](#usb-auto-trigger)
+Detailed guide: [USB Auto-Trigger →](#usb-auto-trigger)
 
 </details>
 
-### 🐳 Docker (Generic)
+### 🐳 Docker (generic)
 
 <details>
-<summary>Für jede Plattform mit Docker</summary>
+<summary>For any platform with Docker</summary>
 
 ```bash
 git clone https://github.com/hehljo/BackupGenie.git
@@ -370,117 +370,117 @@ cd BackupGenie
 cp config/example.env .env
 cp config/sources-example.json config/sources.json
 
-# .env anpassen
+# Adjust .env
 nano .env
 
-# Starten
+# Start
 docker compose up -d
 
 # Web UI: http://localhost:3000
 ```
 
-#### Portainer (ohne Synology)
+#### Portainer (without Synology)
 
 In Portainer → Stacks → Add Stack → Repository:
 1. Repository URL: `https://github.com/hehljo/BackupGenie`
-2. Compose path: `docker-compose.portainer.yml` (nutzt fertige GHCR Images, kein Build nötig)
-3. Environment Variables setzen (mindestens `SECRET_KEY`)
+2. Compose path: `docker-compose.portainer.yml` (uses prebuilt GHCR images, no build needed)
+3. Set environment variables (at minimum `SECRET_KEY`)
 4. Deploy
 
-#### Umgebungsvariablen für Ressourcen-Anpassung
+#### Environment variables for resource tuning
 
-| Variable | Default | Beschreibung |
+| Variable | Default | Description |
 |----------|---------|-------------|
 | `PLATFORM_PROFILE` | `auto` | `auto`, `raspberrypi`, `synology`, `server` |
-| `BACKEND_CPU_LIMIT` | `2.0` | CPU-Limit Backend |
-| `BACKEND_MEMORY_LIMIT` | `1G` | RAM-Limit Backend |
-| `FRONTEND_CPU_LIMIT` | `1.0` | CPU-Limit Frontend |
-| `FRONTEND_MEMORY_LIMIT` | `256M` | RAM-Limit Frontend |
-| `MAX_PARALLEL_TASKS` | `auto` | Parallele Backup-Tasks (auto = basierend auf RAM) |
+| `BACKEND_CPU_LIMIT` | `2.0` | CPU limit for the backend |
+| `BACKEND_MEMORY_LIMIT` | `1G` | RAM limit for the backend |
+| `FRONTEND_CPU_LIMIT` | `1.0` | CPU limit for the frontend |
+| `FRONTEND_MEMORY_LIMIT` | `256M` | RAM limit for the frontend |
+| `MAX_PARALLEL_TASKS` | `auto` | Parallel backup tasks (auto = based on RAM) |
 
 </details>
 
 ### Initial Configuration
 
 > [!IMPORTANT]
-> `SECRET_KEY` muss gesetzt werden (Pflicht!). Ohne startet die App nicht.
-> Generieren: `python3 -c "import secrets; print(secrets.token_urlsafe(32))"`
+> `SECRET_KEY` is mandatory. Without it, the app refuses to start.
+> Generate one: `python3 -c "import secrets; print(secrets.token_urlsafe(32))"`
 
-**Benötigte Environment Variables:**
+**Required environment variables:**
 
-| Variable | Pflicht | Beschreibung |
-|----------|---------|-------------|
-| `SECRET_KEY` | Ja | Zufälliger String für JWT + Credential-Verschlüsselung |
-| `API_PORT` | Nein (5000) | Port für die Backend-API |
-| `FRONTEND_PORT` | Nein (3000) | Port für die Web UI |
-| `PLATFORM_PROFILE` | Nein (auto) | `auto`, `raspberrypi`, `synology`, `server` |
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SECRET_KEY` | Yes | Random string for JWT + credential encryption |
+| `API_PORT` | No (5000) | Port for the backend API |
+| `FRONTEND_PORT` | No (3000) | Port for the Web UI |
+| `PLATFORM_PROFILE` | No (auto) | `auto`, `raspberrypi`, `synology`, `server` |
 
-> **Credentials** (GitHub Token, NAS-Passwörter, Supabase Keys etc.) werden **nicht** über Environment Variables gesetzt, sondern über die Web UI: **Settings → Credentials**. Dort werden sie AES-verschlüsselt in der Datenbank gespeichert.
+> **Credentials** (GitHub token, NAS passwords, Supabase keys etc.) are **not** set via environment variables — manage them through the Web UI under **Settings → Credentials**. They are stored AES-encrypted in the database.
 
-**Login:** `admin` / Passwort wird beim ersten Start zufällig generiert → `docker compose logs backend | grep "INIT"`
+**Login:** `admin` / password is generated randomly on first start → `docker compose logs backend | grep "INIT"`
 
 ### 💾 Data Persistence (Docker Volumes)
 
 > [!NOTE]
-> **Alle Ihre Daten bleiben nach einer Neuinstallation erhalten!**
+> **All your data survives a reinstall!**
 
-BackupGenie nutzt Docker Volumes für persistente Datenspeicherung. Bei Updates oder Neuinstallationen bleiben folgende Daten automatisch erhalten:
+BackupGenie uses Docker volumes for persistent storage. During updates or reinstalls, the following data is preserved automatically:
 
-**Persistente Verzeichnisse:**
+**Persistent directories:**
 
 ```yaml
-./config/         # ✅ Alle Backup-Quellen (sources.json)
-                  # ✅ rclone Konfiguration
-                  # ✅ Notification-Einstellungen
+./config/         # ✅ All backup sources (sources.json)
+                  # ✅ rclone configuration
+                  # ✅ Notification settings
 
-./data/           # ✅ Datenbank (User, Historie, Settings)
-                  # ✅ Backup-Logs
-                  # ✅ Metadaten
+./data/           # ✅ Database (users, history, settings)
+                  # ✅ Backup logs
+                  # ✅ Metadata
 
-./logs/           # ✅ Anwendungs-Logs
+./logs/           # ✅ Application logs
 
-/mnt/backup/      # ✅ Ihre Backup-Daten (konfigurierbar)
+/mnt/backup/      # ✅ Your backup data (configurable)
 ```
 
-**Vorteile:**
-- 🔄 **Sichere Updates:** `docker compose pull && docker compose up -d`
-- 💾 **Backup-fähig:** Einfach `./config/` und `./data/` sichern
-- 🚀 **Migration:** Ordner kopieren → neue Installation → fertig!
-- ⚡ **Rollback:** Alte Container-Version starten ohne Datenverlust
+**Benefits:**
+- 🔄 **Safe updates:** `docker compose pull && docker compose up -d`
+- 💾 **Backup-friendly:** just back up `./config/` and `./data/`
+- 🚀 **Migration:** copy folders → fresh install → done!
+- ⚡ **Rollback:** start an older container version with no data loss
 
-**Vollständiges Backup erstellen:**
+**Create a full backup:**
 
 ```bash
-# BackupGenie Konfiguration sichern
+# Save BackupGenie configuration
 cd /opt/BackupGenie
 tar -czf backupgenie-config-$(date +%Y%m%d).tar.gz config/ data/ .env
 
-# Backup an sicheren Ort kopieren
+# Copy to a safe location
 cp backupgenie-config-*.tar.gz /mnt/external-drive/
 ```
 
-**Nach Neuinstallation wiederherstellen:**
+**Restore after a fresh install:**
 
 ```bash
-# Neue Installation
+# Fresh install
 cd /opt
 git clone https://github.com/hehljo/BackupGenie.git
 cd BackupGenie
 
-# Backup wiederherstellen
+# Restore the backup
 tar -xzf /mnt/external-drive/backupgenie-config-*.tar.gz
 
-# Container starten - alle Einstellungen sind da!
+# Start the containers - all settings are back!
 docker compose up -d
 ```
 
-**Export/Import über Web-UI:**
+**Export/Import via the Web UI:**
 
-Seit v1.1 können Sie alle Einstellungen auch direkt über die Web-Oberfläche exportieren/importieren:
+Since v1.1 you can also export/import all settings directly from the web interface:
 
 1. **Settings** → **Configuration Export/Import**
-2. **Export** → Lädt JSON-Datei mit allen Quellen & Einstellungen herunter
-3. **Import** → Wählen Sie JSON-Datei aus und stellen Sie Ihre Konfiguration wieder her
+2. **Export** → downloads a JSON file with all sources & settings
+3. **Import** → select a JSON file and restore your configuration
 
 ---
 
@@ -525,7 +525,7 @@ smbclient -L //192.168.1.100 -U backup_user
 </details>
 
 <details>
-<summary>🐙 GitHub Repositories (Auto-Discovery)</summary>
+<summary>🐙 GitHub Repositories (auto-discovery)</summary>
 
 ```json
 {
@@ -547,24 +547,24 @@ smbclient -L //192.168.1.100 -U backup_user
 }
 ```
 
-**`discovery_mode`**: `"all"` sichert automatisch alle Repos (private + public + Orgs). Neue Repos werden beim nächsten Backup automatisch erkannt. Alternativ `"manual"` für manuelle Auswahl über die Web UI.
+**`discovery_mode`**: `"all"` automatically backs up all repos (private + public + orgs). New repos are picked up on the next backup. Use `"manual"` to pick repos individually via the Web UI.
 
-**Generate token:** GitHub → Settings → Developer settings → Personal access tokens → Scopes: `repo`, `gist`
+**Generate a token:** GitHub → Settings → Developer settings → Personal access tokens → scopes: `repo`, `gist`
 
 </details>
 
 <details>
 <summary>🟢 Supabase (DB + Storage)</summary>
 
-Konfiguration läuft über die Web UI:
+Configuration is done through the Web UI:
 
-1. **Settings → Credentials → Supabase** → neues Profil anlegen mit Connection String (Session Pooler URI aus dem Supabase Dashboard) + DB Passwort + optional Service Role Key
-2. **Sources → Add Source → Supabase** → Profil auswählen + Backup Mode (`db_only` oder `full`) wählen
-3. **Backup starten**
+1. **Settings → Credentials → Supabase** → create a new profile with the connection string (Session Pooler URI from the Supabase dashboard) + DB password + optional service role key
+2. **Sources → Add Source → Supabase** → pick a profile + choose backup mode (`db_only` or `full`)
+3. **Start backup**
 
-**`backup_mode`**: `full` sichert DB (roles + schema + data) + Storage Buckets + RLS/Auth Config. `db_only` für nur PostgreSQL Dumps.
+**`backup_mode`**: `full` saves DB (roles + schema + data) + storage buckets + RLS/auth config. `db_only` for PostgreSQL dumps only.
 
-**Restore:** History → Backup mit Restore-Button → Ziel-Profil auswählen → Restore starten. Manuelle Connection String Eingabe ebenfalls möglich.
+**Restore:** History → backup with the restore button → choose target profile → start restore. Manual connection string entry is also supported.
 
 </details>
 
@@ -644,23 +644,23 @@ Supports: Google Drive, Dropbox, OneDrive, S3, Backblaze B2, and 40+ more!
 
 ### USB Auto-Trigger
 
-Configure automatic backup triggering when USB drive is connected:
+Configure automatic backup triggering when a USB drive is connected:
 
 <details>
-<summary>Setup udev + systemd</summary>
+<summary>Set up udev + systemd</summary>
 
-#### 1. Create udev rule
+#### 1. Create the udev rule
 
 ```bash
 sudo nano /etc/udev/rules.d/99-backupgenie-backup.rules
 ```
 
 ```bash
-# Trigger backup when USB device is added
+# Trigger backup when a USB device is added
 ACTION=="add", KERNEL=="sd[a-z][0-9]", TAG+="systemd", ENV{SYSTEMD_WANTS}="backupgenie-backup@%k.service"
 ```
 
-#### 2. Create systemd service
+#### 2. Create the systemd service
 
 ```bash
 sudo nano /etc/systemd/system/backupgenie-backup@.service
@@ -684,7 +684,7 @@ Group=docker
 Environment="PATH=/usr/local/bin:/usr/bin:/bin"
 ```
 
-#### 3. Create trigger script
+#### 3. Create the trigger script
 
 ```bash
 sudo nano /opt/BackupGenie/scripts/trigger-backup.sh
@@ -731,13 +731,13 @@ sudo udevadm control --reload-rules
 
 ### Credentials Management
 
-Alle Zugangsdaten werden über die Web UI verwaltet:
+All credentials are managed via the Web UI:
 
 1. **Settings** → **Credentials**
-2. Token/Passwort eintragen (GitHub, NAS, Supabase, SMTP, Telegram etc.)
+2. Enter token / password (GitHub, NAS, Supabase, SMTP, Telegram etc.)
 3. **Save Credentials**
 
-Die Credentials werden **AES-verschlüsselt** in der Datenbank gespeichert (Fernet/PBKDF2). Keine Klartext-Passwörter in Dateien oder Environment Variables nötig.
+Credentials are stored **AES-encrypted** in the database (Fernet/PBKDF2). No plaintext passwords in files or environment variables.
 
 ---
 
@@ -758,21 +758,21 @@ http://YOUR_PI_IP:3000
 - 🔐 Credentials configuration
 - 📈 Storage usage statistics
 - 🔔 Notification settings
-- 🌍 Language switcher (DE/EN)
+- 🌍 Language switcher (EN/DE)
 
 ### API Usage
 
 <details>
-<summary>Start backup via API</summary>
+<summary>Start a backup via API</summary>
 
 ```bash
-# Get API token
+# Get an API token
 TOKEN=$(curl -s -X POST http://localhost:5000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username": "admin", "password": "your_password"}' \
   | jq -r '.access_token')
 
-# Start backup
+# Start a backup
 curl -X POST http://localhost:5000/api/v1/backup/start \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
@@ -798,14 +798,14 @@ curl -X GET http://localhost:5000/api/v1/backup/BACKUP_ID \
 ### CLI Commands
 
 ```bash
-# Start backup for specific sources
+# Start a backup for specific sources
 docker exec backupgenie-backend python -m app.backup.executor \
   --source github-repos --source nas-project1
 
 # List all configured sources
 docker exec backupgenie-backend python -m app.cli sources list
 
-# Test source connection
+# Test a source connection
 docker exec backupgenie-backend python -m app.cli sources test nas-project1
 
 # View backup history
@@ -819,28 +819,28 @@ docker exec backupgenie-backend python -m app.cleanup --days 30
 
 ## 🌍 Internationalization (i18n)
 
-BackupGenie provides full multi-language support:
+BackupGenie ships with full multi-language support:
 
-### Supported Languages
-- 🇩🇪 **Deutsch** - Vollständig übersetzt
-- 🇬🇧 **English** - Fully translated
+### Supported languages
+- 🇬🇧 **English** — fully translated
+- 🇩🇪 **Deutsch** — vollständig übersetzt
 
-### Language Selection
-- **Frontend**: Language switcher in sidebar header
-- **Backend**: Auto-detection via `Accept-Language` header
-- **Storage**: Preference saved in browser localStorage
+### Language selection
+- **Frontend**: language switcher in the sidebar header
+- **Backend**: auto-detection via the `Accept-Language` header
+- **Storage**: preference saved in browser localStorage
 
-### Add New Languages
+### Adding a new language
 
-See detailed guide: **[i18n Documentation →](docs/i18n.md)**
+See the detailed guide: **[i18n Documentation →](docs/i18n.md)**
 
-**Quick Steps:**
-1. Frontend: Create `frontend/src/locales/{lang}/translation.json`
-2. Backend: Run `pybabel init -d app/translations -l {lang}`
-3. Translate `.po` files
+**Quick steps:**
+1. Frontend: create `frontend/src/locales/{lang}/translation.json`
+2. Backend: run `pybabel init -d app/translations -l {lang}`
+3. Translate the `.po` files
 4. Compile: `pybabel compile -d app/translations`
 
-**Technology Stack:**
+**Technology stack:**
 - Frontend: `react-i18next` + `i18next-browser-languagedetector`
 - Backend: `Flask-Babel`
 
@@ -872,9 +872,9 @@ Response:
 ### Endpoints
 
 <details>
-<summary>📦 Backup Management</summary>
+<summary>📦 Backup management</summary>
 
-#### Start Backup
+#### Start a backup
 ```http
 POST /api/v1/backup/start
 Authorization: Bearer TOKEN
@@ -894,7 +894,7 @@ Response 200:
 }
 ```
 
-#### Get Backup Status
+#### Get backup status
 ```http
 GET /api/v1/backup/{backup_id}
 Authorization: Bearer TOKEN
@@ -909,7 +909,7 @@ Response 200:
 }
 ```
 
-#### List Backup History
+#### List backup history
 ```http
 GET /api/v1/backup/history?limit=20&offset=0
 Authorization: Bearer TOKEN
@@ -924,9 +924,9 @@ Response 200:
 </details>
 
 <details>
-<summary>🔧 Source Management</summary>
+<summary>🔧 Source management</summary>
 
-#### List Sources
+#### List sources
 ```http
 GET /api/v1/sources
 Authorization: Bearer TOKEN
@@ -946,7 +946,7 @@ Response 200:
 }
 ```
 
-#### Add Source
+#### Add a source
 ```http
 POST /api/v1/sources
 Authorization: Bearer TOKEN
@@ -970,7 +970,7 @@ Response 201:
 }
 ```
 
-#### Update Source
+#### Update a source
 ```http
 PUT /api/v1/sources/{source_id}
 Authorization: Bearer TOKEN
@@ -981,7 +981,7 @@ Content-Type: application/json
 }
 ```
 
-#### Delete Source
+#### Delete a source
 ```http
 DELETE /api/v1/sources/{source_id}
 Authorization: Bearer TOKEN
@@ -989,7 +989,7 @@ Authorization: Bearer TOKEN
 
 </details>
 
-📚 **[Complete API Documentation →](docs/API.md)**
+📚 **[Complete API documentation →](docs/API.md)**
 
 ---
 
@@ -999,11 +999,11 @@ Authorization: Bearer TOKEN
 <summary>🚫 Docker containers won't start</summary>
 
 ```bash
-# Check logs
+# Check the logs
 docker compose logs backend
 docker compose logs frontend
 
-# Rebuild containers
+# Rebuild the containers
 docker compose down
 docker compose up -d --build --force-recreate
 
@@ -1039,7 +1039,7 @@ sudo udevadm info --name=/dev/sda1 --attribute-walk
 # Test SMB connection
 smbclient -L //192.168.1.100 -U backup_user
 
-# Test from Docker
+# Test from inside Docker
 docker exec backupgenie-backend smbclient -L //192.168.1.100 -U backup_user
 
 # Verify credentials
@@ -1052,10 +1052,10 @@ cat /etc/backupgenie/credentials
 <summary>🔑 GitHub token invalid</summary>
 
 ```bash
-# Verify token online
+# Verify the token online
 curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
 
-# Update token
+# Update the token
 nano .env.secrets
 docker compose restart backend
 ```
@@ -1069,7 +1069,7 @@ docker compose restart backend
 # Check available space
 df -h /mnt/backup
 
-# Find largest files
+# Find the largest files
 du -sh /mnt/backup/* | sort -rh | head -20
 
 # Clean old backups
@@ -1078,7 +1078,7 @@ docker exec backupgenie-backend python -m app.cleanup --days 30
 
 </details>
 
-📚 **[More Troubleshooting →](docs/TROUBLESHOOTING.md)**
+📚 **[More troubleshooting →](docs/TROUBLESHOOTING.md)**
 
 ---
 
@@ -1087,19 +1087,19 @@ docker exec backupgenie-backend python -m app.cleanup --days 30
 > [!IMPORTANT]
 > Follow security best practices to protect your backup data!
 
-### SSH Hardening
+### SSH hardening
 
 <details>
-<summary>Setup secure SSH access</summary>
+<summary>Set up secure SSH access</summary>
 
 ```bash
-# Generate ED25519 key pair (locally)
+# Generate an ED25519 key pair (locally)
 ssh-keygen -t ed25519 -o -a 100 -f ~/.ssh/backupgenie
 
-# Copy public key to Raspberry Pi
+# Copy the public key to the Raspberry Pi
 ssh-copy-id -i ~/.ssh/backupgenie.pub pi@raspberrypi.local
 
-# Configure SSH server
+# Configure the SSH server
 sudo nano /etc/ssh/sshd_config
 ```
 
@@ -1121,7 +1121,7 @@ sudo systemctl restart ssh
 
 </details>
 
-### Firewall Configuration
+### Firewall configuration
 
 ```bash
 # Enable UFW
@@ -1140,48 +1140,48 @@ sudo ufw allow from 192.168.1.0/24 to any port 3000
 sudo ufw status
 ```
 
-### API Token Management
+### API token management
 
 ```bash
-# Generate long-lived API token
+# Generate a long-lived API token
 docker exec backupgenie-backend python -c "
 from app.auth import generate_token
 token = generate_token('backup-automation', expires_days=365)
 print(f'Token: {token}')
 "
 
-# Store securely
+# Store it securely
 sudo mkdir -p /etc/backupgenie
 echo 'YOUR_TOKEN' | sudo tee /etc/backupgenie/api-token > /dev/null
 sudo chmod 600 /etc/backupgenie/api-token
 sudo chown pi:pi /etc/backupgenie/api-token
 ```
 
-### Encrypt Credentials
+### Encrypt credentials
 
 ```bash
 # Install GPG
 sudo apt install gpg -y
 
-# Encrypt credentials file
+# Encrypt the credentials file
 gpg -c /etc/backupgenie/credentials
 
-# Securely delete original
+# Securely delete the original
 sudo shred -vfz /etc/backupgenie/credentials
 
-# Decrypt in Docker entrypoint
+# Decrypt in the Docker entrypoint
 gpg --batch --yes --passphrase-file=/run/secrets/gpg_pass \
     -o /tmp/creds.txt \
     /etc/backupgenie/credentials.gpg
 ```
 
-📚 **[Security Best Practices →](docs/SECURITY.md)**
+📚 **[Security best practices →](docs/SECURITY.md)**
 
 ---
 
 ## 👨‍💻 Development
 
-### Project Structure
+### Project structure
 
 ```
 BackupGenie/
@@ -1229,7 +1229,7 @@ BackupGenie/
 └── README.md
 ```
 
-### Local Development Setup
+### Local development setup
 
 ```bash
 # Backend
@@ -1239,7 +1239,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
 
-# Run backend
+# Run the backend
 flask run --debug
 
 # Frontend
@@ -1248,7 +1248,7 @@ npm install
 npm run dev
 ```
 
-### Running Tests
+### Running tests
 
 ```bash
 # Backend tests
@@ -1263,96 +1263,72 @@ npm test
 docker compose -f docker-compose.test.yml up --abort-on-container-exit
 ```
 
-### Build Docker Images
+### Build Docker images
 
 ```bash
 # Build all services
 docker compose build
 
-# Build specific service
+# Build a specific service
 docker compose build backend
 
 # Build for ARM (Raspberry Pi)
 docker buildx build --platform linux/arm/v7,linux/arm64 -t backupgenie-backend:latest .
 ```
 
-📚 **[Development Guide →](docs/DEVELOPMENT.md)**
+📚 **[Development guide →](docs/DEVELOPMENT.md)**
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+Contributions are welcome! See the [Contributing Guide](CONTRIBUTING.md) for details.
 
-### How to Contribute
+### How to contribute
 
 1. **Fork** the repository
 2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
 3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
 4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
+5. **Open** a pull request
 
-### Development Guidelines
+### Development guidelines
 
 - Follow [PEP 8](https://pep8.org/) for Python code
-- Follow [Airbnb Style Guide](https://github.com/airbnb/javascript) for JavaScript
+- Follow the [Airbnb Style Guide](https://github.com/airbnb/javascript) for JavaScript
 - Write tests for new features
-- Update documentation for API changes
-- Add i18n translations for new UI strings
-
-### Code of Conduct
-
-This project adheres to the Contributor Covenant [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
+- Update documentation when API behavior changes
+- Add i18n translations for any new UI strings
 
 ---
 
 ## 🎯 Roadmap
 
 **Done**
-- [x] Notifications (Email, Telegram, ntfy, Webhooks via Apprise)
-- [x] Supabase Backup + Restore mit Profil-basierten Credentials
+- [x] Notifications (email, Telegram, ntfy, webhooks via Apprise)
+- [x] Supabase backup + restore with profile-based credentials
 - [x] Encrypted credential storage (Fernet/PBKDF2)
-- [x] DE/EN multi-language UI
-- [x] Configuration Export/Import
+- [x] EN/DE multi-language UI
+- [x] Configuration export/import
 - [x] Multi-arch Docker images (amd64, arm64, armv7)
 
-**In Progress / Planned**
-- [ ] Dark/Light theme toggle
+**In progress / planned**
+- [ ] Dark/light theme toggle
 - [ ] Advanced filtering in backup history
-- [ ] Backup scheduling (Cron-style triggers)
+- [ ] Backup scheduling (cron-style triggers)
 - [ ] Two-factor authentication (2FA)
 - [ ] Audit logging
 - [ ] Deduplication / incremental backups
-- [ ] Restore UI für weitere Source-Typen (aktuell nur Supabase)
+- [ ] Restore UI for additional source types (currently Supabase only)
 - [ ] Prometheus metrics export
 - [ ] OpenAPI 3.0 spec
-- [ ] Weitere Sprachen (FR, ES, IT)
+- [ ] Additional languages (FR, ES, IT)
 
 ---
 
 ## 📝 License
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
-```
-MIT License
-
-Copyright (c) 2025 BackupGenie Contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-```
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
 ---
 
@@ -1365,33 +1341,33 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 [![GitHub Issues](https://img.shields.io/github/issues/hehljo/BackupGenie?style=for-the-badge)](https://github.com/hehljo/BackupGenie/issues)
 [![GitHub Discussions](https://img.shields.io/github/discussions/hehljo/BackupGenie?style=for-the-badge)](https://github.com/hehljo/BackupGenie/discussions)
 
-[Report Bug](https://github.com/hehljo/BackupGenie/issues/new?template=bug_report.md) • [Request Feature](https://github.com/hehljo/BackupGenie/issues/new?template=feature_request.md) • [Ask Question](https://github.com/hehljo/BackupGenie/discussions)
+[Report Bug](https://github.com/hehljo/BackupGenie/issues/new?template=bug_report.md) • [Request Feature](https://github.com/hehljo/BackupGenie/issues/new?template=feature_request.md) • [Ask a Question](https://github.com/hehljo/BackupGenie/discussions)
 
 ---
 
-### ☕ Support This Project
+### ☕ Support this project
 
-If BackupGenie helps you manage your backups, consider supporting the development!
+If BackupGenie helps you manage your backups, consider supporting development!
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support%20Development-yellow?style=for-the-badge&logo=buy-me-a-coffee&logoColor=white)](https://buymeacoffee.com/pommesbude)
 
-Your support helps keep this project alive and growing! 🙏
+Your support keeps this project alive and growing! 🙏
 
 </div>
 
 ### Resources
 
-- 📚 **[Full Documentation](docs/)**
-- 🔌 **[API Reference](docs/API.md)**
-- 🌐 **[i18n Guide](docs/i18n.md)**
+- 📚 **[Full documentation](docs/)**
+- 🔌 **[API reference](docs/API.md)**
+- 🌐 **[i18n guide](docs/i18n.md)**
 - 🐞 **[Troubleshooting](docs/TROUBLESHOOTING.md)**
-- 🔐 **[Security Policy](SECURITY.md)**
+- 🔐 **[Security policy](SECURITY.md)**
 
 ---
 
 <div align="center">
 
-**Made with ❤️ by the BackupGenie Community**
+**Made with ❤️ by the BackupGenie community**
 
 ⭐ **Star this repo if BackupGenie helps you!** ⭐
 
