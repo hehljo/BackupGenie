@@ -17,7 +17,7 @@
 
 Ein selbstgehostetes Backup-System mit moderner Weboberfläche zur automatischen Synchronisierung von 60+ Quellen (NAS, GitHub, Supabase, Cloud-Services, Docker, Self-Hosted Apps). Läuft auf Raspberry Pi, Synology NAS, jedem Linux-Server oder als Docker-Container auf jeder Plattform.
 
-[🇩🇪 Deutsch](#) • [🇬🇧 English](README.en.md)
+Web UI ist in Deutsch und Englisch verfügbar.
 
 </div>
 
@@ -556,31 +556,15 @@ smbclient -L //192.168.1.100 -U backup_user
 <details>
 <summary>🟢 Supabase (DB + Storage)</summary>
 
-```json
-{
-  "id": "supabase-project",
-  "name": "Supabase Production",
-  "type": "supabase",
-  "enabled": true,
-  "priority": 3,
-  "project_ref": "your-project-ref",
-  "region": "aws-0-eu-central-1",
-  "backup_mode": "full",
-  "credentials": {
-    "db_password_env": "SUPABASE_DB_PASSWORD",
-    "service_role_key_env": "SUPABASE_SERVICE_ROLE_KEY"
-  },
-  "options": {
-    "include_storage": true,
-    "include_auth_config": true,
-    "compress": true
-  }
-}
-```
+Konfiguration läuft über die Web UI:
 
-**`backup_mode`**: `"full"` sichert DB (roles + schema + data) + Storage Buckets + RLS/Auth Config. `"db_only"` für nur PostgreSQL Dumps.
+1. **Settings → Credentials → Supabase** → neues Profil anlegen mit Connection String (Session Pooler URI aus dem Supabase Dashboard) + DB Passwort + optional Service Role Key
+2. **Sources → Add Source → Supabase** → Profil auswählen + Backup Mode (`db_only` oder `full`) wählen
+3. **Backup starten**
 
-**Restore-Anleitung:** [docs/SUPABASE_RESTORE.md](docs/SUPABASE_RESTORE.md)
+**`backup_mode`**: `full` sichert DB (roles + schema + data) + Storage Buckets + RLS/Auth Config. `db_only` für nur PostgreSQL Dumps.
+
+**Restore:** History → Backup mit Restore-Button → Ziel-Profil auswählen → Restore starten. Manuelle Connection String Eingabe ebenfalls möglich.
 
 </details>
 
@@ -1324,31 +1308,25 @@ This project adheres to the Contributor Covenant [Code of Conduct](CODE_OF_CONDU
 
 ## 🎯 Roadmap
 
-- [ ] **Web UI Enhancements**
-  - [ ] Dark/Light theme toggle
-  - [ ] Advanced filtering in backup history
-  - [ ] Backup scheduling calendar view
-- [ ] **Notifications**
-  - [ ] Email notifications
-  - [ ] Webhook support
-  - [ ] Telegram bot integration
-- [ ] **Security**
-  - [ ] Encryption at rest
-  - [ ] Two-factor authentication (2FA)
-  - [ ] Audit logging
-- [ ] **Performance**
-  - [ ] Deduplication support
-  - [ ] Incremental backup optimization
-  - [ ] Multi-threaded compression
-- [ ] **Features**
-  - [ ] Backup verification/validation
-  - [ ] Restore functionality via UI
-  - [ ] Prometheus metrics export
-  - [ ] REST API v2 with OpenAPI 3.0 spec
-- [ ] **Languages**
-  - [ ] 🇫🇷 French
-  - [ ] 🇪🇸 Spanish
-  - [ ] 🇮🇹 Italian
+**Done**
+- [x] Notifications (Email, Telegram, ntfy, Webhooks via Apprise)
+- [x] Supabase Backup + Restore mit Profil-basierten Credentials
+- [x] Encrypted credential storage (Fernet/PBKDF2)
+- [x] DE/EN multi-language UI
+- [x] Configuration Export/Import
+- [x] Multi-arch Docker images (amd64, arm64, armv7)
+
+**In Progress / Planned**
+- [ ] Dark/Light theme toggle
+- [ ] Advanced filtering in backup history
+- [ ] Backup scheduling (Cron-style triggers)
+- [ ] Two-factor authentication (2FA)
+- [ ] Audit logging
+- [ ] Deduplication / incremental backups
+- [ ] Restore UI für weitere Source-Typen (aktuell nur Supabase)
+- [ ] Prometheus metrics export
+- [ ] OpenAPI 3.0 spec
+- [ ] Weitere Sprachen (FR, ES, IT)
 
 ---
 
