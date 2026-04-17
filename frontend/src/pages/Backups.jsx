@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Archive, Search, Filter, RotateCcw, CheckCircle, XCircle, AlertCircle,
+  Archive, Search, RotateCcw, CheckCircle, XCircle, AlertCircle,
   Clock, ChevronDown, ChevronUp, FileText, X, Loader2, Eye, EyeOff,
-  HardDrive, Database, RefreshCw, Calendar, SlidersHorizontal
+  HardDrive, Database, RefreshCw, Calendar, SlidersHorizontal, Download
 } from 'lucide-react'
-import { backupAPI, restoreAPI, settingsAPI } from '../services/api'
+import { backupAPI, restoreAPI, settingsAPI, downloadAPI } from '../services/api'
 import clsx from 'clsx'
 import { formatDistanceToNow, format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
@@ -31,6 +31,39 @@ export default function Backups() {
   const [typeFilter, setTypeFilter] = useState(STATUS_ALL)
   const [quickFilter, setQuickFilter] = useState(null) // 'restorable' | null
   const [expandedLogs, setExpandedLogs] = useState({})
+
+  // Download
+  const [downloadModal, setDownloadModal] = useState(null) // { sourceId, sourceName }
+  const [downloadFiles, setDownloadFiles] = useState([])
+  const [downloadLoading, setDownloadLoading] = useState(false)
+
+  const openDownloadModal = async (sourceId, sourceName) => {
+    setDownloadModal({ sourceId, sourceName })
+    setDownloadLoading(true)
+    setDownloadFiles([])
+    try {
+      const res = await downloadAPI.listFiles(sourceId)
+      setDownloadFiles(res.data.files || [])
+    } catch (e) {
+      setDownloadFiles([])
+    }
+    setDownloadLoading(false)
+  }
+
+  const triggerDownload = (sourceId, filename) => {
+    const token = localStorage.getItem('token')
+    const url = downloadAPI.getDownloadUrl(sourceId, filename)
+    // Use fetch to include auth header, then trigger blob download
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.blob())
+      .then(blob => {
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(blob)
+        a.download = filename.endsWith('.git') ? filename + '.tar.gz' : filename
+        a.click()
+        URL.revokeObjectURL(a.href)
+      })
+  }
 
   // Restore
   const [restoreModal, setRestoreModal] = useState(null)
@@ -363,6 +396,16 @@ export default function Backups() {
                             </button>
                           )}
 
+                          {source && source.status === 'completed' && (
+                            <button
+                              onClick={() => openDownloadModal(source.source_id, source.source_name)}
+                              className="flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-md transition-colors"
+                            >
+                              <Download className="w-3 h-3" />
+                              Download
+                            </button>
+                          )}
+
                           {(source?.logs || source?.error_message || backup.error_message) && (
                             <button
                               onClick={() => setExpandedLogs(prev => ({ ...prev, [logKey]: !prev[logKey] }))}
@@ -411,6 +454,58 @@ export default function Backups() {
           <button onClick={() => setPage(p => p + 1)} disabled={(page + 1) * limit >= total} className="btn btn-secondary disabled:opacity-50">
             {t('common.next')}
           </button>
+        </div>
+      )}
+
+      {/* ── Download Modal ────────────────────────────────────────────────── */}
+      {downloadModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setDownloadModal(null)} />
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <Download className="w-5 h-5" />
+                  {downloadModal.sourceName}
+                </h2>
+                <button onClick={() => setDownloadModal(null)} className="p-2 hover:bg-gray-100 rounded-lg">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6">
+                {downloadLoading ? (
+                  <div className="flex items-center gap-2 text-gray-500 py-4 justify-center">
+                    <Loader2 className="w-4 h-4 animate-spin" /> {t('common.loading')}
+                  </div>
+                ) : downloadFiles.length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">{t('backups.noDownloadFiles')}</p>
+                ) : (
+                  <div className="space-y-2">
+                    {downloadFiles.map(file => (
+                      <div key={file.filename} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <FileText className="w-4 h-4 text-gray-400 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{file.filename}</p>
+                          <p className="text-xs text-gray-400">
+                            {formatBytes(file.size)} · {new Date(file.modified).toLocaleDateString()}
+                            {file.type === 'directory' && ' · als .tar.gz'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => triggerDownload(downloadModal.sourceId, file.filename)}
+                          className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1 shrink-0"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          Download
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

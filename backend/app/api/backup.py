@@ -1,10 +1,14 @@
 """
 Backup API Endpoints
 """
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_file
 from datetime import datetime
 import uuid
 import threading
+import os
+import glob
+import tarfile
+import tempfile
 
 from app import db
 from app.models.backup import Backup, BackupSourceResult
@@ -168,6 +172,103 @@ def delete_all_backups(current_user):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Failed to delete backups: {str(e)}'}), 500
+
+
+@backup_bp.route('/download/<source_id>', methods=['GET'])
+@token_required
+def list_downloadable(current_user, source_id):
+    """List downloadable backup files for a source"""
+    from app.config import Config
+    backup_dir = os.path.join(Config.BACKUP_BASE_PATH, source_id)
+
+    if not os.path.exists(backup_dir):
+        return jsonify({'files': []}), 200
+
+    files = []
+
+    # Existing tar.gz archives
+    for archive in sorted(glob.glob(os.path.join(backup_dir, '*.tar.gz')), reverse=True):
+        stat = os.stat(archive)
+        files.append({
+            'filename': os.path.basename(archive),
+            'size': stat.st_size,
+            'modified': datetime.utcfromtimestamp(stat.st_mtime).isoformat(),
+            'type': 'archive',
+        })
+
+    # Bare git mirrors (.git dirs) — one entry per repo
+    for git_dir in sorted(glob.glob(os.path.join(backup_dir, '*.git')), reverse=True):
+        if os.path.isdir(git_dir):
+            total = sum(
+                os.path.getsize(os.path.join(dp, f))
+                for dp, _, fs in os.walk(git_dir) for f in fs
+            )
+            stat = os.stat(git_dir)
+            files.append({
+                'filename': os.path.basename(git_dir),
+                'size': total,
+                'modified': datetime.utcfromtimestamp(stat.st_mtime).isoformat(),
+                'type': 'directory',
+            })
+
+    # Generic directories (supabase dumps etc.)
+    for d in sorted(glob.glob(os.path.join(backup_dir, '*')), reverse=True):
+        if os.path.isdir(d) and not d.endswith('.git') and not d.endswith('_restore_tmp'):
+            total = sum(
+                os.path.getsize(os.path.join(dp, f))
+                for dp, _, fs in os.walk(d) for f in fs
+            )
+            stat = os.stat(d)
+            files.append({
+                'filename': os.path.basename(d),
+                'size': total,
+                'modified': datetime.utcfromtimestamp(stat.st_mtime).isoformat(),
+                'type': 'directory',
+            })
+
+    return jsonify({'source_id': source_id, 'files': files}), 200
+
+
+@backup_bp.route('/download/<source_id>/<path:filename>', methods=['GET'])
+@token_required
+def download_backup_file(current_user, source_id, filename):
+    """Download a single backup file or pack a directory as tar.gz on the fly"""
+    from app.config import Config
+    import re
+
+    # Prevent path traversal
+    if '..' in filename or filename.startswith('/'):
+        return jsonify({'error': 'Invalid filename'}), 400
+
+    backup_dir = os.path.join(Config.BACKUP_BASE_PATH, source_id)
+    target = os.path.join(backup_dir, filename)
+
+    # Resolve and verify still inside backup_dir
+    real_target = os.path.realpath(target)
+    real_base = os.path.realpath(backup_dir)
+    if not real_target.startswith(real_base + os.sep) and real_target != real_base:
+        return jsonify({'error': 'Access denied'}), 403
+
+    if not os.path.exists(real_target):
+        return jsonify({'error': 'File not found'}), 404
+
+    if os.path.isfile(real_target):
+        return send_file(real_target, as_attachment=True, download_name=filename)
+
+    # Directory: pack into tar.gz in a temp file and stream it
+    if os.path.isdir(real_target):
+        archive_name = filename.rstrip('/') + '.tar.gz'
+        tmp = tempfile.NamedTemporaryFile(suffix='.tar.gz', delete=False)
+        tmp.close()
+        try:
+            with tarfile.open(tmp.name, 'w:gz') as tar:
+                tar.add(real_target, arcname=os.path.basename(real_target))
+            return send_file(tmp.name, as_attachment=True, download_name=archive_name)
+        except Exception as e:
+            os.unlink(tmp.name)
+            return jsonify({'error': str(e)}), 500
+
+    return jsonify({'error': 'Unsupported file type'}), 400
 
 
 @backup_bp.route('/restore/available/<source_id>', methods=['GET'])

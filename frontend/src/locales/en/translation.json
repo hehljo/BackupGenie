@@ -63,7 +63,8 @@
     "resetFilters": "Reset filters",
     "noResults": "No backups found",
     "noResultsHint": "Adjust the filters or start a new backup",
-    "entries": "entries"
+    "entries": "entries",
+    "noDownloadFiles": "No files found"
   },
   "history": {
     "title": "Backup History",

@@ -119,6 +119,15 @@ export const restoreAPI = {
     api.get(`/backup/restore/${restoreId}`),
 }
 
+// Download API
+export const downloadAPI = {
+  listFiles: (sourceId) =>
+    api.get(`/backup/download/${sourceId}`),
+
+  getDownloadUrl: (sourceId, filename) =>
+    `${API_URL}/backup/download/${encodeURIComponent(sourceId)}/${encodeURIComponent(filename)}`,
+}
+
 // Settings API
 export const settingsAPI = {
   get: () =>

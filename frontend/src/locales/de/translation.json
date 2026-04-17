@@ -63,7 +63,8 @@
     "resetFilters": "Filter zurücksetzen",
     "noResults": "Keine Backups gefunden",
     "noResultsHint": "Passe die Filter an oder starte ein neues Backup",
-    "entries": "Einträge"
+    "entries": "Einträge",
+    "noDownloadFiles": "Keine Dateien gefunden"
   },
   "history": {
     "title": "Backup-Verlauf",
