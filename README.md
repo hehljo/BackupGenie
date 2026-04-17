@@ -29,7 +29,7 @@ A self-hosted backup manager with a modern web UI that automatically syncs 60+ s
 
 > Community-tested sources are marked ✅. Sources marked 🔲 are implemented but awaiting real-world validation — reports welcome via [Discussions](https://github.com/hehljo/BackupGenie/discussions).
 >
-> **Test environment:** Portainer on a Synology Diskstation (DS923+), Docker Compose stack, multi-arch image (amd64).
+> **Test environment:** Portainer on a Synology Diskstation (DS720+), Docker Compose stack, multi-arch image (amd64).
 
 | Source | Backup | Restore | Notes |
 |--------|--------|---------|-------|
