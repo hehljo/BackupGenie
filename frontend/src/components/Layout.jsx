@@ -88,7 +88,7 @@ export default function Layout({ children, onLogout }) {
           <LogOut className="w-5 h-5" />
           {t('nav.logout')}
         </button>
-        <p className="text-xs text-gray-400 text-center mt-2">v1.5.0</p>
+        <p className="text-xs text-gray-400 text-center mt-2">v1.6.0</p>
       </div>
     </>
   )

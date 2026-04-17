@@ -23,6 +23,37 @@ A self-hosted backup manager with a modern web UI that automatically syncs 60+ s
 
 ---
 
+## 🧪 Test Status
+
+> Community-tested sources are marked ✅. Sources marked 🔲 are implemented but awaiting real-world validation — reports welcome via [Discussions](https://github.com/hehljo/BackupGenie/discussions).
+
+| Source | Backup | Restore | Notes |
+|--------|--------|---------|-------|
+| **GitHub** (mirror clone, auto-discovery) | ✅ Tested | — | 77 repos, incl. private + orgs |
+| **Supabase** (DB + Storage + Auth Config) | ✅ Tested | ✅ Tested | Full + db\_only mode, live logs |
+| NAS (SMB) | 🔲 | — | |
+| NAS (NFS) | 🔲 | — | |
+| rsync over SSH | 🔲 | — | |
+| GitLab | 🔲 | — | |
+| Bitbucket | 🔲 | — | |
+| Gitea | 🔲 | — | |
+| MySQL | 🔲 | — | |
+| PostgreSQL | 🔲 | — | |
+| MongoDB | 🔲 | — | |
+| Redis | 🔲 | — | |
+| Google Drive (rclone) | 🔲 | — | |
+| Dropbox (rclone) | 🔲 | — | |
+| OneDrive (rclone) | 🔲 | — | |
+| S3 / Backblaze B2 (rclone) | 🔲 | — | |
+| Nextcloud | 🔲 | — | |
+| Portainer / Docker Volumes | 🔲 | — | |
+| Home Assistant | 🔲 | — | |
+| Local filesystem | 🔲 | — | |
+
+If you've tested a source, please [share your setup](https://github.com/hehljo/BackupGenie/discussions) — it helps others a lot.
+
+---
+
 ## ✨ Features
 
 <table>
