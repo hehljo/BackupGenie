@@ -22,13 +22,20 @@ class SupabaseRestore:
 
     def __init__(self):
         self.logs = []
+        self._status_file = None
 
     def log(self, message):
-        """Add log entry"""
         timestamp = datetime.now().strftime('%H:%M:%S')
         entry = f"[{timestamp}] {message}"
         self.logs.append(entry)
         logger.info(message)
+        if self._status_file:
+            try:
+                import json as _json
+                with open(self._status_file, 'w') as _f:
+                    _json.dump({'status': 'running', 'logs': self.get_logs()}, _f)
+            except Exception:
+                pass
 
     def get_logs(self):
         """Get all log entries as string"""
@@ -285,8 +292,8 @@ class SupabaseRestore:
             with urlopen(req, timeout=30) as resp:
                 pass  # Created
         except HTTPError as e:
-            if e.code == 409:
-                pass  # Already exists
+            if e.code in (409, 400):
+                pass  # Already exists (Supabase returns 400 or 409)
             else:
                 self.log(f"WARNING: Bucket-Erstellung: {e}")
 

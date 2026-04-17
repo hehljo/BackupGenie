@@ -142,11 +142,13 @@ export default function History() {
       const restoreId = response.data.restore_id
       setRestoreStatus('running')
 
-      // Poll for status
+      // Poll for status + live logs
       const pollInterval = setInterval(async () => {
         try {
           const statusResponse = await restoreAPI.getStatus(restoreId)
           const data = statusResponse.data
+
+          if (data.logs) setRestoreResult(prev => ({ ...prev, logs: data.logs }))
 
           if (data.status !== 'running') {
             clearInterval(pollInterval)
@@ -548,7 +550,7 @@ export default function History() {
                       <span className="text-sm text-gray-700">Storage-Objekte wiederherstellen</span>
                     </label>
 
-                    {restoreForm.restore_storage && (
+                    {restoreForm.restore_storage && useManualConnection && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Ziel-Service Role Key</label>
                         <div className="relative">

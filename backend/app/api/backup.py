@@ -267,12 +267,13 @@ def start_restore(current_user):
 
             # Store status in a simple way
             status_file = os.path.join('/tmp', f'restore_{restore_id}.json')
+            restorer._status_file = status_file
 
             try:
                 import json
                 # Write initial status
                 with open(status_file, 'w') as f:
-                    json.dump({'status': 'running', 'restore_id': restore_id}, f)
+                    json.dump({'status': 'running', 'restore_id': restore_id, 'logs': ''}, f)
 
                 result = restorer.restore(backup_path, {
                     'profile': profile,
