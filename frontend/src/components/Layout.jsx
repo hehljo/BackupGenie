@@ -42,9 +42,7 @@ export default function Layout({ children, onLogout }) {
       {/* Logo */}
       <div className="px-6 py-5 border-b border-gray-200">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary-100 rounded-lg">
-            <HardDrive className="w-6 h-6 text-primary-600" />
-          </div>
+          <img src="/icon.png" alt="BackupGenie" className="w-9 h-9 rounded-lg shadow-sm" />
           <div>
             <h1 className="text-xl font-bold text-gray-900">{t('app.name')}</h1>
             <p className="text-xs text-gray-500">Backup Manager</p>
@@ -99,9 +97,7 @@ export default function Layout({ children, onLogout }) {
       <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-primary-100 rounded-lg">
-              <HardDrive className="w-5 h-5 text-primary-600" />
-            </div>
+            <img src="/icon.png" alt="BackupGenie" className="w-8 h-8 rounded-lg" />
             <h1 className="text-lg font-bold text-gray-900">{t('app.name')}</h1>
           </div>
           <button

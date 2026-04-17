@@ -37,9 +37,7 @@ export default function Login({ onLogin }) {
 
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="p-4 bg-primary-100 rounded-2xl mb-4">
-            <HardDrive className="w-12 h-12 text-primary-600" />
-          </div>
+          <img src="/icon.png" alt="BackupGenie" className="w-20 h-20 rounded-2xl mb-4 shadow-md" />
           <h1 className="text-3xl font-bold text-gray-900">{t('app.name')}</h1>
           <p className="text-gray-600 mt-2">{t('app.tagline')}</p>
         </div>
