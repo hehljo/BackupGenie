@@ -6,6 +6,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "sources": "Sources",
+    "backups": "Backups",
     "history": "History",
     "notifications": "Notifications",
     "settings": "Settings",
@@ -47,6 +48,20 @@
     "delete": "Delete",
     "noSources": "No sources configured",
     "noSourcesHint": "Add your first backup source to get started"
+  },
+  "backups": {
+    "title": "Backups",
+    "subtitle": "All backed-up data sorted by source",
+    "filterAll": "All",
+    "filterRestorable": "Restorable",
+    "searchPlaceholder": "Search source, type or ID...",
+    "allStatuses": "All statuses",
+    "allTypes": "All types",
+    "resultsOf": "results of",
+    "resetFilters": "Reset filters",
+    "noResults": "No backups found",
+    "noResultsHint": "Adjust the filters or start a new backup",
+    "entries": "entries"
   },
   "history": {
     "title": "Backup History",

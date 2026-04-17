@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import Sources from './pages/Sources'
+import Backups from './pages/Backups'
 import History from './pages/History'
 import Settings from './pages/Settings'
 import Notifications from './pages/Notifications'
@@ -79,6 +80,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/sources" element={<Sources />} />
+            <Route path="/backups" element={<Backups />} />
             <Route path="/history" element={<History />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/logs" element={<Logs />} />

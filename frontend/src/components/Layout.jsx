@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Database, History, Settings, LogOut, HardDrive, Menu, X, Bell, FileText } from 'lucide-react'
+import { Home, Database, History, Settings, LogOut, HardDrive, Menu, X, Bell, FileText, Archive } from 'lucide-react'
 import clsx from 'clsx'
 import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react'
@@ -8,6 +8,7 @@ import LanguageSwitcher from './LanguageSwitcher'
 const navigation = [
   { name: 'dashboard', href: '/', icon: Home },
   { name: 'sources', href: '/sources', icon: Database },
+  { name: 'backups', href: '/backups', icon: Archive },
   { name: 'history', href: '/history', icon: History },
   { name: 'notifications', href: '/notifications', icon: Bell },
   { name: 'logs', href: '/logs', icon: FileText },
