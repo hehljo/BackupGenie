@@ -49,3 +49,9 @@ Thumbs.db
 
 # Backup test data
 backup-test/
+
+# Internal dev files (not for public repo)
+CLAUDE.md
+claude.md
+MASTER_ROADMAP.md
+master_roadmap.md
