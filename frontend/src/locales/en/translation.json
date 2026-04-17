@@ -28,6 +28,8 @@
     "active": "Active",
     "noSources": "No active sources configured",
     "noBackups": "No backups yet",
+    "backupRunning": "Backup running...",
+    "sourcesCompleted": "sources completed",
     "status": {
       "completed": "Completed",
       "running": "Running",

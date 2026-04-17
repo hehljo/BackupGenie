@@ -30,6 +30,7 @@ class BackupHandler(ABC):
             self.source_config = source_config
         self.dest_path = dest_path
         self.logs = []
+        self._live_log_callback = None  # set by executor for live streaming
 
     @abstractmethod
     def backup(self):
@@ -49,6 +50,11 @@ class BackupHandler(ABC):
         """Add a log message"""
         self.logs.append(message)
         logger.info(message)
+        if self._live_log_callback:
+            try:
+                self._live_log_callback(self.get_logs())
+            except Exception:
+                pass
 
     def get_logs(self):
         """Get all logs as a string"""

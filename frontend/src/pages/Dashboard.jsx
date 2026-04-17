@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Play, Clock, CheckCircle, XCircle, HardDrive, Database } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Play, Clock, CheckCircle, XCircle, HardDrive, Database, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import { backupAPI, sourcesAPI } from '../services/api'
 import clsx from 'clsx'
 import { useTranslation } from 'react-i18next'
@@ -12,12 +12,21 @@ export default function Dashboard() {
   const [isStarting, setIsStarting] = useState(false)
   const [recentBackups, setRecentBackups] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [runningBackup, setRunningBackup] = useState(null) // full backup object with sources
+  const [expandedLiveLogs, setExpandedLiveLogs] = useState({})
+  const intervalRef = useRef(null)
 
   useEffect(() => {
     loadData()
-    const interval = setInterval(loadData, 10000) // Refresh every 10 seconds
-    return () => clearInterval(interval)
+    scheduleRefresh()
+    return () => clearInterval(intervalRef.current)
   }, [])
+
+  const scheduleRefresh = () => {
+    clearInterval(intervalRef.current)
+    // Fast polling when a backup is running, slow otherwise
+    intervalRef.current = setInterval(loadData, runningBackup ? 3000 : 10000)
+  }
 
   const loadData = async () => {
     try {
@@ -29,13 +38,31 @@ export default function Dashboard() {
 
       setStats(statsRes.data)
       setSources(sourcesRes.data.sources)
-      setRecentBackups(historyRes.data.backups)
+      const backups = historyRes.data.backups || []
+      setRecentBackups(backups)
+
+      // Track actively running backup with live source details
+      const active = backups.find(b => b.status === 'running')
+      if (active) {
+        try {
+          const statusRes = await backupAPI.getStatus(active.backup_id)
+          setRunningBackup(statusRes.data)
+        } catch (_) {
+          setRunningBackup(active)
+        }
+      } else {
+        setRunningBackup(null)
+      }
+
       setIsLoading(false)
     } catch (error) {
       console.error('Error loading data:', error)
       setIsLoading(false)
     }
   }
+
+  // Re-schedule interval whenever runningBackup changes (fast ↔ slow)
+  useEffect(() => { scheduleRefresh() }, [runningBackup])
 
   const handleStartBackup = async () => {
     setIsStarting(true)
@@ -181,6 +208,54 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Live Backup Panel */}
+      {runningBackup && (
+        <div className="card border-2 border-blue-200 bg-blue-50">
+          <div className="flex items-center gap-3 mb-4">
+            <Loader2 className="w-5 h-5 text-blue-600 animate-spin shrink-0" />
+            <div className="flex-1 min-w-0">
+              <h2 className="text-base md:text-lg font-bold text-blue-900">{t('dashboard.backupRunning')}</h2>
+              <p className="text-xs text-blue-600">
+                {runningBackup.sources?.filter(s => s.status === 'completed').length ?? 0} / {runningBackup.sources_count ?? runningBackup.sources?.length ?? '?'} {t('dashboard.sourcesCompleted')}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {(runningBackup.sources || []).map(source => (
+              <div key={source.source_id} className="bg-white rounded-lg overflow-hidden border border-blue-100">
+                <div className="flex items-center gap-3 px-3 py-2">
+                  {source.status === 'running' && <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin shrink-0" />}
+                  {source.status === 'completed' && <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />}
+                  {source.status === 'failed' && <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+                  {!['running','completed','failed'].includes(source.status) && <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />}
+
+                  <span className="text-sm font-medium text-gray-900 flex-1 truncate">{source.source_name}</span>
+                  <span className="text-xs text-gray-400">{source.source_type}</span>
+
+                  {source.logs && (
+                    <button
+                      onClick={() => setExpandedLiveLogs(prev => ({ ...prev, [source.source_id]: !prev[source.source_id] }))}
+                      className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 ml-2"
+                    >
+                      Logs {expandedLiveLogs[source.source_id] ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    </button>
+                  )}
+                </div>
+
+                {expandedLiveLogs[source.source_id] && source.logs && (
+                  <div className="border-t border-blue-100 px-3 py-2 bg-gray-50">
+                    <pre className="text-xs text-gray-600 font-mono whitespace-pre-wrap max-h-48 overflow-y-auto">
+                      {source.logs}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Sources Overview */}
       <div className="card">

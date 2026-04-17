@@ -357,8 +357,17 @@ class BackupExecutor:
                 os.makedirs(dest_path, exist_ok=True)
                 logger.info(f"Backup destination: {dest_path}")
 
-                # Execute backup
+                # Execute backup with live log flushing to DB
                 handler = handler_class(source, dest_path)
+
+                def _flush_logs(logs_text, _result=result):
+                    try:
+                        _result.logs = logs_text
+                        db.session.commit()
+                    except Exception:
+                        pass
+
+                handler._live_log_callback = _flush_logs
                 backup_result = handler.backup()
 
                 # Update result
