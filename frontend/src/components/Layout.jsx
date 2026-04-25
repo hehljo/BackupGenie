@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Database, History, Settings, LogOut, HardDrive, Menu, X, Bell, FileText, Archive } from 'lucide-react'
+import { Home, Database, History, Settings, LogOut, Menu, X, Bell, FileText, Archive, Moon, Sun } from 'lucide-react'
 import clsx from 'clsx'
 import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react'
@@ -15,7 +15,7 @@ const navigation = [
   { name: 'settings', href: '/settings', icon: Settings },
 ]
 
-export default function Layout({ children, onLogout }) {
+export default function Layout({ children, onLogout, isDarkMode, onToggleDarkMode }) {
   const location = useLocation()
   const { t } = useTranslation()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -48,8 +48,17 @@ export default function Layout({ children, onLogout }) {
             <p className="text-xs text-gray-500">Backup Manager</p>
           </div>
         </div>
-        <div className="mt-3">
+        <div className="mt-3 flex items-center gap-2">
           <LanguageSwitcher />
+          <button
+            type="button"
+            onClick={onToggleDarkMode}
+            className="p-2 text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            aria-label={isDarkMode ? 'Light mode' : 'Dark mode'}
+            title={isDarkMode ? 'Light mode' : 'Dark mode'}
+          >
+            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
         </div>
       </div>
 
@@ -92,25 +101,36 @@ export default function Layout({ children, onLogout }) {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <img src="/icon.png" alt="BackupGenie" className="w-8 h-8 rounded-lg" />
             <h1 className="text-lg font-bold text-gray-900">{t('app.name')}</h1>
           </div>
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            aria-label="Toggle menu"
-          >
-            {isMobileMenuOpen ? (
-              <X className="w-6 h-6 text-gray-700" />
-            ) : (
-              <Menu className="w-6 h-6 text-gray-700" />
-            )}
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={onToggleDarkMode}
+              className="p-2 text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              aria-label={isDarkMode ? 'Light mode' : 'Dark mode'}
+              title={isDarkMode ? 'Light mode' : 'Dark mode'}
+            >
+              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? (
+                <X className="w-6 h-6 text-gray-700 dark:text-gray-200" />
+              ) : (
+                <Menu className="w-6 h-6 text-gray-700 dark:text-gray-200" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -127,6 +147,7 @@ export default function Layout({ children, onLogout }) {
       <div
         className={clsx(
           'md:hidden fixed inset-y-0 left-0 z-50 w-72 bg-white transform transition-transform duration-300 ease-in-out flex flex-col',
+          'dark:bg-gray-900',
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -134,7 +155,7 @@ export default function Layout({ children, onLogout }) {
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex md:fixed md:inset-y-0 md:left-0 md:w-64 md:flex-col bg-white border-r border-gray-200">
+      <div className="hidden md:flex md:fixed md:inset-y-0 md:left-0 md:w-64 md:flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800">
         <SidebarContent />
       </div>
 

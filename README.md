@@ -60,6 +60,7 @@ If you've tested a source, please [share your setup](https://github.com/hehljo/B
 
 ## 🛠️ Recent Fixes
 
+- **Dark Mode:** The web UI now follows the system theme on first load, keeps manual theme changes, and includes dark-safe colors for forms, cards, modals, badges, logs, and notifications.
 - **Supabase Full Backup:** Fixed full-mode backups with Storage/Auth config by resolving the service role key from the selected credential profile.
 - **Restore Safety:** Restore paths are now restricted to the configured backup directory and archive extraction is protected against path traversal.
 - **GitHub Backups:** Mirror clones no longer store access tokens in remote URLs; failed Git commands are reported as failures instead of successful backups.
@@ -1359,7 +1360,7 @@ Contributions are welcome! See the [Contributing Guide](CONTRIBUTING.md) for det
 - [x] Multi-arch Docker images (amd64, arm64, armv7)
 
 **In progress / planned**
-- [ ] Dark/light theme toggle
+- [x] Dark/light theme toggle
 - [ ] Advanced filtering in backup history
 - [ ] Backup scheduling (cron-style triggers)
 - [ ] Two-factor authentication (2FA)

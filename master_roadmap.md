@@ -1,6 +1,7 @@
 # BackupGenie - Master Roadmap
 
 ## Done
+- [x] Dark Mode für komplettes Frontend mit Systemerkennung, Toggle und globalen Kontrast-Overrides umgesetzt
 - [x] Projekt-spezifische `AGENTS.md` mit BackupGenie-Arbeitsregeln erstellt
 - [x] Fix: Security-/Runtime-Bugs aus Tiefenanalyse behoben (Admin-Bootstrap, Supabase Full, Restore-Pfade, Config-Export, Source-Verträge, Notifications-Auth)
 - [x] Global Credentials System (encrypted in DB)

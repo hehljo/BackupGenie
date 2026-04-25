@@ -3,8 +3,16 @@
 @tailwind utilities;
 
 @layer base {
+  html.dark {
+    color-scheme: dark;
+  }
+
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-gray-50 text-gray-900 transition-colors;
+  }
+
+  .dark body {
+    @apply bg-gray-950 text-gray-100;
   }
 }
 
@@ -19,7 +27,7 @@
   }
 
   .btn-secondary {
-    @apply bg-gray-200 text-gray-800 hover:bg-gray-300 active:bg-gray-400;
+    @apply bg-gray-200 text-gray-800 hover:bg-gray-300 active:bg-gray-400 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 dark:active:bg-gray-600 dark:border dark:border-gray-700;
   }
 
   .btn-danger {
@@ -28,12 +36,12 @@
 
   /* Mobile-first card with responsive padding */
   .card {
-    @apply bg-white rounded-lg md:rounded-xl shadow-sm border border-gray-200 p-4 md:p-6;
+    @apply bg-white rounded-lg md:rounded-xl shadow-sm border border-gray-200 p-4 md:p-6 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-100;
   }
 
   /* Mobile-optimized input with better touch targets */
   .input {
-    @apply w-full px-3 py-2.5 md:px-4 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all text-base;
+    @apply w-full px-3 py-2.5 md:px-4 md:py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all text-base dark:bg-gray-950 dark:text-gray-100 dark:border-gray-700 dark:placeholder:text-gray-500 dark:focus:ring-primary-400;
   }
 
   /* Mobile-first badge */
@@ -42,18 +50,221 @@
   }
 
   .badge-success {
-    @apply bg-green-100 text-green-800;
+    @apply bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200 dark:border dark:border-green-800;
   }
 
   .badge-warning {
-    @apply bg-yellow-100 text-yellow-800;
+    @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-200 dark:border dark:border-yellow-800;
   }
 
   .badge-error {
-    @apply bg-red-100 text-red-800;
+    @apply bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200 dark:border dark:border-red-800;
   }
 
   .badge-info {
-    @apply bg-blue-100 text-blue-800;
+    @apply bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200 dark:border dark:border-blue-800;
+  }
+}
+
+@layer utilities {
+  .dark .bg-white {
+    background-color: #111827;
+  }
+
+  .dark .bg-gray-50 {
+    background-color: #111827;
+  }
+
+  .dark .bg-gray-100 {
+    background-color: #1f2937;
+  }
+
+  .dark .bg-gray-200 {
+    background-color: #374151;
+  }
+
+  .dark .bg-gray-300 {
+    background-color: #4b5563;
+  }
+
+  .dark .border-gray-100,
+  .dark .border-gray-200,
+  .dark .border-gray-300 {
+    border-color: #1f2937;
+  }
+
+  .dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+  .dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+    border-color: #1f2937;
+  }
+
+  .dark .text-gray-950,
+  .dark .text-gray-900 {
+    color: #f3f4f6;
+  }
+
+  .dark .text-gray-800 {
+    color: #e5e7eb;
+  }
+
+  .dark .text-gray-700 {
+    color: #d1d5db;
+  }
+
+  .dark .text-gray-600 {
+    color: #9ca3af;
+  }
+
+  .dark .text-gray-500,
+  .dark .text-gray-400,
+  .dark .text-gray-300 {
+    color: #9ca3af;
+  }
+
+  .dark .hover\:bg-gray-50:hover,
+  .dark .hover\:bg-gray-100:hover,
+  .dark .hover\:bg-gray-200:hover,
+  .dark .hover\:bg-gray-300:hover {
+    background-color: #1f2937;
+  }
+
+  .dark .hover\:text-gray-600:hover,
+  .dark .hover\:text-gray-700:hover,
+  .dark .hover\:text-gray-800:hover,
+  .dark .hover\:text-gray-900:hover {
+    color: #f3f4f6;
+  }
+
+  .dark .from-primary-50 {
+    --tw-gradient-from: #020617 var(--tw-gradient-from-position);
+    --tw-gradient-to: rgb(2 6 23 / 0) var(--tw-gradient-to-position);
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+  }
+
+  .dark .to-primary-100 {
+    --tw-gradient-to: #0f172a var(--tw-gradient-to-position);
+  }
+
+  .dark .bg-blue-50,
+  .dark .bg-blue-100 {
+    background-color: #172554;
+  }
+
+  .dark .bg-green-50,
+  .dark .bg-green-100 {
+    background-color: #052e16;
+  }
+
+  .dark .bg-red-50,
+  .dark .bg-red-100 {
+    background-color: #450a0a;
+  }
+
+  .dark .bg-yellow-50,
+  .dark .bg-yellow-100 {
+    background-color: #422006;
+  }
+
+  .dark .bg-orange-50,
+  .dark .bg-orange-100 {
+    background-color: #431407;
+  }
+
+  .dark .bg-purple-50,
+  .dark .bg-purple-100 {
+    background-color: #3b0764;
+  }
+
+  .dark .bg-primary-50,
+  .dark .bg-primary-100 {
+    background-color: #082f49;
+  }
+
+  .dark .border-primary-100,
+  .dark .border-primary-200,
+  .dark .border-primary-300 {
+    border-color: #075985;
+  }
+
+  .dark .text-primary-600,
+  .dark .text-primary-700,
+  .dark .text-primary-800 {
+    color: #7dd3fc;
+  }
+
+  .dark .border-blue-100,
+  .dark .border-blue-200,
+  .dark .border-green-200,
+  .dark .border-green-300,
+  .dark .border-red-200,
+  .dark .border-red-300,
+  .dark .border-yellow-200,
+  .dark .border-yellow-300,
+  .dark .border-orange-200 {
+    border-color: #374151;
+  }
+
+  .dark .text-blue-600,
+  .dark .text-blue-700,
+  .dark .text-blue-800 {
+    color: #bfdbfe;
+  }
+
+  .dark .text-green-600,
+  .dark .text-green-700,
+  .dark .text-green-800 {
+    color: #bbf7d0;
+  }
+
+  .dark .text-red-600,
+  .dark .text-red-700,
+  .dark .text-red-800 {
+    color: #fecaca;
+  }
+
+  .dark .text-yellow-600,
+  .dark .text-yellow-700,
+  .dark .text-yellow-800 {
+    color: #fef08a;
+  }
+
+  .dark .text-orange-600,
+  .dark .text-orange-700,
+  .dark .text-orange-800 {
+    color: #fed7aa;
+  }
+
+  .dark .text-purple-600,
+  .dark .text-purple-700,
+  .dark .text-purple-800 {
+    color: #e9d5ff;
+  }
+
+  .dark input,
+  .dark select,
+  .dark textarea {
+    background-color: #030712;
+    border-color: #374151;
+    color: #f3f4f6;
+  }
+
+  .dark input[type='checkbox'],
+  .dark input[type='radio'] {
+    background-color: #111827;
+    border-color: #4b5563;
+    color: #0ea5e9;
+  }
+
+  .dark pre,
+  .dark code {
+    color: #e5e7eb;
+  }
+
+  .dark .shadow-sm,
+  .dark .shadow-md,
+  .dark .shadow-lg,
+  .dark .shadow-xl {
+    --tw-shadow-color: rgb(0 0 0 / 0.45);
+    --tw-shadow: var(--tw-shadow-colored);
   }
 }

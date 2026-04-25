@@ -11,9 +11,19 @@ import Notifications from './pages/Notifications'
 import Logs from './pages/Logs'
 import Login from './pages/Login'
 
+const getInitialDarkMode = () => {
+  const storedTheme = localStorage.getItem('theme')
+  if (storedTheme) {
+    return storedTheme === 'dark'
+  }
+
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
+}
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [isDarkMode, setIsDarkMode] = useState(getInitialDarkMode)
 
   useEffect(() => {
     // Check if user is authenticated
@@ -23,6 +33,11 @@ function App() {
     }
     setIsLoading(false)
   }, [])
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDarkMode)
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light')
+  }, [isDarkMode])
 
   const handleLogin = () => {
     setIsAuthenticated(true)
@@ -35,10 +50,10 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-950">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
         </div>
       </div>
     )
@@ -55,11 +70,14 @@ function App() {
         toastOptions={{
           duration: 4000,
           style: {
-            background: '#fff',
-            color: '#363636',
+            background: isDarkMode ? '#111827' : '#fff',
+            color: isDarkMode ? '#f9fafb' : '#363636',
+            border: isDarkMode ? '1px solid #374151' : '1px solid #e5e7eb',
             padding: '16px',
             borderRadius: '8px',
-            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+            boxShadow: isDarkMode
+              ? '0 10px 15px -3px rgb(0 0 0 / 0.45), 0 4px 6px -4px rgb(0 0 0 / 0.45)'
+              : '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
           },
           success: {
             iconTheme: {
@@ -76,7 +94,11 @@ function App() {
         }}
       />
       <Router>
-        <Layout onLogout={handleLogout}>
+        <Layout
+          onLogout={handleLogout}
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={() => setIsDarkMode((value) => !value)}
+        >
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/sources" element={<Sources />} />
