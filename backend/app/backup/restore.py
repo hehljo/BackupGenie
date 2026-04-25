@@ -17,6 +17,16 @@ from urllib.error import HTTPError, URLError
 logger = logging.getLogger(__name__)
 
 
+def _safe_extract(tar, destination):
+    """Extract tar members only inside destination."""
+    real_destination = os.path.realpath(destination)
+    for member in tar.getmembers():
+        member_path = os.path.realpath(os.path.join(destination, member.name))
+        if not member_path.startswith(real_destination + os.sep) and member_path != real_destination:
+            raise Exception(f"Unsicherer Archivpfad: {member.name}")
+    tar.extractall(destination)
+
+
 class SupabaseRestore:
     """Restore Supabase backups to a target project"""
 
@@ -96,7 +106,7 @@ class SupabaseRestore:
             extract_dir = backup_path.replace('.tar.gz', '_restore_tmp')
             os.makedirs(extract_dir, exist_ok=True)
             with tarfile.open(backup_path, 'r:gz') as tar:
-                tar.extractall(extract_dir)
+                _safe_extract(tar, extract_dir)
             # Find the actual backup dir inside
             subdirs = [d for d in os.listdir(extract_dir)
                        if os.path.isdir(os.path.join(extract_dir, d))]

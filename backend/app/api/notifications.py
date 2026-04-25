@@ -3,6 +3,7 @@ Notification API endpoints
 """
 from flask import Blueprint, request, jsonify
 from app.notifications.manager import NotificationManager
+from app.api.auth import token_required
 import logging
 
 logger = logging.getLogger(__name__)
@@ -11,7 +12,8 @@ notifications_bp = Blueprint('notifications', __name__)
 
 
 @notifications_bp.route('/test', methods=['POST'])
-def test_notification():
+@token_required
+def test_notification(current_user):
     """
     Test notification channel
 
@@ -53,7 +55,8 @@ def test_notification():
 
 
 @notifications_bp.route('/channels', methods=['GET'])
-def list_channels():
+@token_required
+def list_channels(current_user):
     """
     List all configured notification channels
 
@@ -74,7 +77,8 @@ def list_channels():
 
 
 @notifications_bp.route('/send', methods=['POST'])
-def send_notification():
+@token_required
+def send_notification(current_user):
     """
     Send custom notification
 

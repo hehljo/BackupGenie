@@ -8,6 +8,7 @@ import subprocess
 import logging
 import os
 import time
+import re
 from app.backup.base import BackupHandler
 
 logger = logging.getLogger(__name__)
@@ -33,9 +34,11 @@ class GitBackup(BackupHandler):
         platform = self.source_config.get('platform', 'gitlab')
         host = self.source_config.get('host', '')  # For self-hosted instances
 
-        # Get token from environment
+        # Get token from direct config or environment/profile references
         token_env = credentials.get('token_env', '')
-        token = self._get_env_credential(token_env, required=False) if token_env else ''
+        token = self.source_config.get('token', '')
+        if not token and token_env:
+            token = self._get_env_credential(token_env, required=False)
 
         if not token:
             self.log(f"WARNING: No authentication token for {platform} – public repos only")
@@ -71,12 +74,13 @@ class GitBackup(BackupHandler):
                     )
 
                 if result.stdout:
-                    self.log(result.stdout)
+                    self.log(self._redact_token(result.stdout, token))
                 if result.stderr and 'warning' not in result.stderr.lower():
-                    self.log(result.stderr)
+                    self.log(self._redact_token(result.stderr, token))
 
                 if result.returncode != 0:
-                    self.log(f"WARNING: git command returned code {result.returncode}")
+                    self.log(f"ERROR: git command returned code {result.returncode}")
+                    continue
 
                 # Get repository size
                 repo_size = self._get_directory_size(repo_path)
@@ -129,6 +133,13 @@ class GitBackup(BackupHandler):
             'size_synced': size_synced,
             'logs': self.get_logs()
         }
+
+    def _redact_token(self, text, token):
+        """Remove credential material from git output before logging."""
+        if not text or not token:
+            return text
+        redacted = text.replace(token, '***REDACTED***')
+        return re.sub(r'https://[^@\s]+@', 'https://***REDACTED***@', redacted)
 
     def _build_repo_url(self, platform, repo, token, host=''):
         """Build repository URL based on platform"""

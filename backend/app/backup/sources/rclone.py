@@ -21,6 +21,28 @@ class RcloneBackup(BackupHandler):
         remote = self.source_config.get('remote')
         remote_path = self.source_config.get('path', '/')
         options = self.source_config.get('options', {})
+        env = os.environ.copy()
+
+        if not remote and self.source_config.get('type') in ['s3', 'b2']:
+            remote = 'backupgenie_temp'
+            bucket = self.source_config.get('bucket', '')
+            if not bucket:
+                raise Exception("Bucket not specified for rclone source")
+            remote_path = f"{bucket}/{str(remote_path).lstrip('/')}"
+            if self.source_config.get('type') == 's3':
+                env.update({
+                    'RCLONE_CONFIG_BACKUPGENIE_TEMP_TYPE': 's3',
+                    'RCLONE_CONFIG_BACKUPGENIE_TEMP_PROVIDER': 'AWS',
+                    'RCLONE_CONFIG_BACKUPGENIE_TEMP_ACCESS_KEY_ID': self.source_config.get('access_key', ''),
+                    'RCLONE_CONFIG_BACKUPGENIE_TEMP_SECRET_ACCESS_KEY': self.source_config.get('secret_key', ''),
+                    'RCLONE_CONFIG_BACKUPGENIE_TEMP_REGION': self.source_config.get('region', 'us-east-1'),
+                })
+            else:
+                env.update({
+                    'RCLONE_CONFIG_BACKUPGENIE_TEMP_TYPE': 'b2',
+                    'RCLONE_CONFIG_BACKUPGENIE_TEMP_ACCOUNT': self.source_config.get('access_key', ''),
+                    'RCLONE_CONFIG_BACKUPGENIE_TEMP_KEY': self.source_config.get('secret_key', ''),
+                })
 
         if not remote:
             raise Exception("Remote not specified for rclone source")
@@ -64,6 +86,7 @@ class RcloneBackup(BackupHandler):
             cmd,
             capture_output=True,
             text=True,
+            env=env,
             timeout=options.get('max_duration', 7200)
         )
 

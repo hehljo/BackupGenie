@@ -8,6 +8,8 @@ import subprocess
 import logging
 import os
 import time
+import re
+import base64
 from app.backup.base import BackupHandler
 
 logger = logging.getLogger(__name__)
@@ -81,31 +83,45 @@ class GitHubBackup(BackupHandler):
                 repo_dir = repo.replace('/', '_')
                 repo_path = os.path.join(self.dest_path, f"{repo_dir}.git")
 
-                # Build clone URL with token
-                repo_url = f"https://{token}@github.com/{repo}.git"
+                repo_url = f"https://github.com/{repo}.git"
+                auth_header = self._auth_header(token)
 
                 if os.path.exists(repo_path):
                     # Mirror exists, update all refs
                     self.log(f"Updating mirror for: {repo}")
+                    subprocess.run(
+                        ['git', '-C', repo_path, 'remote', 'set-url', 'origin', repo_url],
+                        capture_output=True,
+                        text=True,
+                        timeout=30
+                    )
                     result = self._run_with_retry(
-                        ['git', '-C', repo_path, 'remote', 'update', '--prune'],
+                        ['git', '-c', auth_header, '-C', repo_path, 'remote', 'update', '--prune'],
                         retries=3
                     )
                 else:
                     # Create new mirror clone (captures all refs, tags, branches)
                     self.log(f"Creating mirror clone for: {repo}")
                     result = self._run_with_retry(
-                        ['git', 'clone', '--mirror', repo_url, repo_path],
+                        ['git', '-c', auth_header, 'clone', '--mirror', repo_url, repo_path],
                         retries=3
                     )
+                    if result.returncode == 0:
+                        subprocess.run(
+                            ['git', '-C', repo_path, 'remote', 'set-url', 'origin', repo_url],
+                            capture_output=True,
+                            text=True,
+                            timeout=30
+                        )
 
                 if result.stdout:
-                    self.log(result.stdout)
+                    self.log(self._redact_token(result.stdout, token))
                 if result.stderr:
-                    self.log(result.stderr)
+                    self.log(self._redact_token(result.stderr, token))
 
                 if result.returncode != 0:
-                    self.log(f"WARNING: git command returned code {result.returncode}")
+                    self.log(f"ERROR: git command returned code {result.returncode}")
+                    continue
 
                 # Get repository size
                 repo_size = self._get_directory_size(repo_path)
@@ -114,18 +130,22 @@ class GitHubBackup(BackupHandler):
 
                 # Backup wiki if configured
                 if options.get('include_wikis', False):
-                    wiki_url = f"https://{token}@github.com/{repo}.wiki.git"
+                    wiki_url = f"https://github.com/{repo}.wiki.git"
                     wiki_path = os.path.join(self.dest_path, f"{repo_dir}.wiki.git")
                     try:
                         if os.path.exists(wiki_path):
                             subprocess.run(
-                                ['git', '-C', wiki_path, 'remote', 'update', '--prune'],
+                                ['git', '-c', auth_header, '-C', wiki_path, 'remote', 'update', '--prune'],
                                 capture_output=True, text=True, timeout=120
                             )
                         else:
                             subprocess.run(
-                                ['git', 'clone', '--mirror', wiki_url, wiki_path],
+                                ['git', '-c', auth_header, 'clone', '--mirror', wiki_url, wiki_path],
                                 capture_output=True, text=True, timeout=120
+                            )
+                            subprocess.run(
+                                ['git', '-C', wiki_path, 'remote', 'set-url', 'origin', wiki_url],
+                                capture_output=True, text=True, timeout=30
                             )
                         self.log(f"Wiki backed up for {repo}")
                     except Exception:
@@ -149,6 +169,13 @@ class GitHubBackup(BackupHandler):
             'logs': self.get_logs()
         }
 
+    def _redact_token(self, text, token):
+        """Remove credential material from git output before logging."""
+        if not text:
+            return text
+        redacted = text.replace(token, '***REDACTED***')
+        return re.sub(r'https://[^@\s]+@github\.com/', 'https://***REDACTED***@github.com/', redacted)
+
     def _run_with_retry(self, cmd, retries=3, timeout=300):
         """Run command with exponential backoff retry"""
         last_result = None
@@ -164,3 +191,7 @@ class GitHubBackup(BackupHandler):
                 self.log(f"Retry {attempt + 1}/{retries} in {wait_time}s...")
                 time.sleep(wait_time)
         return last_result
+
+    def _auth_header(self, token):
+        encoded = base64.b64encode(f"x-access-token:{token}".encode('utf-8')).decode('ascii')
+        return f"http.https://github.com/.extraheader=AUTHORIZATION: basic {encoded}"

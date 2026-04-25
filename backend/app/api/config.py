@@ -14,21 +14,31 @@ from app.config import Config
 config_bp = Blueprint('config', __name__)
 
 
+def _redact_sensitive_values(value):
+    """Recursively redact secret-like fields from exported config."""
+    if isinstance(value, dict):
+        redacted = {}
+        for key, item in value.items():
+            key_lower = key.lower()
+            if key_lower.endswith('_env'):
+                redacted[key] = item
+            elif any(secret in key_lower for secret in ('token', 'password', 'secret', 'key')):
+                redacted[key] = '***REDACTED***' if item else item
+            else:
+                redacted[key] = _redact_sensitive_values(item)
+        return redacted
+    if isinstance(value, list):
+        return [_redact_sensitive_values(item) for item in value]
+    return value
+
+
 @config_bp.route('/export', methods=['GET'])
 @token_required
 def export_config(current_user):
     """Export all configuration as JSON"""
     try:
         # Load sources and strip credentials
-        sources = load_sources()
-        # Remove credential values from export (only keep env references)
-        for source in sources:
-            creds = source.get('credentials', {})
-            for key in list(creds.keys()):
-                if key.endswith('_env'):
-                    continue  # Keep env var name references
-                if 'token' in key.lower() or 'password' in key.lower() or 'key' in key.lower():
-                    creds[key] = '***REDACTED***'
+        sources = _redact_sensitive_values(load_sources())
 
         # Get system settings
         settings = {

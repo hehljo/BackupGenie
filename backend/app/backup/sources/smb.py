@@ -58,9 +58,22 @@ class SMBBackup(BackupHandler):
     def _mount_smb(self):
         """Mount SMB share with protocol version auto-detection"""
         credentials = self.source_config.get('credentials', {})
-        username = credentials.get('username', '')
-        password = os.environ.get(credentials.get('password_env', ''), '')
+        username = self.source_config.get('username') or credentials.get('username', '')
+        password = self.source_config.get('password', '')
+        if not password:
+            password_env = credentials.get('password_env', '')
+            password = os.environ.get(password_env, '') if password_env else ''
+        if not password:
+            password = self._get_env_credential('NAS_PASSWORD_1', required=False)
         options = self.source_config.get('options', {})
+        source = self.source_config.get('source')
+        if not source:
+            host = self.source_config.get('host', '')
+            share = str(self.source_config.get('share', '')).strip('/')
+            if host and share:
+                source = f"//{host}/{share}"
+        if not source:
+            raise Exception("SMB source missing. Configure source or host/share.")
 
         # Try SMB protocol versions in order: 3.1.1 → 3.0 → 2.1
         smb_versions = options.get('smb_versions', ['3.1.1', '3.0', '2.1'])
@@ -72,7 +85,7 @@ class SMBBackup(BackupHandler):
             cmd = [
                 'mount',
                 '-t', 'cifs',
-                self.source_config['source'],
+                source,
                 self.mount_point,
                 '-o', f'username={username},password={password},vers={vers},sec=ntlmssp'
             ]
@@ -91,12 +104,20 @@ class SMBBackup(BackupHandler):
         options = self.source_config.get('options', {})
         vers = options.get('vers', 3)
         nolock = ',nolock' if options.get('nolock', False) else ''
+        source = self.source_config.get('source')
+        if not source:
+            host = self.source_config.get('host', '')
+            share = self.source_config.get('share', '')
+            if host and share:
+                source = f"{host}:{share}"
+        if not source:
+            raise Exception("NFS source missing. Configure source or host/share.")
 
         cmd = [
             'mount',
             '-t', 'nfs',
             '-o', f'vers={vers}{nolock}',
-            self.source_config['source'],
+            source,
             self.mount_point
         ]
 

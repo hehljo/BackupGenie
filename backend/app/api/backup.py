@@ -263,7 +263,16 @@ def download_backup_file(current_user, source_id, filename):
         try:
             with tarfile.open(tmp.name, 'w:gz') as tar:
                 tar.add(real_target, arcname=os.path.basename(real_target))
-            return send_file(tmp.name, as_attachment=True, download_name=archive_name)
+            response = send_file(tmp.name, as_attachment=True, download_name=archive_name)
+
+            @response.call_on_close
+            def cleanup_tmp_archive():
+                try:
+                    os.unlink(tmp.name)
+                except OSError:
+                    pass
+
+            return response
         except Exception as e:
             os.unlink(tmp.name)
             return jsonify({'error': str(e)}), 500
@@ -352,7 +361,14 @@ def start_restore(current_user):
             return jsonify({'error': 'Kein DB Passwort im Profil. Trag es in den Credentials ein.'}), 400
 
     import os
-    if not os.path.exists(backup_path):
+    from app.config import Config
+
+    real_backup_path = os.path.realpath(backup_path)
+    real_backup_base = os.path.realpath(Config.BACKUP_BASE_PATH)
+    if not real_backup_path.startswith(real_backup_base + os.sep):
+        return jsonify({'error': 'Backup-Pfad außerhalb des Backup-Verzeichnisses'}), 403
+
+    if not os.path.exists(real_backup_path):
         return jsonify({'error': f'Backup nicht gefunden: {backup_path}'}), 404
 
     # Generate restore ID
@@ -376,7 +392,7 @@ def start_restore(current_user):
                 with open(status_file, 'w') as f:
                     json.dump({'status': 'running', 'restore_id': restore_id, 'logs': ''}, f)
 
-                result = restorer.restore(backup_path, {
+                result = restorer.restore(real_backup_path, {
                     'profile': profile,
                     'target_connection_string': target_connection_string,
                     'target_db_password': target_db_password,
@@ -432,4 +448,3 @@ def get_restore_status(current_user, restore_id):
         status = json_module.load(f)
 
     return jsonify(status), 200
-

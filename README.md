@@ -58,6 +58,17 @@ If you've tested a source, please [share your setup](https://github.com/hehljo/B
 
 ---
 
+## 🛠️ Recent Fixes
+
+- **Supabase Full Backup:** Fixed full-mode backups with Storage/Auth config by resolving the service role key from the selected credential profile.
+- **Restore Safety:** Restore paths are now restricted to the configured backup directory and archive extraction is protected against path traversal.
+- **GitHub Backups:** Mirror clones no longer store access tokens in remote URLs; failed Git commands are reported as failures instead of successful backups.
+- **Configuration Export:** Secret-like values are redacted recursively before exporting configuration files.
+- **Source Forms:** UI-created sources now normalize paths, lists, repositories, Docker volumes/images, and NAS/NFS shares for the backend handlers.
+- **Notifications:** Notification endpoints require authentication and the UI uses the real configured channels instead of placeholder data.
+
+---
+
 ## ✨ Features
 
 <table>

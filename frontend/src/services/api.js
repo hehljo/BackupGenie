@@ -167,4 +167,13 @@ export const configAPI = {
     api.post('/config/validate', data),
 }
 
+// Notifications API
+export const notificationsAPI = {
+  getChannels: () =>
+    api.get('/notifications/channels'),
+
+  test: (channel) =>
+    api.post('/notifications/test', channel ? { channel } : {}),
+}
+
 export default api

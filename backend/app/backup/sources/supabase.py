@@ -71,9 +71,13 @@ class SupabaseBackup(BackupHandler):
 
             # --- Full mode: Storage + Config ---
             if backup_mode == 'full':
-                service_role_key = self._get_env_credential(
-                    credentials.get('service_role_key_env', 'SUPABASE_SERVICE_ROLE_KEY')
+                service_role_key = (
+                    self.source_config.get('service_role_key', '')
+                    or get_credential('supabase_service_role_key', profile=profile)
                 )
+                if not service_role_key:
+                    raise Exception("Service Role Key fehlt für Supabase Full Backup.")
+
                 api_url = f"https://{project_ref}.supabase.co"
 
                 if options.get('include_storage', True):

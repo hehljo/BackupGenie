@@ -66,6 +66,15 @@ class BackupExecutor:
 
             # Cloud Storage
             'rclone': RcloneBackup,
+            'gdrive': RcloneBackup,
+            'onedrive': RcloneBackup,
+            'dropbox': RcloneBackup,
+            's3': RcloneBackup,
+            'b2': RcloneBackup,
+            'icloud': RcloneBackup,
+            'box': RcloneBackup,
+            'mega': RcloneBackup,
+            'pcloud': RcloneBackup,
             'webdav': WebDAVBackup,
 
             # Databases

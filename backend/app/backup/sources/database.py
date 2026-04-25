@@ -21,10 +21,12 @@ class MySQLBackup(BackupHandler):
         host = self.source_config.get('host', 'localhost')
         port = self.source_config.get('port', 3306)
         databases = self.source_config.get('databases', [])
+        if not databases and self.source_config.get('database'):
+            databases = [self.source_config.get('database')]
 
         # Get credentials
-        username = self._get_env_credential(credentials.get('username_env', 'MYSQL_USER'))
-        password = self._get_env_credential(credentials.get('password_env', 'MYSQL_PASSWORD'))
+        username = self.source_config.get('username') or self._get_env_credential(credentials.get('username_env', 'MYSQL_USER'))
+        password = self.source_config.get('password') or self._get_env_credential(credentials.get('password_env', 'MYSQL_PASSWORD'))
 
         if not databases:
             # Backup all databases
@@ -109,10 +111,12 @@ class PostgreSQLBackup(BackupHandler):
         host = self.source_config.get('host', 'localhost')
         port = self.source_config.get('port', 5432)
         databases = self.source_config.get('databases', [])
+        if not databases and self.source_config.get('database'):
+            databases = [self.source_config.get('database')]
 
         # Get credentials
-        username = self._get_env_credential(credentials.get('username_env', 'POSTGRES_USER'))
-        password = self._get_env_credential(credentials.get('password_env', 'POSTGRES_PASSWORD'))
+        username = self.source_config.get('username') or self._get_env_credential(credentials.get('username_env', 'POSTGRES_USER'))
+        password = self.source_config.get('password') or self._get_env_credential(credentials.get('password_env', 'POSTGRES_PASSWORD'))
 
         if not databases:
             databases = ['postgres']  # Default database
@@ -199,12 +203,12 @@ class MongoDBBackup(BackupHandler):
         database = self.source_config.get('database', '')
 
         # Get credentials (optional for MongoDB)
-        username = credentials.get('username_env', '')
-        password = credentials.get('password_env', '')
+        username = self.source_config.get('username') or credentials.get('username_env', '')
+        password = self.source_config.get('password') or credentials.get('password_env', '')
 
-        if username:
+        if username and username == credentials.get('username_env', ''):
             username = self._get_env_credential(username)
-        if password:
+        if password and password == credentials.get('password_env', ''):
             password = self._get_env_credential(password)
 
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -277,8 +281,8 @@ class RedisBackup(BackupHandler):
         credentials = self.source_config.get('credentials', {})
 
         # Get password if needed
-        password = credentials.get('password_env', '')
-        if password:
+        password = self.source_config.get('password') or credentials.get('password_env', '')
+        if password and password == credentials.get('password_env', ''):
             password = self._get_env_credential(password, required=False)
 
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -428,11 +432,13 @@ class CouchDBBackup(BackupHandler):
         host = self.source_config.get('host', 'localhost')
         port = self.source_config.get('port', 5984)
         databases = self.source_config.get('databases', [])
+        if not databases and self.source_config.get('database'):
+            databases = [self.source_config.get('database')]
         credentials = self.source_config.get('credentials', {})
 
         # Get credentials
-        username = self._get_env_credential(credentials.get('username_env', 'COUCHDB_USER'))
-        password = self._get_env_credential(credentials.get('password_env', 'COUCHDB_PASSWORD'))
+        username = self.source_config.get('username') or self._get_env_credential(credentials.get('username_env', 'COUCHDB_USER'))
+        password = self.source_config.get('password') or self._get_env_credential(credentials.get('password_env', 'COUCHDB_PASSWORD'))
 
         if not databases:
             raise Exception("No CouchDB databases specified")
@@ -498,7 +504,7 @@ class InfluxDBBackup(BackupHandler):
         credentials = self.source_config.get('credentials', {})
 
         # Get token from environment
-        token = self._get_env_credential(
+        token = self.source_config.get('token') or self._get_env_credential(
             credentials.get('token_env', 'INFLUXDB_TOKEN')
         )
 

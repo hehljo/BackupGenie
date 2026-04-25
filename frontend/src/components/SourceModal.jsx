@@ -167,7 +167,57 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    onSave(formData)
+    onSave(normalizeSourceData(formData))
+  }
+
+  const splitList = (value) => {
+    if (Array.isArray(value)) return value
+    if (!value) return []
+    return String(value).split(',').map(item => item.trim()).filter(Boolean)
+  }
+
+  const normalizeSourceData = (source) => {
+    const config = { ...(source.config || {}) }
+    const normalized = { ...source, config }
+
+    if (config.credential_profile) {
+      normalized.credential_profile = config.credential_profile
+      delete config.credential_profile
+    }
+
+    if (source.type === 'local' && config.path) {
+      normalized.sources = [config.path]
+    }
+
+    if (source.type === 'sqlite' && config.path) {
+      normalized.databases = [config.path]
+    }
+
+    if (['mysql', 'postgresql', 'couchdb'].includes(source.type) && config.database) {
+      normalized.databases = [config.database]
+    }
+
+    if (source.type === 'docker-volume') {
+      normalized.volumes = splitList(config.volumes)
+    }
+
+    if (source.type === 'docker-image') {
+      normalized.images = splitList(config.images)
+    }
+
+    if (['gitlab', 'gitea', 'forgejo', 'bitbucket', 'codeberg'].includes(source.type)) {
+      normalized.repositories = splitList(config.repo)
+      if (config.host) normalized.host = config.host
+      if (config.token) normalized.token = config.token
+    }
+
+    if (['nas', 'nfs'].includes(source.type) && config.host && config.share) {
+      normalized.source = source.type === 'nfs'
+        ? `${config.host}:${config.share}`
+        : `//${config.host}/${String(config.share).replace(/^\/+/, '')}`
+    }
+
+    return normalized
   }
 
   const handleChange = (field, value) => {

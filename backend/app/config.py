@@ -5,6 +5,14 @@ import os
 from datetime import timedelta
 
 
+def _get_int_env(name, default):
+    value = os.environ.get(name, default)
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return int(default)
+
+
 class Config:
     """Base configuration"""
 
@@ -29,11 +37,11 @@ class Config:
 
     # Backup Configuration
     BACKUP_BASE_PATH = os.environ.get('BACKUP_BASE_PATH', '/mnt/backup')
-    MAX_PARALLEL_TASKS = int(os.environ.get('MAX_PARALLEL_TASKS', 2))
-    LOG_RETENTION_DAYS = int(os.environ.get('LOG_RETENTION_DAYS', 30))
+    MAX_PARALLEL_TASKS = _get_int_env('MAX_PARALLEL_TASKS', 2)
+    LOG_RETENTION_DAYS = _get_int_env('LOG_RETENTION_DAYS', 30)
 
     # API Configuration
-    API_PORT = int(os.environ.get('API_PORT', 5000))
+    API_PORT = _get_int_env('API_PORT', 5000)
     API_HOST = os.environ.get('API_HOST', '0.0.0.0')
 
     # JWT Configuration

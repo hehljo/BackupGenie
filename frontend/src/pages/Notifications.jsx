@@ -3,6 +3,7 @@ import { Bell, Mail, MessageSquare, Send, CheckCircle, XCircle, AlertCircle } fr
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { CardGridSkeleton } from '../components/Skeleton'
+import { notificationsAPI } from '../services/api'
 
 export default function Notifications() {
   const { t } = useTranslation()
@@ -16,45 +17,14 @@ export default function Notifications() {
 
   const loadChannels = async () => {
     try {
-      // Mock data for now - will connect to real API later
-      setChannels([
-        {
-          id: 'email',
-          name: 'Email (SMTP)',
-          type: 'email',
-          enabled: true,
-          icon: Mail,
-          config: {
-            smtp_server: 'smtp.gmail.com',
-            smtp_port: 587,
-            from_email: 'backupgenie@example.com'
-          }
-        },
-        {
-          id: 'telegram',
-          name: 'Telegram Bot',
-          type: 'telegram',
-          enabled: false,
-          icon: Send,
-          config: {}
-        },
-        {
-          id: 'discord',
-          name: 'Discord Webhook',
-          type: 'discord',
-          enabled: false,
-          icon: MessageSquare,
-          config: {}
-        },
-        {
-          id: 'ntfy',
-          name: 'ntfy.sh',
-          type: 'ntfy',
-          enabled: false,
-          icon: Bell,
-          config: {}
-        }
-      ])
+      const res = await notificationsAPI.getChannels()
+      setChannels((res.data.channels || []).map((name) => ({
+        id: name,
+        name,
+        type: name.split('-')[0],
+        enabled: true,
+        config: {}
+      })))
       setIsLoading(false)
     } catch (error) {
       console.error('Error loading channels:', error)
@@ -68,11 +38,8 @@ export default function Notifications() {
     const loadingToast = toast.loading(`Testing ${channelId}...`)
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500))
-
-      // Mock success
-      toast.success(`Test notification sent via ${channelId}!`, { id: loadingToast })
+      const res = await notificationsAPI.test(channelId)
+      toast.success(res.data.message || `Test notification sent via ${channelId}!`, { id: loadingToast })
     } catch (error) {
       console.error('Error testing channel:', error)
       toast.error(`Failed to send test notification`, { id: loadingToast })
