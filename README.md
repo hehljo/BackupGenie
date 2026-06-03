@@ -611,7 +611,11 @@ Configuration is done through the Web UI:
 
 **`backup_mode`**: `full` saves DB (roles + schema + data) + storage buckets + RLS/auth config. `db_only` for PostgreSQL dumps only.
 
+**Storage backup:** `full` mode with "Storage Buckets einschließen" downloads all bucket objects into `storage/<bucket>/...` and writes bucket/object metadata to `storage_metadata/`. This preserves image/file content plus common upload metadata such as content type and cache control for restore.
+
 **Restore:** History → backup with the restore button → choose target profile → start restore. Manual connection string entry is also supported.
+
+**Storage restore:** enable "Storage-Objekte wiederherstellen" and provide a target Supabase profile or service role key. BackupGenie recreates missing buckets, uploads objects with upsert, and marks the restore as partial if individual Storage uploads fail. Older backups with legacy `_bucket_meta.json` bucket metadata remain supported.
 
 </details>
 

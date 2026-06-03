@@ -13,6 +13,7 @@ import os
 import json
 import shutil
 from datetime import datetime
+from urllib.parse import quote as quote_path
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
@@ -191,7 +192,12 @@ class SupabaseBackup(BackupHandler):
         Returns (total_size, file_count).
         """
         storage_dir = os.path.join(backup_dir, 'storage')
+        metadata_dir = os.path.join(backup_dir, 'storage_metadata')
+        bucket_metadata_dir = os.path.join(metadata_dir, 'buckets')
+        object_metadata_dir = os.path.join(metadata_dir, 'objects')
         os.makedirs(storage_dir, exist_ok=True)
+        os.makedirs(bucket_metadata_dir, exist_ok=True)
+        os.makedirs(object_metadata_dir, exist_ok=True)
 
         total_size = 0
         files = 0
@@ -216,15 +222,16 @@ class SupabaseBackup(BackupHandler):
             bucket_dir = os.path.join(storage_dir, bucket_name)
             os.makedirs(bucket_dir, exist_ok=True)
 
-            # Save bucket metadata
-            meta_file = os.path.join(bucket_dir, '_bucket_meta.json')
-            with open(meta_file, 'w') as f:
+            meta_name = self._metadata_filename(bucket_name)
+            bucket_meta_file = os.path.join(bucket_metadata_dir, meta_name)
+            with open(bucket_meta_file, 'w', encoding='utf-8') as f:
                 json.dump(bucket, f, indent=2)
 
             # List objects in bucket
             objects = self._list_bucket_objects(
                 api_url, headers, bucket_id
             )
+            object_metadata = {}
 
             for obj in objects:
                 obj_name = obj.get('name', '')
@@ -232,21 +239,27 @@ class SupabaseBackup(BackupHandler):
                     continue
 
                 try:
-                    obj_path = os.path.join(bucket_dir, obj_name)
+                    obj_path = self._safe_storage_path(bucket_dir, obj_name)
                     obj_dir = os.path.dirname(obj_path)
                     os.makedirs(obj_dir, exist_ok=True)
 
                     # Download object
                     download_url = (
-                        f"{api_url}/storage/v1/object/{bucket_id}/{obj_name}"
+                        f"{api_url}/storage/v1/object/{bucket_id}/"
+                        f"{quote_path(obj_name, safe='/')}"
                     )
                     self._download_file(download_url, headers, obj_path)
 
                     size = self._get_file_size(obj_path)
                     total_size += size
                     files += 1
+                    object_metadata[obj_name] = self._extract_object_metadata(obj)
                 except Exception as e:
                     self.log(f"WARNING: Konnte {obj_name} nicht laden: {e}")
+
+            objects_meta_file = os.path.join(object_metadata_dir, meta_name)
+            with open(objects_meta_file, 'w', encoding='utf-8') as f:
+                json.dump(object_metadata, f, indent=2)
 
         self.log(f"Storage Backup: {files} Dateien, {total_size} Bytes")
         return total_size, files
@@ -387,3 +400,26 @@ class SupabaseBackup(BackupHandler):
         with urlopen(req, timeout=120) as resp:
             with open(dest_path, 'wb') as f:
                 shutil.copyfileobj(resp, f)
+
+    def _metadata_filename(self, value):
+        """Return a filesystem-safe metadata filename for bucket scoped data."""
+        return f"{quote_path(value or 'bucket', safe='')}.json"
+
+    def _safe_storage_path(self, bucket_dir, object_name):
+        """Map a Storage object key to disk without allowing path traversal."""
+        real_bucket_dir = os.path.realpath(bucket_dir)
+        real_target = os.path.realpath(os.path.join(bucket_dir, object_name))
+        if not real_target.startswith(real_bucket_dir + os.sep):
+            raise Exception(f"Unsicherer Storage-Objektpfad: {object_name}")
+        return real_target
+
+    def _extract_object_metadata(self, obj):
+        """Keep Supabase object metadata needed for a closer restore."""
+        return {
+            'name': obj.get('name'),
+            'id': obj.get('id'),
+            'updated_at': obj.get('updated_at'),
+            'created_at': obj.get('created_at'),
+            'last_accessed_at': obj.get('last_accessed_at'),
+            'metadata': obj.get('metadata') or {},
+        }

@@ -11,6 +11,7 @@ import json
 import shutil
 import tarfile
 from datetime import datetime
+from urllib.parse import quote as quote_path
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
@@ -179,6 +180,8 @@ class SupabaseRestore:
             # 5. Storage Restore (optional)
             storage_dir = os.path.join(working_dir, 'storage')
             if restore_storage and os.path.isdir(storage_dir) and target_service_key:
+                if not target_ref:
+                    raise Exception("Project Ref konnte aus dem Ziel-Connection-String nicht gelesen werden.")
                 total_steps += 1
                 self.log("Stelle Storage-Objekte wieder her...")
                 try:
@@ -187,6 +190,10 @@ class SupabaseRestore:
                     )
                     completed_steps += 1
                     self.log(f"Storage wiederhergestellt: {storage_result['files']} Dateien ✓")
+                    if storage_result.get('failed'):
+                        errors.append(
+                            f"Storage: {storage_result['failed']} Uploads fehlgeschlagen"
+                        )
                 except Exception as e:
                     errors.append(f"Storage: {str(e)}")
                     self.log(f"ERROR: Storage-Restore fehlgeschlagen: {e}")
@@ -247,6 +254,10 @@ class SupabaseRestore:
         }
 
         files_uploaded = 0
+        files_failed = 0
+        upload_errors = []
+        metadata_root = os.path.join(os.path.dirname(storage_dir), 'storage_metadata')
+        has_new_metadata = os.path.isdir(metadata_root)
 
         # Iterate buckets
         for bucket_name in os.listdir(storage_dir):
@@ -256,32 +267,45 @@ class SupabaseRestore:
 
             self.log(f"Upload Bucket: {bucket_name}")
 
-            # Create bucket if needed (ignore if exists)
-            meta_file = os.path.join(bucket_path, '_bucket_meta.json')
-            if os.path.exists(meta_file):
-                with open(meta_file, 'r') as f:
-                    bucket_meta = json.load(f)
+            bucket_meta = self._load_bucket_metadata(
+                bucket_path, bucket_name, metadata_root
+            )
+            if bucket_meta:
                 self._create_bucket(api_url, headers, bucket_meta)
+
+            object_metadata = self._load_object_metadata(bucket_name, metadata_root)
 
             # Upload files
             for root, dirs, files in os.walk(bucket_path):
                 for filename in files:
-                    if filename == '_bucket_meta.json':
+                    if filename == '_bucket_meta.json' and not has_new_metadata:
                         continue
 
                     filepath = os.path.join(root, filename)
                     # Calculate relative path within bucket
                     rel_path = os.path.relpath(filepath, bucket_path)
+                    rel_path = rel_path.replace(os.sep, '/')
 
                     try:
                         self._upload_file(
-                            api_url, headers, bucket_name, rel_path, filepath
+                            api_url,
+                            headers,
+                            bucket_name,
+                            rel_path,
+                            filepath,
+                            object_metadata.get(rel_path, {})
                         )
                         files_uploaded += 1
                     except Exception as e:
+                        files_failed += 1
+                        upload_errors.append(f"{bucket_name}/{rel_path}: {e}")
                         self.log(f"WARNING: Upload fehlgeschlagen {rel_path}: {e}")
 
-        return {'files': files_uploaded}
+        return {
+            'files': files_uploaded,
+            'failed': files_failed,
+            'errors': upload_errors,
+        }
 
     def _create_bucket(self, api_url, headers, bucket_meta):
         """Create a bucket on target (ignore if exists)"""
@@ -307,21 +331,80 @@ class SupabaseRestore:
             else:
                 self.log(f"WARNING: Bucket-Erstellung: {e}")
 
-    def _upload_file(self, api_url, headers, bucket_id, object_path, local_path):
+    def _upload_file(self, api_url, headers, bucket_id, object_path, local_path, object_meta=None):
         """Upload a file to Supabase Storage"""
         with open(local_path, 'rb') as f:
             file_data = f.read()
 
+        upload_headers = {
+            **headers,
+            **self._storage_upload_headers(object_meta or {}),
+            'x-upsert': 'true',
+        }
+
         req = Request(
-            f"{api_url}/storage/v1/object/{bucket_id}/{object_path}",
+            f"{api_url}/storage/v1/object/{bucket_id}/"
+            f"{quote_path(object_path, safe='/')}",
             data=file_data,
-            headers={
-                **headers,
-                'Content-Type': 'application/octet-stream',
-                'x-upsert': 'true',
-            },
+            headers=upload_headers,
             method='POST'
         )
 
         with urlopen(req, timeout=120) as resp:
             pass
+
+    def _load_bucket_metadata(self, bucket_path, bucket_name, metadata_root):
+        """Read new metadata layout first, then legacy metadata inside bucket."""
+        meta_file = os.path.join(
+            metadata_root, 'buckets', self._metadata_filename(bucket_name)
+        )
+        data = self._read_json(meta_file)
+        if data:
+            return data
+
+        legacy_meta_file = os.path.join(bucket_path, '_bucket_meta.json')
+        return self._read_json(legacy_meta_file)
+
+    def _load_object_metadata(self, bucket_name, metadata_root):
+        """Read object metadata saved during backup."""
+        meta_file = os.path.join(
+            metadata_root, 'objects', self._metadata_filename(bucket_name)
+        )
+        return self._read_json(meta_file) or {}
+
+    def _read_json(self, path):
+        if not path or not os.path.exists(path):
+            return None
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            self.log(f"WARNING: Metadaten konnten nicht gelesen werden {path}: {e}")
+            return None
+
+    def _metadata_filename(self, value):
+        """Return a filesystem-safe metadata filename for bucket scoped data."""
+        return f"{quote_path(value or 'bucket', safe='')}.json"
+
+    def _storage_upload_headers(self, object_meta):
+        """Preserve common Supabase Storage object metadata on upload."""
+        metadata = object_meta.get('metadata') or {}
+        content_type = (
+            metadata.get('mimetype')
+            or metadata.get('contentType')
+            or metadata.get('content_type')
+            or object_meta.get('mimetype')
+            or object_meta.get('contentType')
+            or 'application/octet-stream'
+        )
+        cache_control = (
+            metadata.get('cacheControl')
+            or metadata.get('cache_control')
+            or object_meta.get('cacheControl')
+            or object_meta.get('cache_control')
+        )
+
+        headers = {'Content-Type': content_type}
+        if cache_control:
+            headers['cache-control'] = str(cache_control)
+        return headers

@@ -23,6 +23,7 @@
 - [x] **Suchfunktion in SourceModal:** Globale Suche über alle 60+ Source-Typen (nach Label, Kategorie, Value)
 - [x] **Supabase Verbindungstest:** Button in Source-Config + Backend-Endpoint mit pg_dump/psql Validierung
 - [x] **Supabase Restore Backend:** `SupabaseRestore` Klasse (Schema, Data, Roles, Auth, Storage)
+- [x] **Supabase Storage Metadaten:** Full-Backup sichert Bucket-/Objektmetadaten separat und Restore erhält Content-Type/Cache-Control mit Teilfehler-Status
 - [x] **Restore API Endpoints:** Available Backups auflisten, Restore starten, Status-Polling
 - [x] **Restore UI in History:** Restore-Button bei Supabase-Sources, Modal mit Ziel-Konfiguration, Bestätigungsdialog
 - [x] **Restore Frontend API:** restoreAPI Service (getAvailable, start, getStatus)
