@@ -60,6 +60,10 @@ If you've tested a source, please [share your setup](https://github.com/hehljo/B
 
 ## 🛠️ Recent Fixes
 
+- **Adaptive UI:** The web UI now has consistent touch targets, visible focus states, responsive page shells, mobile-friendly drawers, bottom-sheet modals, and safer wrapping for backup/source lists.
+- **Backup Retention:** Settings now include automatic cleanup plus configurable backup versions per source. Cleanup only removes older timestamp-based artifacts after successful backups; sync/mirror targets are left alone.
+- **Source Handler Compatibility:** Non-GitHub/Supabase handlers now accept UI-created list fields, direct credentials, and path fallbacks more robustly across local, database, Docker, FTP/SFTP, WebDAV, rclone, rsync, self-hosted, and Proxmox sources.
+- **i18n Cleanup:** The language selector is always visible and common Settings/Storage/Config dialogs now use localized English/German strings.
 - **Dark Mode:** The web UI now follows the system theme on first load, keeps manual theme changes, and includes dark-safe colors for forms, cards, modals, badges, logs, and notifications.
 - **Supabase Full Backup:** Fixed full-mode backups with Storage/Auth config by resolving the service role key from the selected credential profile.
 - **Restore Safety:** Restore paths are now restricted to the configured backup directory and archive extraction is protected against path traversal.
