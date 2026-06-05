@@ -20,7 +20,7 @@ class MySQLBackup(BackupHandler):
         credentials = self.source_config.get('credentials', {})
         host = self.source_config.get('host', 'localhost')
         port = self.source_config.get('port', 3306)
-        databases = self.source_config.get('databases', [])
+        databases = self._as_list(self.source_config.get('databases'))
         if not databases and self.source_config.get('database'):
             databases = [self.source_config.get('database')]
 
@@ -110,7 +110,7 @@ class PostgreSQLBackup(BackupHandler):
         credentials = self.source_config.get('credentials', {})
         host = self.source_config.get('host', 'localhost')
         port = self.source_config.get('port', 5432)
-        databases = self.source_config.get('databases', [])
+        databases = self._as_list(self.source_config.get('databases'))
         if not databases and self.source_config.get('database'):
             databases = [self.source_config.get('database')]
 
@@ -365,7 +365,9 @@ class SQLiteBackup(BackupHandler):
 
     def backup(self):
         """Execute SQLite backup"""
-        source_files = self.source_config.get('databases', [])
+        source_files = self._as_list(self.source_config.get('databases'))
+        if not source_files and self.source_config.get('path'):
+            source_files = [self.source_config.get('path')]
 
         if not source_files:
             raise Exception("No SQLite database files specified")
@@ -431,7 +433,7 @@ class CouchDBBackup(BackupHandler):
         """Execute CouchDB backup"""
         host = self.source_config.get('host', 'localhost')
         port = self.source_config.get('port', 5984)
-        databases = self.source_config.get('databases', [])
+        databases = self._as_list(self.source_config.get('databases'))
         if not databases and self.source_config.get('database'):
             databases = [self.source_config.get('database')]
         credentials = self.source_config.get('credentials', {})

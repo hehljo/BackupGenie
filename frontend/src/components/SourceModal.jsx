@@ -1186,16 +1186,17 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
       />
 
       {/* Modal */}
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div className="modal-stage">
+        <div className="modal-panel max-w-4xl">
           {/* Header */}
-          <div className="sticky top-0 bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex items-center justify-between z-10">
-            <h2 className="text-lg md:text-xl font-bold text-gray-900">
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-4 md:px-6 dark:border-gray-800 dark:bg-gray-900">
+            <h2 className="min-w-0 truncate text-lg font-bold text-gray-900 md:text-xl">
               {editingSource ? 'Edit Source' : t('sources.addSource')}
             </h2>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="icon-btn hover:bg-gray-100 dark:hover:bg-gray-800"
+              aria-label={t('common.close')}
             >
               <X className="w-5 h-5" />
             </button>
@@ -1230,7 +1231,7 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
-                    className="input pl-10 pr-8"
+                    className="input pl-10 pr-10"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Suche: z.B. Supabase, GitHub, Docker..."
@@ -1239,7 +1240,8 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
                     <button
                       type="button"
                       onClick={() => setSearchQuery('')}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600"
+                      aria-label={t('common.clear')}
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -1275,14 +1277,14 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
                         {Object.entries(groupedResults).map(([category, types]) => (
                           <div key={category}>
                             <p className="text-xs font-semibold text-gray-500 uppercase mb-2">{category}</p>
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
                               {types.map(({ value, label, icon: Icon }) => (
                                 <button
                                   key={value}
                                   type="button"
                                   onClick={() => { handleTypeChange(value); setSearchQuery('') }}
                                   className={clsx(
-                                    'flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all text-left',
+                                    'flex min-h-24 flex-col items-center justify-center gap-2 rounded-lg border-2 p-3 text-left transition-all',
                                     formData.type === value
                                       ? 'border-primary-600 bg-primary-50'
                                       : 'border-gray-200 hover:border-gray-300'
@@ -1293,7 +1295,7 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
                                     formData.type === value ? 'text-primary-600' : 'text-gray-600'
                                   )} />
                                   <span className={clsx(
-                                    'text-xs md:text-sm font-medium text-center',
+                                    'text-center text-xs font-medium leading-snug md:text-sm',
                                     formData.type === value ? 'text-primary-700' : 'text-gray-700'
                                   )}>
                                     {label}
@@ -1311,14 +1313,14 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
                   return (
                     <>
                       {/* Category Selector */}
-                      <div className="flex overflow-x-auto gap-2 mb-3 pb-2">
+                      <div className="mb-3 flex gap-2 overflow-x-auto pb-2">
                         {Object.keys(SOURCE_CATEGORIES).map((category) => (
                           <button
                             key={category}
                             type="button"
                             onClick={() => setSelectedCategory(category)}
                             className={clsx(
-                              'px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all',
+                              'min-h-9 shrink-0 rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap transition-all',
                               selectedCategory === category
                                 ? 'bg-primary-600 text-white'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -1330,14 +1332,14 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
                       </div>
 
                       {/* Type Grid */}
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
                         {SOURCE_CATEGORIES[selectedCategory]?.map(({ value, label, icon: Icon }) => (
                           <button
                             key={value}
                             type="button"
                             onClick={() => handleTypeChange(value)}
                             className={clsx(
-                              'flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all text-left',
+                              'flex min-h-24 flex-col items-center justify-center gap-2 rounded-lg border-2 p-3 text-left transition-all',
                               formData.type === value
                                 ? 'border-primary-600 bg-primary-50'
                                 : 'border-gray-200 hover:border-gray-300'
@@ -1348,7 +1350,7 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
                               formData.type === value ? 'text-primary-600' : 'text-gray-600'
                             )} />
                             <span className={clsx(
-                              'text-xs md:text-sm font-medium text-center',
+                              'text-center text-xs font-medium leading-snug md:text-sm',
                               formData.type === value ? 'text-primary-700' : 'text-gray-700'
                             )}>
                               {label}
@@ -1406,7 +1408,7 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
             </div>
 
             {/* Actions */}
-            <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4 border-t border-gray-200">
+            <div className="sticky bottom-0 -mx-4 -mb-4 flex flex-col-reverse gap-3 border-t border-gray-200 bg-white/95 px-4 py-4 backdrop-blur sm:mx-0 sm:mb-0 sm:flex-row sm:justify-end md:-mx-6 md:px-6 dark:border-gray-800 dark:bg-gray-900/95">
               <button
                 type="button"
                 onClick={onClose}

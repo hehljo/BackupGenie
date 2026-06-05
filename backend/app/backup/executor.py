@@ -7,9 +7,11 @@ import logging
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
+import re
+import shutil
 
 from app import db
-from app.models.backup import Backup, BackupSourceResult
+from app.models.backup import Backup, BackupSourceResult, Setting
 from app.config import Config
 from app.backup.sources.smb import SMBBackup
 from app.backup.sources.github import GitHubBackup
@@ -378,6 +380,7 @@ class BackupExecutor:
 
                 handler._live_log_callback = _flush_logs
                 backup_result = handler.backup()
+                cleanup_logs = self._cleanup_old_backup_versions(source_id)
 
                 # Update result
                 result.status = 'completed'
@@ -386,7 +389,10 @@ class BackupExecutor:
                 result.files_synced = backup_result.get('files_synced', 0)
                 result.size_synced = backup_result.get('size_synced', 0)
                 result.progress = 100
-                result.logs = backup_result.get('logs', '')
+                result.logs = '\n'.join(
+                    part for part in [backup_result.get('logs', ''), cleanup_logs]
+                    if part
+                )
 
                 db.session.commit()
 
@@ -411,3 +417,76 @@ class BackupExecutor:
                     'status': 'failed',
                     'size_synced': 0
                 }
+
+    def _cleanup_old_backup_versions(self, source_id):
+        """Keep only the newest timestamped backup versions for one source."""
+        if not self._auto_cleanup_enabled():
+            return ''
+
+        keep_count = self._backup_retention_count()
+        source_dir = os.path.join(self.backup_base_path, source_id)
+        if keep_count < 1 or not os.path.isdir(source_dir):
+            return ''
+
+        real_base = os.path.realpath(self.backup_base_path)
+        real_source_dir = os.path.realpath(source_dir)
+        if not real_source_dir.startswith(real_base + os.sep):
+            logger.warning(f"Cleanup skipped for unsafe source path: {source_dir}")
+            return 'Cleanup übersprungen: unsicherer Quellpfad'
+
+        versioned_entries = {}
+        for name in os.listdir(source_dir):
+            path = os.path.join(source_dir, name)
+            if name.endswith('_restore_tmp'):
+                continue
+            match = re.search(r'(\d{8}_\d{6})', name)
+            if not match:
+                continue
+            versioned_entries.setdefault(match.group(1), []).append(path)
+
+        if len(versioned_entries) <= keep_count:
+            return ''
+
+        timestamps = sorted(versioned_entries.keys(), reverse=True)
+        delete_timestamps = timestamps[keep_count:]
+        deleted = 0
+        errors = []
+
+        for timestamp in delete_timestamps:
+            for path in versioned_entries[timestamp]:
+                real_path = os.path.realpath(path)
+                if not real_path.startswith(real_source_dir + os.sep):
+                    errors.append(f"unsicherer Pfad übersprungen: {path}")
+                    continue
+                try:
+                    if os.path.isdir(path):
+                        shutil.rmtree(path)
+                    else:
+                        os.unlink(path)
+                    deleted += 1
+                except OSError as e:
+                    errors.append(f"{os.path.basename(path)}: {e}")
+
+        message = (
+            f"Cleanup: {deleted} alte Backup-Artefakte entfernt "
+            f"(behalte {keep_count} Versionen pro Quelle)."
+        )
+        if errors:
+            message += f" WARNINGS: {'; '.join(errors[:5])}"
+        logger.info(f"{source_id}: {message}")
+        return message
+
+    def _auto_cleanup_enabled(self):
+        value = Setting.get('auto_cleanup')
+        if value is None:
+            value = os.environ.get('AUTO_CLEANUP', 'true')
+        return str(value).lower() in ('true', '1', 'yes', 'on')
+
+    def _backup_retention_count(self):
+        value = Setting.get('backup_retention_count')
+        if value is None:
+            value = os.environ.get('BACKUP_RETENTION_COUNT', '10')
+        try:
+            return max(1, int(value))
+        except (TypeError, ValueError):
+            return 10

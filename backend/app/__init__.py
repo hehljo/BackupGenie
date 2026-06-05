@@ -159,13 +159,13 @@ def create_app(config_class=Config):
             db_status = f'error: {str(e)}'
             return jsonify({
                 'status': 'unhealthy',
-                'version': '1.0.0',
+                'version': '1.6.1',
                 'database': db_status
             }), 503
 
         return jsonify({
             'status': 'healthy',
-            'version': '1.0.0',
+            'version': '1.6.1',
             'database': db_status
         }), 200
 

@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "BackupGenie",
-    "tagline": "Automatisierter Multi-Quellen Backup Manager"
+    "tagline": "Automatisierter Multi-Quellen Backup Manager",
+    "shortDescription": "Backup-Manager"
   },
   "nav": {
     "dashboard": "Übersicht",
@@ -11,7 +12,12 @@
     "notifications": "Benachrichtigungen",
     "settings": "Einstellungen",
     "logs": "Logs",
-    "logout": "Abmelden"
+    "logout": "Abmelden",
+    "toggleMenu": "Menü umschalten"
+  },
+  "theme": {
+    "light": "Heller Modus",
+    "dark": "Dunkler Modus"
   },
   "dashboard": {
     "title": "Übersicht",
@@ -86,7 +92,13 @@
     "backupBasePath": "Backup-Basispfad",
     "backupBasePathHint": "Verzeichnis im Container, in dem Backups gespeichert werden",
     "maxParallelTasks": "Max. parallele Aufgaben",
+    "maxParallelTasksHint": "Anzahl gleichzeitiger Backup-Vorgänge",
     "logRetention": "Log-Aufbewahrung (Tage)",
+    "logRetentionHint": "Wie lange Backup-Logs aufgehoben werden",
+    "backupRetentionCount": "Backup-Versionen pro Quelle",
+    "backupRetentionCountHint": "Wie viele timestamp-basierte Backup-Versionen je Quelle aufgehoben werden. Sync-/Mirror-Quellen überschreiben in der Regel denselben Zielordner.",
+    "autoCleanup": "Automatische Backup-Bereinigung",
+    "autoCleanupHint": "Nach erfolgreichem Backup ältere timestamp-basierte Artefakte entfernen. Aktuell werden {{count}} Versionen je Quelle behalten.",
     "user": "Benutzereinstellungen",
     "username": "Benutzername",
     "newPassword": "Neues Passwort",
@@ -95,12 +107,88 @@
     "saving": "Speichere...",
     "saved": "Einstellungen erfolgreich gespeichert",
     "error": "Fehler beim Speichern der Einstellungen",
+    "loadError": "Einstellungen konnten nicht geladen werden",
+    "password": {
+      "minLength": "Passwort muss mindestens 12 Zeichen lang sein",
+      "uppercase": "Passwort muss mindestens einen Großbuchstaben enthalten",
+      "lowercase": "Passwort muss mindestens einen Kleinbuchstaben enthalten",
+      "digit": "Passwort muss mindestens eine Zahl enthalten",
+      "special": "Passwort muss mindestens ein Sonderzeichen enthalten",
+      "mismatch": "Passwörter stimmen nicht überein",
+      "changed": "Passwort erfolgreich geändert",
+      "changeError": "Passwort konnte nicht geändert werden"
+    },
+    "security": {
+      "title": "Sicherheit",
+      "apiAuth": "API-Authentifizierung",
+      "apiAuthHint": "Token für API-Zugriff erforderlich",
+      "httpsOnly": "Nur HTTPS",
+      "httpsOnlyHint": "Sichere Verbindungen erzwingen"
+    },
+    "storage": {
+      "title": "Speicher",
+      "usedSpace": "Belegter Speicher",
+      "percentUsed": "{{percentage}}% belegt",
+      "clearAllBackups": "Alle Backup-Einträge löschen",
+      "clearBackupsTitle": "Alle Backup-Einträge löschen?",
+      "clearBackupsMessage": "Das löscht dauerhaft alle Backup-Einträge aus der Datenbank. Diese Aktion kann nicht rückgängig gemacht werden. Die Backup-Dateien bleiben auf dem Datenträger.",
+      "clearBackupsSuccess": "Alle Backup-Einträge wurden gelöscht",
+      "clearBackupsError": "Backup-Einträge konnten nicht gelöscht werden"
+    },
+    "config": {
+      "title": "Konfiguration exportieren/importieren",
+      "export": "Export",
+      "exportHint": "Quellen, Einstellungen und Konfigurationen als JSON-Datei für Backup oder Migration herunterladen.",
+      "exportButton": "Konfiguration exportieren",
+      "exporting": "Konfiguration wird exportiert...",
+      "exported": "Konfiguration erfolgreich exportiert",
+      "exportError": "Konfiguration konnte nicht exportiert werden",
+      "import": "Import",
+      "importHint": "Zuvor exportierte Konfigurationsdatei hochladen, um Einstellungen wiederherzustellen.",
+      "chooseFile": "Datei auswählen",
+      "selectedFile": "Ausgewählt: {{name}}",
+      "validConfiguration": "Gültige Konfiguration",
+      "invalidConfiguration": "Ungültige Konfiguration",
+      "sourcesFound": "{{count}} Quellen gefunden",
+      "errors": "Fehler:",
+      "warnings": "Warnungen:",
+      "validFile": "Konfigurationsdatei ist gültig",
+      "invalidFile": "Konfigurationsdatei enthält Fehler",
+      "invalidJson": "Ungültiges JSON-Format oder Datei ist beschädigt",
+      "selectValidFile": "Bitte zuerst eine gültige Konfigurationsdatei auswählen",
+      "confirmImportMerge": "Diese Konfiguration wirklich importieren? Sie wird mit den aktuellen Einstellungen zusammengeführt.",
+      "confirmImportReplace": "Diese Konfiguration wirklich importieren? Sie ersetzt die aktuellen Einstellungen.",
+      "importing": "Importiere...",
+      "importButton": "Konfiguration importieren",
+      "imported": "Konfiguration importiert. {{count}} Quellen importiert.",
+      "importError": "Konfiguration konnte nicht importiert werden",
+      "readError": "Konfigurationsdatei konnte nicht gelesen werden",
+      "mergeMode": "Zusammenführen",
+      "mergeHint": "Zu bestehenden Quellen hinzufügen",
+      "replaceHint": "Alle Quellen ersetzen"
+    },
     "credentials": {
       "title": "Zugangsdaten",
       "subtitle": "Globale Zugangsdaten für alle Backup-Quellen. Einmal eintragen, überall nutzen.",
       "saveButton": "Zugangsdaten speichern",
       "saved": "Zugangsdaten erfolgreich gespeichert",
-      "noChanges": "Keine Änderungen zum Speichern"
+      "noChanges": "Keine Änderungen zum Speichern",
+      "addProfile": "Profil hinzufügen",
+      "editProfile": "Profil bearbeiten",
+      "deleteProfile": "Profil löschen",
+      "editProfileNamed": "Profil \"{{profile}}\" bearbeiten",
+      "newProfile": "Neues Profil",
+      "noProfile": "Kein Profil konfiguriert",
+      "onlyFilledFields": "Nur ausgefüllte Felder werden überschrieben. Leere Felder bleiben unverändert.",
+      "profileNamePlaceholder": "Profilname (z.B. Privat, Arbeit, Server-1)",
+      "saveProfile": "Profil speichern",
+      "profileNameRequired": "Profilname erforderlich",
+      "oneFieldRequired": "Mindestens ein Feld ausfüllen",
+      "profileSaved": "Profil \"{{name}}\" gespeichert",
+      "profileDeleted": "Profil \"{{profile}}\" gelöscht",
+      "confirmDeleteProfile": "Profil \"{{profile}}\" wirklich löschen?",
+      "saveError": "Fehler beim Speichern",
+      "deleteError": "Fehler beim Löschen"
     }
   },
   "logs": {
@@ -145,10 +233,12 @@
     "back": "Zurück",
     "next": "Weiter",
     "previous": "Zurück",
+    "processing": "Wird verarbeitet...",
     "yes": "Ja",
     "no": "Nein"
   },
   "language": {
+    "label": "Sprache",
     "select": "Sprache wählen",
     "en": "English",
     "de": "Deutsch"

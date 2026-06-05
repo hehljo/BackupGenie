@@ -1,5 +1,6 @@
 import { AlertTriangle, X } from 'lucide-react'
 import clsx from 'clsx'
+import { useTranslation } from 'react-i18next'
 
 /**
  * Confirmation Dialog Component
@@ -18,14 +19,19 @@ export default function ConfirmDialog({
   isOpen,
   onClose,
   onConfirm,
-  title = "Are you sure?",
+  title,
   message,
-  confirmText = "Confirm",
-  cancelText = "Cancel",
+  confirmText,
+  cancelText,
   confirmVariant = "danger",
   isLoading = false,
 }) {
+  const { t } = useTranslation()
   if (!isOpen) return null
+
+  const resolvedTitle = title || t('common.confirm')
+  const resolvedConfirmText = confirmText || t('common.confirm')
+  const resolvedCancelText = cancelText || t('common.cancel')
 
   const variantStyles = {
     danger: 'bg-red-600 hover:bg-red-700 focus:ring-red-500',
@@ -49,16 +55,16 @@ export default function ConfirmDialog({
       />
 
       {/* Dialog */}
-      <div className="flex min-h-full items-center justify-center p-4">
+      <div className="modal-stage">
         <div
-          className="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6 transform transition-all"
+          className="modal-panel max-w-md p-5 md:p-6 transform transition-all"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 rounded-lg transition-colors"
-            aria-label="Close"
+            className="icon-btn absolute top-3 right-3 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            aria-label={t('common.close')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -73,12 +79,12 @@ export default function ConfirmDialog({
 
           {/* Title */}
           <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
-            {title}
+            {resolvedTitle}
           </h3>
 
           {/* Message */}
           {message && (
-            <p className="text-sm text-gray-600 text-center mb-6">
+            <p className="text-sm text-gray-600 text-center mb-6 break-words">
               {message}
             </p>
           )}
@@ -90,7 +96,7 @@ export default function ConfirmDialog({
               disabled={isLoading}
               className="btn btn-secondary flex-1 justify-center"
             >
-              {cancelText}
+              {resolvedCancelText}
             </button>
             <button
               onClick={() => {
@@ -104,7 +110,7 @@ export default function ConfirmDialog({
                 isLoading && 'opacity-75 cursor-not-allowed'
               )}
             >
-              {isLoading ? 'Processing...' : confirmText}
+              {isLoading ? t('common.processing') : resolvedConfirmText}
             </button>
           </div>
         </div>

@@ -23,8 +23,8 @@ class WebDAVBackup(BackupHandler):
             raise Exception("WebDAV host is required")
 
         # Get credentials
-        username = self._get_env_credential(credentials.get('username_env', 'WEBDAV_USER'))
-        password = self._get_env_credential(credentials.get('password_env', 'WEBDAV_PASSWORD'))
+        username = self.source_config.get('username') or self._get_env_credential(credentials.get('username_env', 'WEBDAV_USER'))
+        password = self.source_config.get('password') or self._get_env_credential(credentials.get('password_env', 'WEBDAV_PASSWORD'))
 
         # Determine protocol
         use_https = self.source_config.get('https', True)

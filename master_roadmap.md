@@ -1,6 +1,10 @@
 # BackupGenie - Master Roadmap
 
 ## Done
+- [x] Fix: Backup-Handler außer Supabase/GitHub akzeptieren UI-Listen, direkte Credentials und `path`-Fallbacks robuster
+- [x] UI: Frontend adaptiv gehärtet mit konsistenten Touch-Zielen, sichtbarem Fokus, stabilen Dialogen und responsive Listen-/Kartenlayouts
+- [x] Fix: Sprachwahl in Sidebar sichtbar gemacht und Settings-/Storage-/Config-Texte vollständig über i18n geführt
+- [x] Fix: Backup-Aufbewahrung pro Quelle als UI-Setting ergänzt, Auto-Cleanup erklärt und Version auf 1.6.1 erhöht
 - [x] Dark Mode für komplettes Frontend mit Systemerkennung, Toggle und globalen Kontrast-Overrides umgesetzt
 - [x] Projekt-spezifische `AGENTS.md` mit BackupGenie-Arbeitsregeln erstellt
 - [x] Fix: Security-/Runtime-Bugs aus Tiefenanalyse behoben (Admin-Bootstrap, Supabase Full, Restore-Pfade, Config-Export, Source-Verträge, Notifications-Auth)

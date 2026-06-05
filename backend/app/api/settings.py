@@ -20,6 +20,8 @@ CONFIGURABLE_SETTINGS = {
     'backup_base_path': {'type': 'string', 'default': '/mnt/backup'},
     'max_parallel_tasks': {'type': 'int', 'default': 2, 'min': 1, 'max': 10},
     'log_retention_days': {'type': 'int', 'default': 30, 'min': 1},
+    'backup_retention_count': {'type': 'int', 'default': 10, 'min': 1, 'max': 1000},
+    'auto_cleanup': {'type': 'bool', 'default': True},
 }
 
 
@@ -33,6 +35,8 @@ def get_setting(key, default=None):
         'backup_base_path': 'BACKUP_BASE_PATH',
         'max_parallel_tasks': 'MAX_PARALLEL_TASKS',
         'log_retention_days': 'LOG_RETENTION_DAYS',
+        'backup_retention_count': 'BACKUP_RETENTION_COUNT',
+        'auto_cleanup': 'AUTO_CLEANUP',
     }
     env_key = env_map.get(key)
     if env_key:
@@ -190,9 +194,10 @@ def get_settings(current_user):
         'backup_base_path': backup_path,
         'max_parallel_tasks': int(get_setting('max_parallel_tasks', 2)),
         'log_retention_days': int(get_setting('log_retention_days', 30)),
+        'backup_retention_count': int(get_setting('backup_retention_count', 10)),
         'api_auth_enabled': True,
         'https_only': os.getenv('FORCE_HTTPS', 'false').lower() == 'true',
-        'auto_cleanup': os.getenv('AUTO_CLEANUP', 'true').lower() == 'true',
+        'auto_cleanup': str(get_setting('auto_cleanup', 'true')).lower() == 'true',
         'storage': storage
     }
 
@@ -225,6 +230,8 @@ def update_settings(current_user):
                     return jsonify({'error': f'{key} must be at most {meta["max"]}'}), 400
             except (ValueError, TypeError):
                 return jsonify({'error': f'{key} must be a number'}), 400
+        elif meta['type'] == 'bool':
+            value = str(value).lower() in ('true', '1', 'yes', 'on')
 
         Setting.set(key, str(value))
         updated.append(key)

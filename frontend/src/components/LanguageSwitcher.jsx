@@ -8,38 +8,22 @@ const LanguageSwitcher = () => {
     i18n.changeLanguage(lng);
   };
 
-  const currentLanguage = i18n.language;
+  const currentLanguage = i18n.language?.split('-')[0] || 'de';
 
   return (
-    <div className="relative group">
-      <button
-        className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+    <label className="flex min-h-11 w-full items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-200">
+      <Globe className="w-4 h-4 text-gray-500 shrink-0" />
+      <span className="truncate text-xs font-medium text-gray-500">{t('language.label')}</span>
+      <select
+        value={currentLanguage}
+        onChange={(e) => changeLanguage(e.target.value)}
+        className="ml-auto min-h-8 rounded bg-transparent text-sm font-medium text-gray-800 dark:text-gray-100"
         aria-label={t('language.select')}
       >
-        <Globe className="w-4 h-4" />
-        <span className="font-medium">{currentLanguage.toUpperCase()}</span>
-      </button>
-      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-        <div className="py-1">
-          <button
-            onClick={() => changeLanguage('en')}
-            className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
-              currentLanguage === 'en' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
-            }`}
-          >
-            {t('language.en')}
-          </button>
-          <button
-            onClick={() => changeLanguage('de')}
-            className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
-              currentLanguage === 'de' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
-            }`}
-          >
-            {t('language.de')}
-          </button>
-        </div>
-      </div>
-    </div>
+        <option value="de">{t('language.de')}</option>
+        <option value="en">{t('language.en')}</option>
+      </select>
+    </label>
   );
 };
 

@@ -231,24 +231,24 @@ export default function Backups() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-5">
+    <div className="page-shell">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{t('backups.title')}</h1>
           <p className="text-sm text-gray-500 mt-1">{t('backups.subtitle')}</p>
         </div>
-        <button onClick={loadBackups} className="btn btn-secondary flex items-center gap-2">
+        <button onClick={loadBackups} className="btn btn-secondary w-full sm:w-auto">
           <RefreshCw className="w-4 h-4" />
           {t('common.refresh')}
         </button>
       </div>
 
       {/* Quick Filters */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap">
         <button
           onClick={() => setQuickFilter(null)}
-          className={clsx('px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
+          className={clsx('inline-flex min-h-9 shrink-0 items-center rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
             !quickFilter ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           )}
         >
@@ -256,7 +256,7 @@ export default function Backups() {
         </button>
         <button
           onClick={() => setQuickFilter(STATUS_RESTORABLE)}
-          className={clsx('px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5',
+          className={clsx('inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
             quickFilter === STATUS_RESTORABLE ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           )}
         >
@@ -268,7 +268,7 @@ export default function Backups() {
       {/* Search + Filters */}
       <div className="card p-4 space-y-3">
         <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
+          <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
@@ -278,7 +278,7 @@ export default function Backups() {
               onChange={e => setSearch(e.target.value)}
             />
             {search && (
-              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600" aria-label={t('common.clear')}>
                 <X className="w-4 h-4" />
               </button>
             )}
@@ -308,7 +308,7 @@ export default function Backups() {
         </div>
 
         {(search || statusFilter !== STATUS_ALL || typeFilter !== STATUS_ALL || quickFilter) && (
-          <div className="flex items-center gap-2 text-sm text-gray-600">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
             <SlidersHorizontal className="w-4 h-4" />
             <span>{filtered.length} {t('backups.resultsOf')} {rows.length}</span>
             <button
@@ -335,13 +335,13 @@ export default function Backups() {
       ) : (
         <div className="space-y-4">
           {groups.map(group => (
-            <div key={group.sourceName} className="card overflow-hidden">
+            <div key={group.sourceName} className="card overflow-hidden p-0">
               {/* Group Header */}
-              <div className="flex items-center gap-3 px-5 py-3 bg-gray-50 border-b border-gray-100">
+              <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 bg-gray-50 px-4 py-3 md:px-5">
                 {typeIcon(group.sourceType)}
-                <span className="font-semibold text-gray-900">{group.sourceName}</span>
-                <span className="text-xs text-gray-400 bg-gray-200 rounded-full px-2 py-0.5">{group.sourceType}</span>
-                <span className="ml-auto text-xs text-gray-400">{group.rows.length} {t('backups.entries')}</span>
+                <span className="min-w-0 flex-1 break-words font-semibold text-gray-900">{group.sourceName}</span>
+                <span className="shrink-0 text-xs text-gray-400 bg-gray-200 rounded-full px-2 py-0.5">{group.sourceType}</span>
+                <span className="w-full text-xs text-gray-400 sm:ml-auto sm:w-auto">{group.rows.length} {t('backups.entries')}</span>
               </div>
 
               {/* Rows */}
@@ -352,20 +352,20 @@ export default function Backups() {
                   const isRestorable = source && RESTORABLE_TYPES.includes(source.source_type) && source.status === 'completed'
 
                   return (
-                    <div key={logKey} className="px-5 py-3">
-                      <div className="flex items-center gap-3 flex-wrap">
+                    <div key={logKey} className="px-4 py-3 md:px-5">
+                      <div className="grid gap-3 md:grid-cols-[auto_minmax(8rem,12rem)_1fr_auto] md:items-center">
                         {statusIcon(status)}
 
                         {/* Date */}
-                        <div className="flex items-center gap-1.5 text-sm text-gray-700 min-w-[140px]">
+                        <div className="flex min-w-0 items-center gap-1.5 text-sm text-gray-700">
                           <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                          <span title={format(new Date(backup.started_at), 'dd.MM.yyyy HH:mm:ss')}>
+                          <span className="truncate" title={format(new Date(backup.started_at), 'dd.MM.yyyy HH:mm:ss')}>
                             {formatDistanceToNow(new Date(backup.started_at), { addSuffix: true })}
                           </span>
                         </div>
 
                         {/* Stats */}
-                        <div className="flex items-center gap-4 text-xs text-gray-500 flex-1">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
                           {source ? (
                             <>
                               <span>{source.files_synced ?? '—'} files</span>
@@ -381,7 +381,7 @@ export default function Backups() {
                         </div>
 
                         {/* Badge + Actions */}
-                        <div className="flex items-center gap-2">
+                        <div className="mobile-action-row">
                           <span className={clsx('badge text-xs', statusBadge(status))}>
                             {t(`dashboard.status.${status}`)}
                           </span>
@@ -389,7 +389,7 @@ export default function Backups() {
                           {isRestorable && (
                             <button
                               onClick={() => openRestoreModal(source.source_id, source.source_type)}
-                              className="flex items-center gap-1 text-xs font-medium text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-md transition-colors"
+                              className="btn min-h-9 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100 hover:text-emerald-900"
                             >
                               <RotateCcw className="w-3 h-3" />
                               Restore
@@ -399,7 +399,7 @@ export default function Backups() {
                           {source && source.status === 'completed' && (
                             <button
                               onClick={() => openDownloadModal(source.source_id, source.source_name)}
-                              className="flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-md transition-colors"
+                              className="btn min-h-9 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 hover:text-blue-900"
                             >
                               <Download className="w-3 h-3" />
                               Download
@@ -409,7 +409,7 @@ export default function Backups() {
                           {(source?.logs || source?.error_message || backup.error_message) && (
                             <button
                               onClick={() => setExpandedLogs(prev => ({ ...prev, [logKey]: !prev[logKey] }))}
-                              className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700"
+                              className="btn min-h-9 px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700"
                             >
                               <FileText className="w-3.5 h-3.5" />
                               {expandedLogs[logKey] ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -420,14 +420,14 @@ export default function Backups() {
 
                       {/* Log drawer */}
                       {expandedLogs[logKey] && (
-                        <div className="mt-2 ml-7">
+                        <div className="mt-3 md:ml-7">
                           {(source?.error_message || backup.error_message) && (
-                            <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700 font-mono whitespace-pre-wrap">
+                            <div className="mb-2 overflow-x-auto rounded border border-red-200 bg-red-50 p-2 font-mono text-xs text-red-700 whitespace-pre-wrap">
                               {source?.error_message || backup.error_message}
                             </div>
                           )}
                           {source?.logs ? (
-                            <pre className="text-xs text-gray-600 font-mono whitespace-pre-wrap max-h-48 overflow-y-auto bg-gray-50 p-2 rounded border">
+                            <pre className="max-h-48 overflow-auto rounded border bg-gray-50 p-2 font-mono text-xs text-gray-600 whitespace-pre-wrap">
                               {source.logs}
                             </pre>
                           ) : (
@@ -446,7 +446,7 @@ export default function Backups() {
 
       {/* Pagination */}
       {total > limit && (
-        <div className="flex items-center justify-center gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-3">
           <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="btn btn-secondary disabled:opacity-50">
             {t('common.previous')}
           </button>
@@ -461,19 +461,19 @@ export default function Backups() {
       {downloadModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="fixed inset-0 bg-black/50" onClick={() => setDownloadModal(null)} />
-          <div className="flex min-h-full items-center justify-center p-4">
-            <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <div className="modal-stage">
+            <div className="modal-panel max-w-md">
+              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-4 md:px-6">
+                <h2 className="flex min-w-0 items-center gap-2 text-lg font-bold text-gray-900">
                   <Download className="w-5 h-5" />
-                  {downloadModal.sourceName}
+                  <span className="truncate">{downloadModal.sourceName}</span>
                 </h2>
-                <button onClick={() => setDownloadModal(null)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <button onClick={() => setDownloadModal(null)} className="icon-btn shrink-0 hover:bg-gray-100" aria-label={t('common.close')}>
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="p-6">
+              <div className="p-4 md:p-6">
                 {downloadLoading ? (
                   <div className="flex items-center gap-2 text-gray-500 py-4 justify-center">
                     <Loader2 className="w-4 h-4 animate-spin" /> {t('common.loading')}
@@ -483,18 +483,18 @@ export default function Backups() {
                 ) : (
                   <div className="space-y-2">
                     {downloadFiles.map(file => (
-                      <div key={file.filename} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <div key={file.filename} className="flex flex-col gap-3 rounded-lg bg-gray-50 p-3 sm:flex-row sm:items-center">
                         <FileText className="w-4 h-4 text-gray-400 shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{file.filename}</p>
-                          <p className="text-xs text-gray-400">
+                          <p className="break-words text-sm font-medium text-gray-900">{file.filename}</p>
+                          <p className="text-xs text-gray-400 break-words">
                             {formatBytes(file.size)} · {new Date(file.modified).toLocaleDateString()}
                             {file.type === 'directory' && ' · als .tar.gz'}
                           </p>
                         </div>
                         <button
                           onClick={() => triggerDownload(downloadModal.sourceId, file.filename)}
-                          className="btn btn-secondary text-xs py-1.5 px-3 flex items-center gap-1 shrink-0"
+                          className="btn btn-secondary min-h-10 w-full shrink-0 px-3 py-1.5 text-xs sm:w-auto"
                         >
                           <Download className="w-3.5 h-3.5" />
                           Download
@@ -513,20 +513,20 @@ export default function Backups() {
       {restoreModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="fixed inset-0 bg-black/50" onClick={() => !restoreStatus && setRestoreModal(null)} />
-          <div className="flex min-h-full items-center justify-center p-4">
-            <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg">
-              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
-                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <div className="modal-stage">
+            <div className="modal-panel max-w-lg">
+              <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex items-center justify-between rounded-t-2xl sm:rounded-t-xl">
+                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2 min-w-0">
                   <RotateCcw className="w-5 h-5" /> Supabase Restore
                 </h2>
                 {!restoreStatus && (
-                  <button onClick={() => setRestoreModal(null)} className="p-2 hover:bg-gray-100 rounded-lg">
+                  <button onClick={() => setRestoreModal(null)} className="icon-btn hover:bg-gray-100" aria-label={t('common.close')}>
                     <X className="w-5 h-5" />
                   </button>
                 )}
               </div>
 
-              <div className="p-6 space-y-4">
+              <div className="p-4 md:p-6 space-y-4">
                 {/* Status display */}
                 {restoreStatus && (
                   <div className={clsx('p-4 rounded-lg border',
@@ -667,7 +667,7 @@ export default function Backups() {
                     )}
 
                     {/* Actions */}
-                    <div className="flex gap-3 pt-2">
+                    <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
                       <button onClick={() => setRestoreModal(null)} className="btn btn-secondary flex-1">Abbrechen</button>
                       <button
                         onClick={() => setConfirmRestore(true)}

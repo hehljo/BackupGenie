@@ -73,7 +73,7 @@ class RcloneBackup(BackupHandler):
             cmd.extend(['--bwlimit', str(options['bwlimit'])])
 
         # Exclude patterns
-        for exclude in options.get('exclude', []):
+        for exclude in self._as_list(options.get('exclude')):
             cmd.extend(['--exclude', exclude])
 
         # Timeout for stalled transfers

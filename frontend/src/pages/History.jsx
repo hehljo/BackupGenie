@@ -177,7 +177,7 @@ export default function History() {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="page-shell">
       {/* Header */}
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{t('history.title')}</h1>

@@ -28,10 +28,10 @@ class RsyncSSHBackup(BackupHandler):
             raise Exception("Invalid port number")
 
         # Get username
-        username = self._get_env_credential(credentials.get('username_env', 'SSH_USER'))
+        username = self.source_config.get('username') or self._get_env_credential(credentials.get('username_env', 'SSH_USER'))
 
         # Check for SSH key
-        ssh_key = credentials.get('ssh_key_path', '')
+        ssh_key = self.source_config.get('ssh_key_path') or credentials.get('ssh_key_path', '')
         if ssh_key:
             ssh_key = os.path.expanduser(ssh_key)
 
@@ -80,9 +80,11 @@ class RsyncSSHBackup(BackupHandler):
             cmd.extend(['-e', ' '.join(ssh_cmd_parts)])
 
             # Handle password auth via SSHPASS env var (not command line)
+            password = self.source_config.get('password', '')
             password_env = credentials.get('password_env', '')
-            if password_env and not ssh_key:
-                password = self._get_env_credential(password_env, required=False)
+            if (password or password_env) and not ssh_key:
+                if not password:
+                    password = self._get_env_credential(password_env, required=False)
                 if password:
                     cmd = ['sshpass', '-e'] + cmd
                     os.environ['SSHPASS'] = password

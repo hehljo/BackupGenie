@@ -78,7 +78,7 @@ export default function Notifications() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4 md:space-y-6">
+      <div className="page-shell">
         {/* Header Skeleton */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="space-y-2">
@@ -94,7 +94,7 @@ export default function Notifications() {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="page-shell">
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>

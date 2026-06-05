@@ -79,6 +79,25 @@ class BackupHandler(ABC):
         except:
             return 0
 
+    def _as_list(self, value):
+        """Normalize UI string/list values to a clean list."""
+        if isinstance(value, list):
+            return [item for item in value if item]
+        if not value:
+            return []
+        return [item.strip() for item in str(value).split(',') if item.strip()]
+
+    def _get_config_credential(self, field, env_key, required=True):
+        """Get credential from flattened source config, credentials object, then env/DB."""
+        credentials = self.source_config.get('credentials', {})
+        value = self.source_config.get(field) or credentials.get(field)
+        if value:
+            return value
+        credential_env = credentials.get(f'{field}_env') or credentials.get(env_key)
+        if credential_env:
+            return self._get_env_credential(credential_env, required=required)
+        return self._get_env_credential(env_key, required=required)
+
     def _get_env_credential(self, key, required=True):
         """Get credential: DB (global) first, then environment variable.
         Respects credential_profile from source config for multi-account support."""

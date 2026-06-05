@@ -72,7 +72,7 @@ class SelfHostedBackup(BackupHandler):
 
             if not volumes:
                 self.log(f"No Docker volumes found for {service_name}, trying manual volume specification")
-                volumes = self.source_config.get('volumes', [])
+                volumes = self._as_list(self.source_config.get('volumes'))
 
             for volume in volumes:
                 if not volume:
@@ -142,7 +142,10 @@ class SelfHostedBackup(BackupHandler):
             credentials = self.source_config.get('credentials', {})
             headers = {}
 
-            if 'token_env' in credentials:
+            token = self.source_config.get('token') or self.source_config.get('api_key')
+            if token:
+                headers['Authorization'] = f'Bearer {token}'
+            elif 'token_env' in credentials:
                 token = self._get_env_credential(credentials['token_env'], required=False)
                 if token:
                     headers['Authorization'] = f'Bearer {token}'

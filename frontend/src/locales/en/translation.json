@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "BackupGenie",
-    "tagline": "Automated Multi-Source Backup Manager"
+    "tagline": "Automated Multi-Source Backup Manager",
+    "shortDescription": "Backup Manager"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -11,7 +12,12 @@
     "notifications": "Notifications",
     "settings": "Settings",
     "logs": "Logs",
-    "logout": "Logout"
+    "logout": "Logout",
+    "toggleMenu": "Toggle menu"
+  },
+  "theme": {
+    "light": "Light mode",
+    "dark": "Dark mode"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -86,7 +92,13 @@
     "backupBasePath": "Backup Base Path",
     "backupBasePathHint": "Directory inside the container where backups are stored",
     "maxParallelTasks": "Max Parallel Tasks",
+    "maxParallelTasksHint": "Number of concurrent backup operations",
     "logRetention": "Log Retention (days)",
+    "logRetentionHint": "How long to keep backup logs",
+    "backupRetentionCount": "Backup versions per source",
+    "backupRetentionCountHint": "How many timestamp-based backup versions to keep per source. Sync/mirror sources usually overwrite the same target folder.",
+    "autoCleanup": "Automatic Backup Cleanup",
+    "autoCleanupHint": "After a successful backup, remove older timestamp-based artifacts. Currently keeping {{count}} versions per source.",
     "user": "User Settings",
     "username": "Username",
     "newPassword": "New Password",
@@ -95,12 +107,88 @@
     "saving": "Saving...",
     "saved": "Settings saved successfully",
     "error": "Error saving settings",
+    "loadError": "Failed to load settings",
+    "password": {
+      "minLength": "Password must be at least 12 characters long",
+      "uppercase": "Password must contain at least one uppercase letter",
+      "lowercase": "Password must contain at least one lowercase letter",
+      "digit": "Password must contain at least one digit",
+      "special": "Password must contain at least one special character",
+      "mismatch": "Passwords do not match",
+      "changed": "Password changed successfully",
+      "changeError": "Failed to change password"
+    },
+    "security": {
+      "title": "Security",
+      "apiAuth": "API Authentication",
+      "apiAuthHint": "Require token for API access",
+      "httpsOnly": "HTTPS Only",
+      "httpsOnlyHint": "Enforce secure connections"
+    },
+    "storage": {
+      "title": "Storage",
+      "usedSpace": "Used Space",
+      "percentUsed": "{{percentage}}% used",
+      "clearAllBackups": "Clear All Backup Records",
+      "clearBackupsTitle": "Clear all backup records?",
+      "clearBackupsMessage": "This permanently deletes all backup records from the database. This action cannot be undone. Backup files remain on disk.",
+      "clearBackupsSuccess": "All backup records deleted successfully",
+      "clearBackupsError": "Failed to clear backup records"
+    },
+    "config": {
+      "title": "Configuration Export/Import",
+      "export": "Export",
+      "exportHint": "Download all sources, settings, and configurations as a JSON file for backup or migration.",
+      "exportButton": "Export Configuration",
+      "exporting": "Exporting configuration...",
+      "exported": "Configuration exported successfully",
+      "exportError": "Failed to export configuration",
+      "import": "Import",
+      "importHint": "Upload a previously exported configuration file to restore your settings.",
+      "chooseFile": "Choose File",
+      "selectedFile": "Selected: {{name}}",
+      "validConfiguration": "Valid Configuration",
+      "invalidConfiguration": "Invalid Configuration",
+      "sourcesFound": "{{count}} sources found",
+      "errors": "Errors:",
+      "warnings": "Warnings:",
+      "validFile": "Configuration file is valid",
+      "invalidFile": "Configuration file has errors",
+      "invalidJson": "Invalid JSON format or file is corrupted",
+      "selectValidFile": "Please select a valid configuration file first",
+      "confirmImportMerge": "Are you sure you want to import this configuration? It will merge with your current settings.",
+      "confirmImportReplace": "Are you sure you want to import this configuration? It will replace your current settings.",
+      "importing": "Importing...",
+      "importButton": "Import Configuration",
+      "imported": "Configuration imported. {{count}} sources imported.",
+      "importError": "Failed to import configuration",
+      "readError": "Failed to read configuration file",
+      "mergeMode": "Merge Mode",
+      "mergeHint": "Add to existing sources",
+      "replaceHint": "Replace all sources"
+    },
     "credentials": {
       "title": "Credentials",
       "subtitle": "Global credentials used by all backup sources. Set once, used everywhere.",
       "saveButton": "Save Credentials",
       "saved": "Credentials saved successfully",
-      "noChanges": "No changes to save"
+      "noChanges": "No changes to save",
+      "addProfile": "Add profile",
+      "editProfile": "Edit profile",
+      "deleteProfile": "Delete profile",
+      "editProfileNamed": "Edit profile \"{{profile}}\"",
+      "newProfile": "New profile",
+      "noProfile": "No profile configured",
+      "onlyFilledFields": "Only filled fields will be overwritten. Empty fields remain unchanged.",
+      "profileNamePlaceholder": "Profile name (e.g. Personal, Work, Server-1)",
+      "saveProfile": "Save profile",
+      "profileNameRequired": "Profile name is required",
+      "oneFieldRequired": "Fill at least one field",
+      "profileSaved": "Profile \"{{name}}\" saved",
+      "profileDeleted": "Profile \"{{profile}}\" deleted",
+      "confirmDeleteProfile": "Delete profile \"{{profile}}\"?",
+      "saveError": "Error saving",
+      "deleteError": "Error deleting"
     }
   },
   "logs": {
@@ -145,10 +233,12 @@
     "back": "Back",
     "next": "Next",
     "previous": "Previous",
+    "processing": "Processing...",
     "yes": "Yes",
     "no": "No"
   },
   "language": {
+    "label": "Language",
     "select": "Select Language",
     "en": "English",
     "de": "Deutsch"

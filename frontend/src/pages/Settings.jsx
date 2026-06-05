@@ -19,6 +19,7 @@ export default function Settings() {
     backupBasePath: '/mnt/backup',
     maxParallelTasks: 2,
     logRetention: 30,
+    backupRetentionCount: 10,
     apiAuth: true,
     httpsOnly: false,
     autoCleanup: true,
@@ -76,6 +77,7 @@ export default function Settings() {
         backupBasePath: settingsData.backup_base_path,
         maxParallelTasks: settingsData.max_parallel_tasks,
         logRetention: settingsData.log_retention_days,
+        backupRetentionCount: settingsData.backup_retention_count,
         apiAuth: settingsData.api_auth_enabled,
         httpsOnly: settingsData.https_only,
         autoCleanup: settingsData.auto_cleanup,
@@ -101,7 +103,7 @@ export default function Settings() {
       setIsLoading(false)
     } catch (error) {
       console.error('Error loading settings:', error)
-      toast.error('Failed to load settings')
+      toast.error(t('settings.loadError'))
       setIsLoading(false)
     }
   }
@@ -159,57 +161,57 @@ export default function Settings() {
 
   const handleAddProfile = async () => {
     if (!newProfile.name.trim()) {
-      toast.error('Profilname erforderlich')
+      toast.error(t('settings.credentials.profileNameRequired'))
       return
     }
     const hasValues = Object.values(newProfile.values || {}).some(v => v?.trim())
     if (!hasValues) {
-      toast.error('Mindestens ein Feld ausfüllen')
+      toast.error(t('settings.credentials.oneFieldRequired'))
       return
     }
     setIsSavingCredentials(true)
     try {
       await settingsAPI.addCredentialProfile(showAddProfile, newProfile.name, newProfile.values)
-      toast.success(`Profil "${newProfile.name}" gespeichert`)
+      toast.success(t('settings.credentials.profileSaved', { name: newProfile.name }))
       setNewProfile({ name: '', values: {} })
       setShowAddProfile(null)
       setEditingProfile(null)
       const credRes = await settingsAPI.getCredentials()
       setCredentials(credRes.data)
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Fehler beim Speichern')
+      toast.error(error.response?.data?.error || t('settings.credentials.saveError'))
     } finally {
       setIsSavingCredentials(false)
     }
   }
 
   const handleDeleteProfile = async (provider, profile) => {
-    if (!confirm(`Profil "${profile}" wirklich löschen?`)) return
+    if (!confirm(t('settings.credentials.confirmDeleteProfile', { profile }))) return
     try {
       await settingsAPI.deleteCredentialProfile(provider, profile)
-      toast.success(`Profil "${profile}" gelöscht`)
+      toast.success(t('settings.credentials.profileDeleted', { profile }))
       const credRes = await settingsAPI.getCredentials()
       setCredentials(credRes.data)
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Fehler beim Löschen')
+      toast.error(error.response?.data?.error || t('settings.credentials.deleteError'))
     }
   }
 
   const validatePassword = (password) => {
     if (password.length < 12) {
-      return 'Password must be at least 12 characters long'
+      return t('settings.password.minLength')
     }
     if (!/[A-Z]/.test(password)) {
-      return 'Password must contain at least one uppercase letter'
+      return t('settings.password.uppercase')
     }
     if (!/[a-z]/.test(password)) {
-      return 'Password must contain at least one lowercase letter'
+      return t('settings.password.lowercase')
     }
     if (!/\d/.test(password)) {
-      return 'Password must contain at least one digit'
+      return t('settings.password.digit')
     }
     if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-      return 'Password must contain at least one special character'
+      return t('settings.password.special')
     }
     return null
   }
@@ -221,7 +223,7 @@ export default function Settings() {
 
     // Validate passwords match
     if (passwords.newPassword !== passwords.confirmPassword) {
-      setPasswordError('Passwords do not match')
+      setPasswordError(t('settings.password.mismatch'))
       return
     }
 
@@ -236,13 +238,13 @@ export default function Settings() {
     try {
       // Call real API endpoint
       await authAPI.changePassword(passwords.newPassword)
-      toast.success('Password changed successfully!')
+      toast.success(t('settings.password.changed'))
       setPasswordSuccess(true)
       setPasswords({ newPassword: '', confirmPassword: '' })
       setTimeout(() => setPasswordSuccess(false), 5000)
     } catch (error) {
       console.error('Error changing password:', error)
-      const errorMsg = error.response?.data?.error || 'Failed to change password'
+      const errorMsg = error.response?.data?.error || t('settings.password.changeError')
       setPasswordError(errorMsg)
       toast.error(errorMsg)
     } finally {
@@ -259,13 +261,15 @@ export default function Settings() {
         backup_base_path: settings.backupBasePath,
         max_parallel_tasks: settings.maxParallelTasks,
         log_retention_days: settings.logRetention,
+        backup_retention_count: settings.backupRetentionCount,
+        auto_cleanup: settings.autoCleanup,
       })
-      toast.success('Settings saved successfully!')
+      toast.success(t('settings.saved'))
       setSaveStatus('success')
       setTimeout(() => setSaveStatus(null), 3000)
     } catch (error) {
       console.error('Error saving settings:', error)
-      toast.error('Failed to save settings')
+      toast.error(t('settings.error'))
       setSaveStatus('error')
       setTimeout(() => setSaveStatus(null), 3000)
     } finally {
@@ -281,19 +285,19 @@ export default function Settings() {
     setIsClearing(true)
     try {
       const response = await backupAPI.deleteAll()
-      toast.success(response.data.message ||'All backups deleted successfully')
+      toast.success(response.data.message || t('settings.storage.clearBackupsSuccess'))
       setClearBackupsConfirm(false)
       loadData()
     } catch (error) {
       console.error('Error clearing backups:', error)
-      toast.error(error.response?.data?.error || 'Failed to clear backups')
+      toast.error(error.response?.data?.error || t('settings.storage.clearBackupsError'))
     } finally {
       setIsClearing(false)
     }
   }
 
   const handleExport = async () => {
-    const loadingToast = toast.loading('Exporting configuration...')
+    const loadingToast = toast.loading(t('settings.config.exporting'))
     try {
       const response = await configAPI.export()
 
@@ -311,10 +315,10 @@ export default function Settings() {
       link.parentNode.removeChild(link)
       window.URL.revokeObjectURL(url)
 
-      toast.success('Configuration exported successfully!', { id: loadingToast })
+      toast.success(t('settings.config.exported'), { id: loadingToast })
     } catch (error) {
       console.error('Error exporting configuration:', error)
-      toast.error(error.response?.data?.error || 'Failed to export configuration', { id: loadingToast })
+      toast.error(error.response?.data?.error || t('settings.config.exportError'), { id: loadingToast })
     }
   }
 
@@ -336,18 +340,18 @@ export default function Settings() {
         setValidationResult(response.data)
 
         if (response.data.valid) {
-          toast.success('Configuration file is valid!')
+          toast.success(t('settings.config.validFile'))
         } else {
-          toast.error('Configuration file has errors')
+          toast.error(t('settings.config.invalidFile'))
         }
       } catch (error) {
         console.error('Error validating file:', error)
         setValidationResult({
           valid: false,
-          errors: ['Invalid JSON format or file is corrupted'],
+          errors: [t('settings.config.invalidJson')],
           warnings: []
         })
-        toast.error('Invalid configuration file')
+        toast.error(t('settings.config.invalidFile'))
       }
     }
     reader.readAsText(file)
@@ -355,15 +359,15 @@ export default function Settings() {
 
   const handleImport = async () => {
     if (!importFile || !validationResult?.valid) {
-      toast.error('Please select a valid configuration file first')
+      toast.error(t('settings.config.selectValidFile'))
       return
     }
 
-    if (!confirm(`Are you sure you want to import this configuration? ${importMerge ? 'This will merge with' : 'This will replace'} your current settings.`)) {
+    if (!confirm(t(importMerge ? 'settings.config.confirmImportMerge' : 'settings.config.confirmImportReplace'))) {
       return
     }
 
-    const loadingToast = toast.loading('Importing configuration...')
+    const loadingToast = toast.loading(t('settings.config.importing'))
     try {
       const reader = new FileReader()
       reader.onload = async (event) => {
@@ -372,7 +376,7 @@ export default function Settings() {
           const response = await configAPI.import(configData, importMerge)
 
           toast.success(
-            `Configuration imported! ${response.data.summary.sources_imported} sources imported.`,
+            t('settings.config.imported', { count: response.data.summary.sources_imported }),
             { id: loadingToast }
           )
 
@@ -387,13 +391,13 @@ export default function Settings() {
           loadData()
         } catch (error) {
           console.error('Error importing configuration:', error)
-          toast.error(error.response?.data?.error || 'Failed to import configuration', { id: loadingToast })
+          toast.error(error.response?.data?.error || t('settings.config.importError'), { id: loadingToast })
         }
       }
       reader.readAsText(importFile)
     } catch (error) {
       console.error('Error reading file:', error)
-      toast.error('Failed to read configuration file', { id: loadingToast })
+      toast.error(t('settings.config.readError'), { id: loadingToast })
     }
   }
 
@@ -413,7 +417,7 @@ export default function Settings() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4 md:space-y-6">
+      <div className="page-shell">
         {/* Header Skeleton */}
         <div className="space-y-2">
           <div className="h-8 w-40 bg-gray-200 rounded animate-pulse"></div>
@@ -437,7 +441,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="page-shell">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{t('settings.title')}</h1>
         <p className="text-sm md:text-base text-gray-600 mt-1">{t('settings.subtitle')}</p>
@@ -469,12 +473,17 @@ export default function Settings() {
             <div>
               <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">{t('settings.maxParallelTasks')}</label>
               <input type="number" className="input" value={settings.maxParallelTasks} onChange={(e) => setSettings({...settings, maxParallelTasks: parseInt(e.target.value)})} min="1" max="10" />
-              <p className="text-xs text-gray-500 mt-1">Number of concurrent backup operations</p>
+              <p className="text-xs text-gray-500 mt-1">{t('settings.maxParallelTasksHint')}</p>
             </div>
             <div>
               <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">{t('settings.logRetention')}</label>
               <input type="number" className="input" value={settings.logRetention} onChange={(e) => setSettings({...settings, logRetention: parseInt(e.target.value)})} min="1" />
-              <p className="text-xs text-gray-500 mt-1">How long to keep backup logs</p>
+              <p className="text-xs text-gray-500 mt-1">{t('settings.logRetentionHint')}</p>
+            </div>
+            <div>
+              <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">{t('settings.backupRetentionCount')}</label>
+              <input type="number" className="input" value={settings.backupRetentionCount} onChange={(e) => setSettings({...settings, backupRetentionCount: parseInt(e.target.value)})} min="1" max="1000" />
+              <p className="text-xs text-gray-500 mt-1">{t('settings.backupRetentionCountHint')}</p>
             </div>
           </div>
         </div>
@@ -500,7 +509,7 @@ export default function Settings() {
               <input type="password" className="input" placeholder={t('settings.confirmPassword')} value={passwords.confirmPassword} onChange={(e) => setPasswords({...passwords, confirmPassword: e.target.value})} />
             </div>
             {passwordError && <p className="text-xs md:text-sm text-red-600">{passwordError}</p>}
-            {passwordSuccess && <p className="text-xs md:text-sm text-green-600">Password changed successfully!</p>}
+            {passwordSuccess && <p className="text-xs md:text-sm text-green-600">{t('settings.password.changed')}</p>}
             <button type="submit" className="btn btn-primary w-full flex items-center justify-center gap-2" disabled={isSaving || !passwords.newPassword || !passwords.confirmPassword}>
               {isSaving ? <><Loader className="w-4 h-4 md:w-5 md:h-5 animate-spin" /><span className="text-sm md:text-base">{t('settings.saving')}</span></> : <span className="text-sm md:text-base">{t('settings.save')}</span>}
             </button>
@@ -512,13 +521,13 @@ export default function Settings() {
             <div className="p-1.5 md:p-2 bg-red-100 rounded-lg shrink-0">
               <Shield className="w-5 h-5 md:w-6 md:h-6 text-red-600" />
             </div>
-            <h2 className="text-lg md:text-xl font-bold text-gray-900">Security</h2>
+            <h2 className="text-lg md:text-xl font-bold text-gray-900">{t('settings.security.title')}</h2>
           </div>
           <div className="space-y-3 md:space-y-4">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <p className="text-sm md:text-base font-medium text-gray-900 truncate">API Authentication</p>
-                <p className="text-xs md:text-sm text-gray-600">Require token for API access</p>
+                <p className="text-sm md:text-base font-medium text-gray-900 truncate">{t('settings.security.apiAuth')}</p>
+                <p className="text-xs md:text-sm text-gray-600">{t('settings.security.apiAuthHint')}</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer shrink-0">
                 <input type="checkbox" className="sr-only peer" checked={settings.apiAuth} disabled />
@@ -527,8 +536,8 @@ export default function Settings() {
             </div>
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <p className="text-sm md:text-base font-medium text-gray-900 truncate">HTTPS Only</p>
-                <p className="text-xs md:text-sm text-gray-600">Enforce secure connections</p>
+                <p className="text-sm md:text-base font-medium text-gray-900 truncate">{t('settings.security.httpsOnly')}</p>
+                <p className="text-xs md:text-sm text-gray-600">{t('settings.security.httpsOnlyHint')}</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer shrink-0">
                 <input type="checkbox" className="sr-only peer" checked={settings.httpsOnly} onChange={(e) => setSettings({...settings, httpsOnly: e.target.checked})} />
@@ -565,7 +574,7 @@ export default function Settings() {
                     className="text-xs flex items-center gap-1 text-primary-600 hover:text-primary-800"
                   >
                     {showAddProfile === provider ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                    {showAddProfile === provider ? 'Abbrechen' : 'Profil hinzufügen'}
+                    {showAddProfile === provider ? t('common.cancel') : t('settings.credentials.addProfile')}
                   </button>
                 </div>
 
@@ -586,14 +595,14 @@ export default function Settings() {
                                     setNewProfile({ name: p.profile, values: {} })
                                   }}
                                   className="text-gray-400 hover:text-blue-500"
-                                  title="Profil bearbeiten"
+                                  title={t('settings.credentials.editProfile')}
                                 >
                                   <Save className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   onClick={() => handleDeleteProfile(provider, p.profile)}
                                   className="text-gray-400 hover:text-red-500"
-                                  title="Profil löschen"
+                                  title={t('settings.credentials.deleteProfile')}
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -615,22 +624,22 @@ export default function Settings() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-400 italic mt-1">Kein Profil konfiguriert</p>
+                  <p className="text-xs text-gray-400 italic mt-1">{t('settings.credentials.noProfile')}</p>
                 )}
 
                 {/* Add/Edit profile form */}
                 {showAddProfile === provider && (
                   <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
                     <div className="text-xs font-semibold text-blue-700 mb-1">
-                      {editingProfile ? `Profil "${editingProfile.profile}" bearbeiten` : 'Neues Profil'}
+                      {editingProfile ? t('settings.credentials.editProfileNamed', { profile: editingProfile.profile }) : t('settings.credentials.newProfile')}
                     </div>
                     {editingProfile && (
-                      <p className="text-xs text-blue-600 italic">Nur ausgefüllte Felder werden überschrieben. Leere Felder bleiben unverändert.</p>
+                      <p className="text-xs text-blue-600 italic">{t('settings.credentials.onlyFilledFields')}</p>
                     )}
                     <input
                       type="text"
                       className="input text-sm"
-                      placeholder="Profilname (z.B. Privat, Arbeit, Server-1)"
+                      placeholder={t('settings.credentials.profileNamePlaceholder')}
                       value={newProfile.name}
                       onChange={(e) => setNewProfile({...newProfile, name: e.target.value})}
                       disabled={!!editingProfile}
@@ -670,7 +679,7 @@ export default function Settings() {
                       {isSavingCredentials ? (
                         <Loader className="w-4 h-4 animate-spin" />
                       ) : (
-                        <><Key className="w-4 h-4" /><span>Profil speichern</span></>
+                        <><Key className="w-4 h-4" /><span>{t('settings.credentials.saveProfile')}</span></>
                       )}
                     </button>
                   </div>
@@ -685,12 +694,12 @@ export default function Settings() {
             <div className="p-1.5 md:p-2 bg-purple-100 rounded-lg shrink-0">
               <Database className="w-5 h-5 md:w-6 md:h-6 text-purple-600" />
             </div>
-            <h2 className="text-lg md:text-xl font-bold text-gray-900">Storage</h2>
+            <h2 className="text-lg md:text-xl font-bold text-gray-900">{t('settings.storage.title')}</h2>
           </div>
           <div className="space-y-3 md:space-y-4">
             <div className="p-3 md:p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs md:text-sm text-gray-600">Used Space</span>
+                <span className="text-xs md:text-sm text-gray-600">{t('settings.storage.usedSpace')}</span>
                 <span className="text-sm md:text-base font-medium text-gray-900">
                   {formatBytes(storage.usedBytes)} / {formatBytes(storage.totalBytes)}
                 </span>
@@ -698,12 +707,12 @@ export default function Settings() {
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div className={clsx('h-2 rounded-full transition-all', getStorageColor())} style={{ width: `${Math.min(storage.percentage, 100)}%` }}></div>
               </div>
-              <p className="text-xs text-gray-500 mt-1">{storage.percentage}% used</p>
+              <p className="text-xs text-gray-500 mt-1">{t('settings.storage.percentUsed', { percentage: storage.percentage })}</p>
             </div>
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <p className="text-sm md:text-base font-medium text-gray-900 truncate">Auto Cleanup</p>
-                <p className="text-xs md:text-sm text-gray-600">Delete old backups automatically</p>
+                <p className="text-sm md:text-base font-medium text-gray-900 truncate">{t('settings.autoCleanup')}</p>
+                <p className="text-xs md:text-sm text-gray-600">{t('settings.autoCleanupHint', { count: settings.backupRetentionCount })}</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer shrink-0">
                 <input type="checkbox" className="sr-only peer" checked={settings.autoCleanup} onChange={(e) => setSettings({...settings, autoCleanup: e.target.checked})} />
@@ -711,7 +720,7 @@ export default function Settings() {
               </label>
             </div>
             <button onClick={handleClearBackupsClick} className="btn btn-danger w-full flex items-center justify-center gap-2" disabled={isSaving}>
-              <span className="text-sm md:text-base">Clear All Backups</span>
+              <span className="text-sm md:text-base">{t('settings.storage.clearAllBackups')}</span>
             </button>
           </div>
         </div>
@@ -722,15 +731,15 @@ export default function Settings() {
             <div className="p-1.5 md:p-2 bg-indigo-100 rounded-lg shrink-0">
               <FileJson className="w-5 h-5 md:w-6 md:h-6 text-indigo-600" />
             </div>
-            <h2 className="text-lg md:text-xl font-bold text-gray-900">Configuration Export/Import</h2>
+            <h2 className="text-lg md:text-xl font-bold text-gray-900">{t('settings.config.title')}</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             {/* Export Section */}
             <div className="space-y-3 md:space-y-4">
-              <h3 className="text-base md:text-lg font-semibold text-gray-800">Export</h3>
+              <h3 className="text-base md:text-lg font-semibold text-gray-800">{t('settings.config.export')}</h3>
               <p className="text-xs md:text-sm text-gray-600">
-                Download all your sources, settings, and configurations as a JSON file for backup or migration.
+                {t('settings.config.exportHint')}
               </p>
               <button
                 onClick={handleExport}
@@ -738,15 +747,15 @@ export default function Settings() {
                 disabled={isSaving}
               >
                 <Download className="w-4 h-4 md:w-5 md:h-5" />
-                <span className="text-sm md:text-base">Export Configuration</span>
+                <span className="text-sm md:text-base">{t('settings.config.exportButton')}</span>
               </button>
             </div>
 
             {/* Import Section */}
             <div className="space-y-3 md:space-y-4">
-              <h3 className="text-base md:text-lg font-semibold text-gray-800">Import</h3>
+              <h3 className="text-base md:text-lg font-semibold text-gray-800">{t('settings.config.import')}</h3>
               <p className="text-xs md:text-sm text-gray-600">
-                Upload a previously exported configuration file to restore your settings.
+                {t('settings.config.importHint')}
               </p>
 
               <input
@@ -764,7 +773,7 @@ export default function Settings() {
               >
                 <Upload className="w-4 h-4 md:w-5 md:h-5" />
                 <span className="text-sm md:text-base">
-                  {importFile ? `Selected: ${importFile.name}` : 'Choose File'}
+                  {importFile ? t('settings.config.selectedFile', { name: importFile.name }) : t('settings.config.chooseFile')}
                 </span>
               </button>
 
@@ -783,11 +792,11 @@ export default function Settings() {
                     )}
                     <div className="flex-1 min-w-0">
                       <p className={clsx('font-semibold', validationResult.valid ? 'text-green-800' : 'text-red-800')}>
-                        {validationResult.valid ? 'Valid Configuration' : 'Invalid Configuration'}
+                        {validationResult.valid ? t('settings.config.validConfiguration') : t('settings.config.invalidConfiguration')}
                       </p>
                       {validationResult.summary && (
                         <p className="text-gray-700 mt-1">
-                          {validationResult.summary.total_sources} sources found
+                          {t('settings.config.sourcesFound', { count: validationResult.summary.total_sources })}
                         </p>
                       )}
                     </div>
@@ -795,7 +804,7 @@ export default function Settings() {
 
                   {validationResult.errors?.length > 0 && (
                     <div className="mt-2">
-                      <p className="font-medium text-red-800 mb-1">Errors:</p>
+                      <p className="font-medium text-red-800 mb-1">{t('settings.config.errors')}</p>
                       <ul className="list-disc list-inside text-red-700 space-y-1">
                         {validationResult.errors.map((error, i) => (
                           <li key={i} className="break-words">{error}</li>
@@ -806,7 +815,7 @@ export default function Settings() {
 
                   {validationResult.warnings?.length > 0 && (
                     <div className="mt-2">
-                      <p className="font-medium text-yellow-800 mb-1">Warnings:</p>
+                      <p className="font-medium text-yellow-800 mb-1">{t('settings.config.warnings')}</p>
                       <ul className="list-disc list-inside text-yellow-700 space-y-1">
                         {validationResult.warnings.map((warning, i) => (
                           <li key={i} className="break-words">{warning}</li>
@@ -830,9 +839,9 @@ export default function Settings() {
                       <div className="w-9 h-5 md:w-11 md:h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 md:after:h-5 md:after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                     </label>
                     <div>
-                      <p className="text-sm md:text-base font-medium text-gray-900">Merge Mode</p>
+                      <p className="text-sm md:text-base font-medium text-gray-900">{t('settings.config.mergeMode')}</p>
                       <p className="text-xs text-gray-600">
-                        {importMerge ? 'Add to existing sources' : 'Replace all sources'}
+                        {importMerge ? t('settings.config.mergeHint') : t('settings.config.replaceHint')}
                       </p>
                     </div>
                   </div>
@@ -845,12 +854,12 @@ export default function Settings() {
                     {isSaving ? (
                       <>
                         <Loader className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
-                        <span className="text-sm md:text-base">Importing...</span>
+                        <span className="text-sm md:text-base">{t('settings.config.importing')}</span>
                       </>
                     ) : (
                       <>
                         <Upload className="w-4 h-4 md:w-5 md:h-5" />
-                        <span className="text-sm md:text-base">Import Configuration</span>
+                        <span className="text-sm md:text-base">{t('settings.config.importButton')}</span>
                       </>
                     )}
                   </button>
@@ -872,9 +881,10 @@ export default function Settings() {
         isOpen={clearBackupsConfirm}
         onClose={() => setClearBackupsConfirm(false)}
         onConfirm={handleClearBackupsConfirm}
-        title="Delete All Backups?"
-        message="This will permanently delete all backup records from the database. This action cannot be undone. Your backup files will remain on disk."
-        confirmText="Delete All Backups"
+        title={t('settings.storage.clearBackupsTitle')}
+        message={t('settings.storage.clearBackupsMessage')}
+        confirmText={t('settings.storage.clearAllBackups')}
+        cancelText={t('common.cancel')}
         confirmVariant="danger"
         isLoading={isClearing}
       />

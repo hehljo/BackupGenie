@@ -40,22 +40,22 @@ export default function Layout({ children, onLogout, isDarkMode, onToggleDarkMod
   const SidebarContent = () => (
     <>
       {/* Logo */}
-      <div className="px-6 py-5 border-b border-gray-200">
+      <div className="px-5 py-5 border-b border-gray-200 dark:border-gray-800">
         <div className="flex items-center gap-3">
-          <img src="/icon.png" alt="BackupGenie" className="w-9 h-9 rounded-lg shadow-sm" />
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">{t('app.name')}</h1>
-            <p className="text-xs text-gray-500">Backup Manager</p>
+          <img src="/icon.png" alt="BackupGenie" className="w-9 h-9 rounded-lg shadow-sm shrink-0" />
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-bold text-gray-900">{t('app.name')}</h1>
+            <p className="truncate text-xs text-gray-500">{t('app.shortDescription')}</p>
           </div>
         </div>
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-3 grid grid-cols-[1fr_auto] items-center gap-2">
           <LanguageSwitcher />
           <button
             type="button"
             onClick={onToggleDarkMode}
-            className="p-2 text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            aria-label={isDarkMode ? 'Light mode' : 'Dark mode'}
-            title={isDarkMode ? 'Light mode' : 'Dark mode'}
+            className="icon-btn text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
+            aria-label={isDarkMode ? t('theme.light') : t('theme.dark')}
+            title={isDarkMode ? t('theme.light') : t('theme.dark')}
           >
             {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
@@ -63,7 +63,7 @@ export default function Layout({ children, onLogout, isDarkMode, onToggleDarkMod
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {navigation.map((item) => {
           const isActive = location.pathname === item.href
           const Icon = item.icon
@@ -73,29 +73,29 @@ export default function Layout({ children, onLogout, isDarkMode, onToggleDarkMod
               key={item.name}
               to={item.href}
               className={clsx(
-                'flex items-center gap-3 px-4 py-3 rounded-lg transition-all',
+                'flex min-h-11 items-center gap-3 rounded-lg px-4 py-2.5 transition-all',
                 isActive
                   ? 'bg-primary-50 text-primary-700 font-medium'
                   : 'text-gray-700 hover:bg-gray-100'
               )}
             >
-              <Icon className="w-5 h-5" />
-              {t(`nav.${item.name}`)}
+              <Icon className="w-5 h-5 shrink-0" />
+              <span className="truncate">{t(`nav.${item.name}`)}</span>
             </Link>
           )
         })}
       </nav>
 
       {/* Logout + Version */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-gray-200 dark:border-gray-800">
         <button
           onClick={onLogout}
-          className="flex items-center gap-3 w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+          className="flex min-h-11 w-full items-center gap-3 rounded-lg px-4 py-2.5 text-red-600 transition-all hover:bg-red-50 dark:hover:bg-red-950/40"
         >
           <LogOut className="w-5 h-5" />
           {t('nav.logout')}
         </button>
-        <p className="text-xs text-gray-400 text-center mt-2">v1.6.0</p>
+        <p className="text-xs text-gray-400 text-center mt-2">v1.6.1</p>
       </div>
     </>
   )
@@ -103,26 +103,26 @@ export default function Layout({ children, onLogout, isDarkMode, onToggleDarkMod
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
-            <img src="/icon.png" alt="BackupGenie" className="w-8 h-8 rounded-lg" />
-            <h1 className="text-lg font-bold text-gray-900">{t('app.name')}</h1>
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur border-b border-gray-200 dark:border-gray-800">
+        <div className="flex min-h-16 items-center justify-between px-4 py-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <img src="/icon.png" alt="BackupGenie" className="w-8 h-8 rounded-lg shrink-0" />
+            <h1 className="truncate text-lg font-bold text-gray-900">{t('app.name')}</h1>
           </div>
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={onToggleDarkMode}
-              className="p-2 text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              aria-label={isDarkMode ? 'Light mode' : 'Dark mode'}
-              title={isDarkMode ? 'Light mode' : 'Dark mode'}
+              className="icon-btn text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
+              aria-label={isDarkMode ? t('theme.light') : t('theme.dark')}
+              title={isDarkMode ? t('theme.light') : t('theme.dark')}
             >
               {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              aria-label="Toggle menu"
+              className="icon-btn hover:bg-gray-100 dark:hover:bg-gray-800"
+              aria-label={t('nav.toggleMenu')}
             >
               {isMobileMenuOpen ? (
                 <X className="w-6 h-6 text-gray-700 dark:text-gray-200" />
@@ -146,8 +146,8 @@ export default function Layout({ children, onLogout, isDarkMode, onToggleDarkMod
       {/* Mobile Sidebar Drawer */}
       <div
         className={clsx(
-          'md:hidden fixed inset-y-0 left-0 z-50 w-72 bg-white transform transition-transform duration-300 ease-in-out flex flex-col',
-          'dark:bg-gray-900',
+          'md:hidden fixed inset-y-0 left-0 z-50 w-[min(20rem,calc(100vw-2rem))] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col',
+          'dark:bg-gray-900 dark:border-r dark:border-gray-800',
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -161,7 +161,7 @@ export default function Layout({ children, onLogout, isDarkMode, onToggleDarkMod
 
       {/* Main content */}
       <div className="md:pl-64 pt-16 md:pt-0">
-        <main className="p-4 md:p-8">
+        <main className="px-3 py-4 sm:px-4 md:p-8">
           {children}
         </main>
       </div>

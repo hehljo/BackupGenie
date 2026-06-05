@@ -16,8 +16,8 @@ class DockerVolumeBackup(BackupHandler):
 
     def backup(self):
         """Execute Docker volume backup"""
-        volumes = self.source_config.get('volumes', [])
-        containers = self.source_config.get('containers', [])
+        volumes = self._as_list(self.source_config.get('volumes'))
+        containers = self._as_list(self.source_config.get('containers'))
 
         if not volumes and not containers:
             raise Exception("No Docker volumes or containers specified")
@@ -157,7 +157,7 @@ class DockerImageBackup(BackupHandler):
 
     def backup(self):
         """Execute Docker image backup"""
-        images = self.source_config.get('images', [])
+        images = self._as_list(self.source_config.get('images'))
 
         if not images:
             raise Exception("No Docker images specified")

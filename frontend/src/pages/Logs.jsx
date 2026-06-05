@@ -88,7 +88,7 @@ export default function Logs() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="page-shell">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
@@ -126,7 +126,7 @@ export default function Logs() {
           </select>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-5 gap-2 sm:flex sm:items-center">
             <button
               onClick={() => setAutoRefresh(!autoRefresh)}
               className={`btn btn-secondary text-sm px-3 py-2 ${autoRefresh ? 'ring-2 ring-primary-500 bg-primary-50' : ''}`}

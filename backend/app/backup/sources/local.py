@@ -15,7 +15,9 @@ class LocalBackup(BackupHandler):
 
     def backup(self):
         """Execute local backup"""
-        sources = self.source_config.get('sources', [])
+        sources = self._as_list(self.source_config.get('sources'))
+        if not sources and self.source_config.get('path'):
+            sources = [self.source_config.get('path')]
 
         if not sources:
             raise Exception("No source paths specified for local backup")

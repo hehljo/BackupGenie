@@ -28,8 +28,8 @@ class FTPBackup(BackupHandler):
             raise Exception("Invalid port number")
 
         # Get credentials
-        username = self._get_env_credential(credentials.get('username_env', 'FTP_USER'))
-        password = self._get_env_credential(credentials.get('password_env', 'FTP_PASSWORD'))
+        username = self.source_config.get('username') or self._get_env_credential(credentials.get('username_env', 'FTP_USER'))
+        password = self.source_config.get('password') or self._get_env_credential(credentials.get('password_env', 'FTP_PASSWORD'))
 
         # Check if FTPS is enabled
         use_ftps = self.source_config.get('ftps', False)
@@ -122,10 +122,11 @@ class SFTPBackup(BackupHandler):
             raise Exception("Invalid port number")
 
         # Get credentials
-        username = self._get_env_credential(credentials.get('username_env', 'SFTP_USER'))
+        username = self.source_config.get('username') or self._get_env_credential(credentials.get('username_env', 'SFTP_USER'))
 
         # Check for SSH key or password
-        ssh_key = credentials.get('ssh_key_path', '')
+        ssh_key = self.source_config.get('ssh_key_path') or credentials.get('ssh_key_path', '')
+        password = self.source_config.get('password', '')
         password_env = credentials.get('password_env', '')
 
         try:
@@ -147,9 +148,10 @@ class SFTPBackup(BackupHandler):
             if ssh_key and os.path.exists(ssh_key):
                 ssh_cmd.extend(['-i', ssh_key])
                 self.log(f"Using SSH key authentication")
-            elif password_env:
+            elif password or password_env:
                 # Use sshpass with SSHPASS env var (not command line)
-                password = self._get_env_credential(password_env)
+                if not password:
+                    password = self._get_env_credential(password_env)
                 cmd = ['sshpass', '-e'] + cmd
                 os.environ['SSHPASS'] = password
 

@@ -94,7 +94,7 @@ export default function Sources() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4 md:space-y-6">
+      <div className="page-shell">
         {/* Header Skeleton */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="space-y-2">
@@ -111,10 +111,10 @@ export default function Sources() {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="page-shell">
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{t('sources.title')}</h1>
           <p className="text-sm md:text-base text-gray-600 mt-1">{t('sources.subtitle')}</p>
         </div>
@@ -134,21 +134,22 @@ export default function Sources() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {sources.map((source) => (
           <div key={source.id} className="card">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-primary-100 rounded-lg">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="shrink-0 rounded-lg bg-primary-100 p-3">
                   {getTypeIcon(source.type)}
                 </div>
-                <div>
-                  <h3 className="font-bold text-gray-900">{source.name}</h3>
-                  <p className="text-sm text-gray-600">{source.type.toUpperCase()}</p>
+                <div className="min-w-0">
+                  <h3 className="break-words font-bold text-gray-900">{source.name}</h3>
+                  <p className="truncate text-sm text-gray-600">{source.type.toUpperCase()}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center">
                 <button
                   onClick={() => handleTest(source.id)}
-                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                  className="icon-btn text-blue-600 hover:bg-blue-50"
                   title={t('sources.testConnection')}
+                  aria-label={t('sources.testConnection')}
                 >
                   <TestTube className="w-5 h-5" />
                 </button>
@@ -157,15 +158,17 @@ export default function Sources() {
                     setEditingSource(source)
                     setShowModal(true)
                   }}
-                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
+                  className="icon-btn text-gray-600 hover:bg-gray-100"
                   title={t('sources.edit')}
+                  aria-label={t('sources.edit')}
                 >
                   <Edit2 className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => handleDeleteClick(source)}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                  className="icon-btn text-red-600 hover:bg-red-50"
                   title={t('sources.delete')}
+                  aria-label={t('sources.delete')}
                 >
                   <Trash2 className="w-5 h-5" />
                 </button>
@@ -173,7 +176,7 @@ export default function Sources() {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center justify-between gap-3 text-sm">
                 <span className="text-gray-600">{t('sources.status')}</span>
                 <span className={clsx(
                   'badge',
@@ -182,7 +185,7 @@ export default function Sources() {
                   {source.enabled ? t('sources.enabled') : t('sources.disabled')}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center justify-between gap-3 text-sm">
                 <span className="text-gray-600">{t('sources.priority')}</span>
                 <span className="font-medium">{source.priority}</span>
               </div>

@@ -51,10 +51,12 @@ class ProxmoxBackup(BackupHandler):
 
         # Get API token or user/password
         token_env = credentials.get('token_env', '')
-        token_id = credentials.get('token_id', '')  # e.g., "backup@pam!backup-token"
+        token_id = self.source_config.get('token_id') or credentials.get('token_id', '')  # e.g., "backup@pam!backup-token"
+        api_token = self.source_config.get('token', '')
 
-        if token_env:
-            api_token = self._get_env_credential(token_env)
+        if api_token or token_env:
+            if not api_token:
+                api_token = self._get_env_credential(token_env)
             headers = {'Authorization': f'PVEAPIToken={token_id}={api_token}'}
         else:
             # Fallback: user/password auth (get ticket)
@@ -66,7 +68,7 @@ class ProxmoxBackup(BackupHandler):
         verify_ssl = options.get('verify_ssl', False)
 
         # Get list of VMs/Containers to backup
-        vmids = self.source_config.get('vmids', [])  # Explicit list
+        vmids = self._as_list(self.source_config.get('vmids'))  # Explicit list
         backup_all = self.source_config.get('backup_all', False)
 
         if backup_all:
@@ -136,7 +138,7 @@ class ProxmoxBackup(BackupHandler):
 
     def _backup_cli(self):
         """Backup VMs/Containers via vzdump CLI (runs on Proxmox host directly)"""
-        vmids = self.source_config.get('vmids', [])
+        vmids = self._as_list(self.source_config.get('vmids'))
         options = self.source_config.get('options', {})
 
         self.log("Using CLI mode (vzdump)")

@@ -29,7 +29,7 @@ class GitBackup(BackupHandler):
 
     def backup(self):
         """Execute Git repository backup using --mirror"""
-        repositories = self.source_config.get('repositories', [])
+        repositories = self._as_list(self.source_config.get('repositories'))
         credentials = self.source_config.get('credentials', {})
         platform = self.source_config.get('platform', 'gitlab')
         host = self.source_config.get('host', '')  # For self-hosted instances
