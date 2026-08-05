@@ -20,6 +20,9 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - DEBUG=${DEBUG:-false}
       - DATABASE_URL=sqlite:////data/backupgenie.db
+      # Timezone for scheduled backups ("03:00" = local wall clock)
+      - TZ=${TZ:-Europe/Berlin}
+      - SCHEDULER_ENABLED=${SCHEDULER_ENABLED:-true}
       - BACKUP_BASE_PATH=/mnt/backup
       - MAX_PARALLEL_TASKS=${MAX_PARALLEL_TASKS:-auto}
       - LOG_RETENTION_DAYS=${LOG_RETENTION_DAYS:-30}

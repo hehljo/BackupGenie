@@ -562,7 +562,10 @@ BackupGenie supports 60+ backup sources. Configure them in `config/sources.json`
     "timeout": 300
   },
   "schedule": {
-    "trigger": "usb_mount",
+    "enabled": true,
+    "trigger": "cron,usb_mount",
+    "frequency": "daily",
+    "time": "03:00",
     "max_duration": 3600
   }
 }
@@ -1370,7 +1373,7 @@ Contributions are welcome! See the [Contributing Guide](CONTRIBUTING.md) for det
 **In progress / planned**
 - [x] Dark/light theme toggle
 - [ ] Advanced filtering in backup history
-- [ ] Backup scheduling (cron-style triggers)
+- [x] Backup scheduling (per-source time schedules)
 - [ ] Two-factor authentication (2FA)
 - [ ] Audit logging
 - [ ] Deduplication / incremental backups

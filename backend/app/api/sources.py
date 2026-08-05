@@ -9,6 +9,14 @@ import os
 from app.api.auth import token_required
 from app import limiter
 from app.config import Config
+from app.scheduler.schedule import (
+    describe_schedule,
+    get_default_schedule,
+    next_run_after,
+    resolve_schedule,
+    set_default_schedule,
+    validate_schedule,
+)
 from app.services.github_discovery import discover_all
 
 logger = logging.getLogger(__name__)
@@ -81,6 +89,12 @@ def create_source(current_user):
     data.setdefault('enabled', True)
     data.setdefault('priority', len(sources) + 1)
 
+    if 'schedule' in data:
+        schedule, error = validate_schedule(data['schedule'])
+        if error:
+            return jsonify({'error': error}), 400
+        data['schedule'] = schedule
+
     sources.append(data)
     save_sources(sources)
 
@@ -101,6 +115,12 @@ def update_source(current_user, source_id):
 
     if source_index is None:
         return jsonify({'error': 'Source not found'}), 404
+
+    if 'schedule' in data:
+        schedule, error = validate_schedule(data['schedule'])
+        if error:
+            return jsonify({'error': error}), 400
+        data['schedule'] = schedule
 
     # Update source
     sources[source_index].update(data)
@@ -124,6 +144,52 @@ def delete_source(current_user, source_id):
     save_sources(sources)
 
     return jsonify({'message': 'Source deleted successfully'}), 200
+
+
+@sources_bp.route('/schedules', methods=['GET'])
+@token_required
+def get_schedules(current_user):
+    """List the effective schedule and next run time for every source."""
+    from datetime import datetime
+
+    default_schedule = get_default_schedule()
+    now = datetime.now()  # local time, matching the scheduler
+    entries = []
+
+    for source in load_sources():
+        schedule = resolve_schedule(source, default_schedule)
+        next_run = next_run_after(schedule, now)
+        entries.append({
+            'source_id': source.get('id'),
+            'source_name': source.get('name'),
+            'source_enabled': source.get('enabled', True),
+            'inherits_default': 'schedule' not in source,
+            'schedule': schedule,
+            'summary': describe_schedule(schedule),
+            'next_run': next_run.isoformat() if next_run else None,
+        })
+
+    return jsonify({
+        'default': default_schedule,
+        'schedules': entries,
+    }), 200
+
+
+@sources_bp.route('/schedules/default', methods=['PUT'])
+@token_required
+def update_default_schedule(current_user):
+    """Update the global default schedule inherited by sources without one."""
+    data = request.get_json() or {}
+    schedule, error = validate_schedule(data)
+    if error:
+        return jsonify({'error': error}), 400
+
+    saved = set_default_schedule(schedule)
+    return jsonify({
+        'message': 'Default schedule updated',
+        'schedule': saved,
+        'summary': describe_schedule(saved),
+    }), 200
 
 
 @sources_bp.route('/github/discover', methods=['GET'])

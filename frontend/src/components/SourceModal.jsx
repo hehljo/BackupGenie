@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next'
 import clsx from 'clsx'
 import { sourcesAPI, settingsAPI } from '../services/api'
 import GitHubRepoSelector from './GitHubRepoSelector'
+import ScheduleFields, { DEFAULT_SCHEDULE, describeSchedule } from './ScheduleFields'
 
 // Complete list of 60+ backup source types organized by category
 const SOURCE_TYPES = [
@@ -129,17 +130,25 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
   const [connectionTestStatus, setConnectionTestStatus] = useState(null) // null, 'testing', 'success', 'error'
   const [connectionTestMessage, setConnectionTestMessage] = useState('')
   const [credentialProfiles, setCredentialProfiles] = useState({})
+  // A source without its own schedule inherits the global default.
+  const [useDefaultSchedule, setUseDefaultSchedule] = useState(true)
+  const [defaultSchedule, setDefaultSchedule] = useState(DEFAULT_SCHEDULE)
   const [formData, setFormData] = useState({
     name: '',
     type: 'nas',
     enabled: true,
     priority: 1,
+    schedule: { ...DEFAULT_SCHEDULE },
     config: {}
   })
 
   useEffect(() => {
     if (editingSource) {
-      setFormData(editingSource)
+      setFormData({
+        ...editingSource,
+        schedule: editingSource.schedule || { ...DEFAULT_SCHEDULE }
+      })
+      setUseDefaultSchedule(!editingSource.schedule)
       // Set category based on type
       const sourceType = SOURCE_TYPES.find(t => t.value === editingSource.type)
       if (sourceType) setSelectedCategory(sourceType.category)
@@ -150,8 +159,10 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
         type: 'nas',
         enabled: true,
         priority: 1,
+        schedule: { ...DEFAULT_SCHEDULE },
         config: {}
       })
+      setUseDefaultSchedule(true)
       setSelectedCategory('Network Storage')
     }
   }, [editingSource, isOpen])
@@ -161,6 +172,9 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
     if (isOpen) {
       settingsAPI.getCredentials().then(res => {
         setCredentialProfiles(res.data)
+      }).catch(() => {})
+      sourcesAPI.getSchedules().then(res => {
+        if (res.data?.default) setDefaultSchedule(res.data.default)
       }).catch(() => {})
     }
   }, [isOpen])
@@ -179,6 +193,12 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
   const normalizeSourceData = (source) => {
     const config = { ...(source.config || {}) }
     const normalized = { ...source, config }
+
+    // Dropping the key lets the backend fall back to the global default,
+    // so the source keeps following it when the default changes later.
+    if (useDefaultSchedule) {
+      delete normalized.schedule
+    }
 
     if (config.credential_profile) {
       normalized.credential_profile = config.credential_profile
@@ -1394,6 +1414,40 @@ export default function SourceModal({ isOpen, onClose, onSave, editingSource }) 
                   <p className="text-xs text-gray-500 mt-1">Enable automatic backups</p>
                 </div>
               </div>
+            </div>
+
+            {/* Schedule */}
+            <div className="border-t border-gray-200 pt-4 md:pt-6 dark:border-gray-800">
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-1 dark:text-gray-100">
+                {t('schedule.title')}
+              </h3>
+              <p className="text-xs text-gray-500 mb-3">{t('schedule.hint')}</p>
+
+              <label className="flex items-center gap-2 cursor-pointer mb-3">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+                  checked={useDefaultSchedule}
+                  onChange={(e) => setUseDefaultSchedule(e.target.checked)}
+                />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('schedule.useDefault')}
+                </span>
+              </label>
+
+              {useDefaultSchedule ? (
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg dark:bg-gray-800 dark:border-gray-700">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    {describeSchedule(defaultSchedule, t)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">{t('schedule.useDefaultHint')}</p>
+                </div>
+              ) : (
+                <ScheduleFields
+                  value={formData.schedule}
+                  onChange={(schedule) => handleChange('schedule', schedule)}
+                />
+              )}
             </div>
 
             {/* Type-specific config */}

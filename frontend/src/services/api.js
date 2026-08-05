@@ -100,6 +100,12 @@ export const sourcesAPI = {
   test: (sourceId) =>
     api.post(`/sources/${sourceId}/test`),
 
+  getSchedules: () =>
+    api.get('/sources/schedules'),
+
+  updateDefaultSchedule: (data) =>
+    api.put('/sources/schedules/default', data),
+
   testSupabase: (data) =>
     api.post('/sources/supabase/test', data),
 

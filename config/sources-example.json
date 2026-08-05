@@ -17,7 +17,10 @@
         "timeout": 300
       },
       "schedule": {
-        "trigger": "usb_mount",
+        "enabled": true,
+        "trigger": "cron,usb_mount",
+        "frequency": "daily",
+        "time": "03:00",
         "max_duration": 3600
       }
     },
@@ -41,7 +44,10 @@
         "include_lfs": true
       },
       "schedule": {
-        "trigger": "usb_mount",
+        "enabled": true,
+        "trigger": "cron,usb_mount",
+        "frequency": "daily",
+        "time": "04:00",
         "max_duration": 600
       }
     },
@@ -58,7 +64,11 @@
         "checkers": 8
       },
       "schedule": {
-        "trigger": "usb_mount",
+        "enabled": true,
+        "trigger": "cron",
+        "frequency": "weekly",
+        "weekday": 6,
+        "time": "02:00",
         "max_duration": 1800
       }
     },
@@ -78,7 +88,10 @@
         "compress": false
       },
       "schedule": {
-        "trigger": "usb_mount",
+        "enabled": true,
+        "trigger": "cron,usb_mount",
+        "frequency": "daily",
+        "time": "04:00",
         "max_duration": 600
       }
     }

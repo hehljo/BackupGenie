@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
-import { Settings as SettingsIcon, User, Shield, Database, Save, Loader, Download, Upload, FileJson, CheckCircle, AlertCircle, Key, Eye, EyeOff, Plus, Trash2, X } from 'lucide-react'
+import { Settings as SettingsIcon, User, Shield, Database, Save, Loader, Download, Upload, FileJson, CheckCircle, AlertCircle, Key, Eye, EyeOff, Plus, Trash2, X, Clock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { authAPI, backupAPI, settingsAPI, configAPI } from '../services/api'
+import { authAPI, backupAPI, settingsAPI, configAPI, sourcesAPI } from '../services/api'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import { FormSkeleton } from '../components/Skeleton'
 import ConfirmDialog from '../components/ConfirmDialog'
+import ScheduleFields, { DEFAULT_SCHEDULE } from '../components/ScheduleFields'
 
 export default function Settings() {
   const { t } = useTranslation()
@@ -55,6 +56,10 @@ export default function Settings() {
   const [editingProfile, setEditingProfile] = useState(null) // { provider, profile } when editing
 
   // Confirm Dialogs
+  // Global default schedule, inherited by sources without their own
+  const [defaultSchedule, setDefaultSchedule] = useState(DEFAULT_SCHEDULE)
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false)
+
   const [clearBackupsConfirm, setClearBackupsConfirm] = useState(false)
   const [isClearing, setIsClearing] = useState(false)
 
@@ -90,6 +95,14 @@ export default function Settings() {
           usedBytes: settingsData.storage.used_bytes,
           percentage: settingsData.storage.percentage_used,
         })
+      }
+
+      // Load global default schedule
+      try {
+        const scheduleRes = await sourcesAPI.getSchedules()
+        if (scheduleRes.data?.default) setDefaultSchedule(scheduleRes.data.default)
+      } catch (e) {
+        console.error('Error loading default schedule:', e)
       }
 
       // Load credentials status
@@ -274,6 +287,20 @@ export default function Settings() {
       setTimeout(() => setSaveStatus(null), 3000)
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleScheduleSave = async () => {
+    setIsSavingSchedule(true)
+    try {
+      const res = await sourcesAPI.updateDefaultSchedule(defaultSchedule)
+      if (res.data?.schedule) setDefaultSchedule(res.data.schedule)
+      toast.success(t('schedule.saved'))
+    } catch (error) {
+      console.error('Error saving default schedule:', error)
+      toast.error(error.response?.data?.error || t('settings.error'))
+    } finally {
+      setIsSavingSchedule(false)
     }
   }
 
@@ -486,6 +513,32 @@ export default function Settings() {
               <p className="text-xs text-gray-500 mt-1">{t('settings.backupRetentionCountHint')}</p>
             </div>
           </div>
+        </div>
+
+        <div className="card">
+          <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6">
+            <div className="p-1.5 md:p-2 bg-purple-100 rounded-lg shrink-0">
+              <Clock className="w-5 h-5 md:w-6 md:h-6 text-purple-600" />
+            </div>
+            <div>
+              <h2 className="text-lg md:text-xl font-bold text-gray-900">{t('schedule.defaultTitle')}</h2>
+              <p className="text-xs text-gray-500">{t('schedule.defaultSubtitle')}</p>
+            </div>
+          </div>
+          <ScheduleFields value={defaultSchedule} onChange={setDefaultSchedule} />
+          <button
+            type="button"
+            onClick={handleScheduleSave}
+            disabled={isSavingSchedule}
+            className="btn btn-primary mt-4 w-full sm:w-auto"
+          >
+            {isSavingSchedule ? (
+              <Loader className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            {t('common.save')}
+          </button>
         </div>
 
         <div className="card">

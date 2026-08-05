@@ -23,8 +23,36 @@ fi
 echo ""
 echo "Starting BackupGenie backend..."
 
-exec gunicorn \
+# Backup scheduler runs as a single process next to gunicorn, so scheduled
+# backups fire exactly once no matter how many workers are running.
+SCHEDULER_PID=""
+if [ "${SCHEDULER_ENABLED:-true}" = "true" ]; then
+    python -m app.scheduler.runner &
+    SCHEDULER_PID=$!
+    echo "  Backup scheduler started (pid $SCHEDULER_PID)"
+else
+    echo "  Backup scheduler disabled (SCHEDULER_ENABLED=false)"
+fi
+
+shutdown() {
+    if [ -n "$SCHEDULER_PID" ]; then
+        kill "$SCHEDULER_PID" 2>/dev/null || true
+    fi
+    if [ -n "$GUNICORN_PID" ]; then
+        kill "$GUNICORN_PID" 2>/dev/null || true
+    fi
+}
+trap shutdown TERM INT
+
+gunicorn \
     --bind 0.0.0.0:5000 \
     --workers "$GUNICORN_WORKERS" \
     --timeout 300 \
-    run:app
+    run:app &
+GUNICORN_PID=$!
+
+# Exit when gunicorn does; the scheduler is torn down by the trap.
+wait "$GUNICORN_PID"
+EXIT_CODE=$?
+shutdown
+exit "$EXIT_CODE"
