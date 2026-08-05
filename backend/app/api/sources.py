@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify
 import json
 import logging
 import os
+import requests
 
 from app.api.auth import token_required
 from app import limiter
@@ -146,6 +147,28 @@ def delete_source(current_user, source_id):
     return jsonify({'message': 'Source deleted successfully'}), 200
 
 
+def _github_error_message(response):
+    """Translate a GitHub API error response into (message, http_status)."""
+    if response is None:
+        return 'GitHub API request failed', 502
+
+    status = response.status_code
+
+    if status == 401:
+        return ('GitHub token is invalid or expired. Update it in '
+                'Settings → Credentials.'), 401
+    if status == 403:
+        # 403 covers both rate limiting and missing scopes.
+        if response.headers.get('X-RateLimit-Remaining') == '0':
+            return ('GitHub rate limit reached. Try again later.'), 429
+        return ('GitHub denied access. The token is missing the "repo" '
+                'scope.'), 403
+    if status == 404:
+        return 'GitHub resource not found.', 404
+
+    return f'GitHub API error ({status}).', 502
+
+
 @sources_bp.route('/schedules', methods=['GET'])
 @token_required
 def get_schedules(current_user):
@@ -206,8 +229,21 @@ def discover_github_repos(current_user):
     try:
         result = discover_all(token)
         return jsonify(result), 200
+    except requests.HTTPError as e:
+        # Surface the actual reason instead of a generic 502 — an expired
+        # token and a rate limit need very different fixes from the user.
+        status = e.response.status_code if e.response is not None else None
+        message, code = _github_error_message(e.response)
+        logger.error(f"GitHub discovery failed ({status}): {message}")
+        return jsonify({'error': message}), code
+    except requests.Timeout:
+        logger.error("GitHub discovery timed out")
+        return jsonify({'error': 'GitHub API timed out. Try again in a moment.'}), 504
+    except requests.RequestException as e:
+        logger.error(f"GitHub discovery connection error: {e}")
+        return jsonify({'error': 'Could not reach GitHub. Check the network connection.'}), 502
     except Exception as e:
-        logger.error(f"GitHub discovery failed: {e}")
+        logger.exception(f"GitHub discovery failed: {e}")
         return jsonify({'error': 'GitHub API request failed'}), 502
 
 

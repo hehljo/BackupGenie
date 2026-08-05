@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Settings as SettingsIcon, User, Shield, Database, Save, Loader, Download, Upload, FileJson, CheckCircle, AlertCircle, Key, Eye, EyeOff, Plus, Trash2, X, Clock } from 'lucide-react'
+import { Settings as SettingsIcon, User, Shield, Database, Save, Loader, Download, Upload, FileJson, CheckCircle, AlertCircle, Key, Eye, EyeOff, Plus, Trash2, X, Clock, Zap } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { authAPI, backupAPI, settingsAPI, configAPI, sourcesAPI } from '../services/api'
 import toast from 'react-hot-toast'
@@ -7,6 +7,9 @@ import clsx from 'clsx'
 import { FormSkeleton } from '../components/Skeleton'
 import ConfirmDialog from '../components/ConfirmDialog'
 import ScheduleFields, { DEFAULT_SCHEDULE } from '../components/ScheduleFields'
+
+// Providers whose credentials can be verified against a live API
+const TESTABLE_PROVIDERS = ['github', 'telegram']
 
 export default function Settings() {
   const { t } = useTranslation()
@@ -55,11 +58,16 @@ export default function Settings() {
   const [showAddProfile, setShowAddProfile] = useState(null) // which type is adding
   const [editingProfile, setEditingProfile] = useState(null) // { provider, profile } when editing
 
-  // Confirm Dialogs
+  // Credential connection tests: which one is running, and the last result
+  // per "provider:profile" key
+  const [testingCredential, setTestingCredential] = useState(null)
+  const [credentialTestResults, setCredentialTestResults] = useState({})
+
   // Global default schedule, inherited by sources without their own
   const [defaultSchedule, setDefaultSchedule] = useState(DEFAULT_SCHEDULE)
   const [isSavingSchedule, setIsSavingSchedule] = useState(false)
 
+  // Confirm Dialogs
   const [clearBackupsConfirm, setClearBackupsConfirm] = useState(false)
   const [isClearing, setIsClearing] = useState(false)
 
@@ -287,6 +295,23 @@ export default function Settings() {
       setTimeout(() => setSaveStatus(null), 3000)
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleTestCredential = async (provider, profile) => {
+    const key = `${provider}:${profile}`
+    setTestingCredential(key)
+    try {
+      const res = await settingsAPI.testCredential(provider, profile)
+      const { success, message } = res.data
+      setCredentialTestResults(prev => ({ ...prev, [key]: { success, message } }))
+      success ? toast.success(message) : toast.error(message)
+    } catch (error) {
+      const message = error.response?.data?.error || t('settings.credentials.testError')
+      setCredentialTestResults(prev => ({ ...prev, [key]: { success: false, message } }))
+      toast.error(message)
+    } finally {
+      setTestingCredential(null)
     }
   }
 
@@ -555,11 +580,11 @@ export default function Settings() {
             </div>
             <div>
               <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">{t('settings.newPassword')}</label>
-              <input type="password" className="input" placeholder={t('settings.newPassword')} value={passwords.newPassword} onChange={(e) => setPasswords({...passwords, newPassword: e.target.value})} />
+              <input type="password" autoComplete="new-password" className="input" placeholder={t('settings.newPassword')} value={passwords.newPassword} onChange={(e) => setPasswords({...passwords, newPassword: e.target.value})} />
             </div>
             <div>
               <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">{t('settings.confirmPassword')}</label>
-              <input type="password" className="input" placeholder={t('settings.confirmPassword')} value={passwords.confirmPassword} onChange={(e) => setPasswords({...passwords, confirmPassword: e.target.value})} />
+              <input type="password" autoComplete="new-password" className="input" placeholder={t('settings.confirmPassword')} value={passwords.confirmPassword} onChange={(e) => setPasswords({...passwords, confirmPassword: e.target.value})} />
             </div>
             {passwordError && <p className="text-xs md:text-sm text-red-600">{passwordError}</p>}
             {passwordSuccess && <p className="text-xs md:text-sm text-green-600">{t('settings.password.changed')}</p>}
@@ -639,6 +664,20 @@ export default function Settings() {
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-sm font-medium text-gray-700">{p.profile}</span>
                           <div className="flex items-center gap-1.5 shrink-0">
+                            {TESTABLE_PROVIDERS.includes(provider) && (
+                              <button
+                                onClick={() => handleTestCredential(provider, p.profile)}
+                                disabled={testingCredential === `${provider}:${p.profile}`}
+                                className="text-gray-400 hover:text-green-600 disabled:opacity-50"
+                                title={t('settings.credentials.testCredential')}
+                              >
+                                {testingCredential === `${provider}:${p.profile}` ? (
+                                  <Loader className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Zap className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            )}
                             {p.source === 'database' && (
                               <>
                                 <button
@@ -671,6 +710,20 @@ export default function Settings() {
                               </span>
                             ))}
                             <span className="text-xs text-gray-400 ml-1">{p.source}</span>
+                          </div>
+                        )}
+                        {credentialTestResults[`${provider}:${p.profile}`] && (
+                          <div className={clsx(
+                            'flex items-start gap-1.5 mt-1.5 text-xs',
+                            credentialTestResults[`${provider}:${p.profile}`].success
+                              ? 'text-green-700' : 'text-red-600'
+                          )}>
+                            {credentialTestResults[`${provider}:${p.profile}`].success ? (
+                              <CheckCircle className="w-3.5 h-3.5 mt-px shrink-0" />
+                            ) : (
+                              <AlertCircle className="w-3.5 h-3.5 mt-px shrink-0" />
+                            )}
+                            <span>{credentialTestResults[`${provider}:${p.profile}`].message}</span>
                           </div>
                         )}
                       </div>

@@ -154,6 +154,9 @@ export const settingsAPI = {
   deleteCredentialProfile: (provider, profile) =>
     api.delete('/settings/credentials/profile', { data: { provider, profile } }),
 
+  testCredential: (provider, profile) =>
+    api.post('/settings/credentials/test', { provider, profile }),
+
   getLogs: (lines = 200) =>
     api.get(`/settings/logs?lines=${lines}`),
 

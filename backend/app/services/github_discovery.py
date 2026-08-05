@@ -4,6 +4,8 @@ Fetches all accessible repositories for the authenticated user,
 including personal repos and organization repos with pagination.
 """
 import logging
+import time
+
 import requests
 
 logger = logging.getLogger(__name__)
@@ -11,6 +13,12 @@ logger = logging.getLogger(__name__)
 GITHUB_API_BASE = 'https://api.github.com'
 PER_PAGE = 100
 MAX_PAGES = 50  # Safety limit: max 5000 repos
+
+# Kept well below the gunicorn worker timeout (300s) so a slow GitHub
+# response surfaces as a real error instead of the worker being killed,
+# which the browser only ever sees as a 502.
+REQUEST_TIMEOUT = 15
+TOTAL_TIMEOUT = 180
 
 
 def _get_headers(token):
@@ -30,8 +38,15 @@ def _paginate(url, headers, params=None):
     params['page'] = 1
 
     all_items = []
+    started = time.monotonic()
     while params['page'] <= MAX_PAGES:
-        response = requests.get(url, headers=headers, params=params, timeout=30)
+        if time.monotonic() - started > TOTAL_TIMEOUT:
+            logger.warning(
+                'GitHub pagination hit the total timeout after %d items', len(all_items)
+            )
+            break
+
+        response = requests.get(url, headers=headers, params=params, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
 
         items = response.json()
@@ -104,7 +119,7 @@ def discover_all(token):
 
     # /user/repos already includes org repos the user can access
     # Also fetch user info for response metadata
-    resp = requests.get(f'{GITHUB_API_BASE}/user', headers=headers, timeout=15)
+    resp = requests.get(f'{GITHUB_API_BASE}/user', headers=headers, timeout=REQUEST_TIMEOUT)
     resp.raise_for_status()
     user_info = resp.json()
 

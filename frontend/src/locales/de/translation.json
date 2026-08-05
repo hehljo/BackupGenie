@@ -188,7 +188,10 @@
       "profileDeleted": "Profil \"{{profile}}\" gelöscht",
       "confirmDeleteProfile": "Profil \"{{profile}}\" wirklich löschen?",
       "saveError": "Fehler beim Speichern",
-      "deleteError": "Fehler beim Löschen"
+      "deleteError": "Fehler beim Löschen",
+      "testCredential": "Verbindung testen",
+      "testError": "Test fehlgeschlagen",
+      "testing": "Teste…"
     }
   },
   "logs": {

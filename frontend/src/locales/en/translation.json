@@ -188,7 +188,10 @@
       "profileDeleted": "Profile \"{{profile}}\" deleted",
       "confirmDeleteProfile": "Delete profile \"{{profile}}\"?",
       "saveError": "Error saving",
-      "deleteError": "Error deleting"
+      "deleteError": "Error deleting",
+      "testCredential": "Test connection",
+      "testError": "Test failed",
+      "testing": "Testing…"
     }
   },
   "logs": {

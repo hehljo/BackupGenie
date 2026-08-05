@@ -4,14 +4,19 @@ Provides system configuration and management
 All settings are persisted in the database.
 """
 from flask import Blueprint, request, jsonify
+import logging
 import shutil
 import os
 import subprocess
 
-from app import db
+import requests
+
+from app import db, limiter
 from app.api.auth import token_required
 from app.config import Config
 from app.models.backup import Setting
+
+logger = logging.getLogger(__name__)
 
 settings_bp = Blueprint('settings', __name__)
 
@@ -364,6 +369,95 @@ def add_credential_profile(current_user):
         'profile': profile,
         'fields': saved_fields
     }), 200
+
+
+def _test_github_token(token):
+    """Verify a GitHub token and report the account and granted scopes."""
+    resp = requests.get(
+        'https://api.github.com/user',
+        headers={
+            'Authorization': f'token {token}',
+            'Accept': 'application/vnd.github.v3+json',
+        },
+        timeout=15,
+    )
+
+    if resp.status_code == 401:
+        return False, 'Token is invalid or expired'
+    if resp.status_code == 403:
+        if resp.headers.get('X-RateLimit-Remaining') == '0':
+            return False, 'GitHub rate limit reached, try again later'
+        return False, 'Token lacks the required permissions'
+    resp.raise_for_status()
+
+    login = resp.json().get('login', '?')
+    scopes = resp.headers.get('X-OAuth-Scopes', '')
+    scope_list = [s.strip() for s in scopes.split(',') if s.strip()]
+
+    # Classic tokens report scopes; fine-grained tokens report none, so a
+    # missing 'repo' scope is only a warning when scopes are present at all.
+    if scope_list and not any(s in scope_list for s in ('repo', 'public_repo')):
+        return False, (f'Connected as {login}, but the token is missing the '
+                       f'"repo" scope needed for backups')
+
+    detail = f' (scopes: {", ".join(scope_list)})' if scope_list else ''
+    return True, f'Connected as {login}{detail}'
+
+
+def _test_telegram_token(token):
+    """Verify a Telegram bot token."""
+    resp = requests.get(f'https://api.telegram.org/bot{token}/getMe', timeout=15)
+    if resp.status_code == 401:
+        return False, 'Bot token is invalid'
+    resp.raise_for_status()
+    data = resp.json()
+    if not data.get('ok'):
+        return False, data.get('description', 'Telegram rejected the token')
+    return True, f"Connected as @{data.get('result', {}).get('username', '?')}"
+
+
+@settings_bp.route('/credentials/test', methods=['POST'])
+@token_required
+@limiter.limit("20 per hour")
+def test_credential(current_user):
+    """Test a stored credential against the provider's API.
+
+    Tests the saved credential, so the token never has to be sent from the
+    browser just to check whether it still works.
+    """
+    data = request.get_json() or {}
+    provider = (data.get('provider') or '').strip()
+    profile = (data.get('profile') or '').strip() or None
+
+    if provider not in CREDENTIAL_PROVIDERS:
+        return jsonify({'error': 'Invalid provider'}), 400
+
+    testable = {
+        'github': ('token', _test_github_token),
+        'telegram': ('bot_token', _test_telegram_token),
+    }
+    if provider not in testable:
+        return jsonify({
+            'error': f'Testing is not supported for {provider} yet'
+        }), 400
+
+    field, test_func = testable[provider]
+    credential = get_credential(f'{provider}.{field}', profile=profile)
+    if not credential:
+        return jsonify({'error': 'No credential stored for this profile'}), 404
+
+    try:
+        success, message = test_func(credential)
+    except requests.Timeout:
+        return jsonify({'success': False, 'message': 'Connection timed out'}), 200
+    except requests.RequestException as e:
+        logger.error(f'Credential test failed for {provider}: {e}')
+        return jsonify({
+            'success': False,
+            'message': 'Could not reach the provider'
+        }), 200
+
+    return jsonify({'success': success, 'message': message}), 200
 
 
 @settings_bp.route('/credentials/profile', methods=['DELETE'])
