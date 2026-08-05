@@ -240,10 +240,11 @@ def discover_github_repos(current_user):
         logger.error("GitHub discovery timed out")
         return jsonify({'error': 'GitHub API timed out. Try again in a moment.'}), 504
     except requests.RequestException as e:
-        logger.error(f"GitHub discovery connection error: {e}")
+        # Log the exception type only — exception text can echo request details.
+        logger.error("GitHub discovery connection error: %s", type(e).__name__)
         return jsonify({'error': 'Could not reach GitHub. Check the network connection.'}), 502
     except Exception as e:
-        logger.exception(f"GitHub discovery failed: {e}")
+        logger.error("GitHub discovery failed: %s", type(e).__name__)
         return jsonify({'error': 'GitHub API request failed'}), 502
 
 

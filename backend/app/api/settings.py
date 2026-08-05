@@ -450,8 +450,19 @@ def test_credential(current_user):
         success, message = test_func(credential)
     except requests.Timeout:
         return jsonify({'success': False, 'message': 'Connection timed out'}), 200
+    except requests.HTTPError as e:
+        # Never log the exception object: its text contains the request URL,
+        # and Telegram carries the bot token inside that URL.
+        status = e.response.status_code if e.response is not None else 'unknown'
+        logger.error('Credential test failed for %s: HTTP %s', provider, status)
+        return jsonify({
+            'success': False,
+            'message': 'The provider returned an error'
+        }), 200
     except requests.RequestException as e:
-        logger.error(f'Credential test failed for {provider}: {e}')
+        logger.error(
+            'Credential test network error for %s: %s', provider, type(e).__name__
+        )
         return jsonify({
             'success': False,
             'message': 'Could not reach the provider'
